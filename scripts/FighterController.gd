@@ -266,20 +266,7 @@ func _load_character_assets() -> void:
 	var f_cfg: Dictionary = fighters.get(fighter_id, {})
 	_fighter_parts = f_cfg.get("parts", {})
 
-	var map := {}
-	match fighter_id:
-		"landsknecht":
-			map = {"calm": "p1_head_calm", "yell": "p1_head_yell", "pain": "p1_head_grimace", "bloody": "p1_head_bloody", "dead": "p1_head_dead"}
-		"fechtmeister":
-			map = {"calm": "p2_head_calm", "yell": "p2_head_yell", "pain": "p2_head_pain", "bloody": "p2_head_bloody", "dead": "p2_head_dead"}
-		"plague_executioner":
-			map = {"calm": "p3_head_mask", "yell": "p3_head_mask", "pain": "p3_head_bloody", "bloody": "p3_head_bloody", "dead": "p3_head_dead"}
-		"black_knight":
-			map = {"calm": "p4_head_helm", "yell": "p4_head_helm", "pain": "p4_head_bloody", "bloody": "p4_head_bloody", "dead": "p4_head_dead"}
-		"venetian_bravo":
-			map = {"calm": "p5_head_calm", "yell": "p5_head_yell", "pain": "p5_head_yell", "bloody": "p5_head_bloody", "dead": "p5_head_dead"}
-		_:
-			map = {"calm": "p1_head_calm", "yell": "p1_head_yell", "pain": "p1_head_grimace", "bloody": "p1_head_bloody", "dead": "p1_head_dead"}
+	var map: Dictionary = stats.get("heads", FighterStats.DEFAULT["heads"])
 	for k in map.keys():
 		var pid: String = map[k]
 		if _meta_parts.has(pid):

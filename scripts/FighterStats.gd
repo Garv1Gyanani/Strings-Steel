@@ -26,6 +26,8 @@ const DEFAULT := {
 	"ai_spacing": 195.0,
 	"ai_aggression": 0.55, # 0..1, shortens AI attack cooldowns
 	"ai_thrust_bias": 0.0, # -1..1, shifts AI attack choice toward slashes / thrusts
+	# Head sprite part ids (from rig_metadata.json) per facial expression.
+	"heads": {"calm": "p1_head_calm", "yell": "p1_head_yell", "pain": "p1_head_grimace", "bloody": "p1_head_bloody", "dead": "p1_head_dead"},
 }
 
 const TABLE := {
@@ -49,6 +51,7 @@ const TABLE := {
 		"perfect_parry_window": 0.34,
 		"ai_spacing": 200.0,
 		"ai_aggression": 0.45,
+		"heads": {"calm": "p2_head_calm", "yell": "p2_head_yell", "pain": "p2_head_pain", "bloody": "p2_head_bloody", "dead": "p2_head_dead"},
 	},
 	"plague_executioner": {
 		"display_name": "PLAGUE EXECUTIONER",
@@ -68,6 +71,7 @@ const TABLE := {
 		"ai_spacing": 180.0,
 		"ai_aggression": 0.6,
 		"ai_thrust_bias": -0.6,
+		"heads": {"calm": "p3_head_mask", "yell": "p3_head_mask", "pain": "p3_head_bloody", "bloody": "p3_head_bloody", "dead": "p3_head_dead"},
 	},
 	"black_knight": {
 		"display_name": "BLACK KNIGHT",
@@ -85,6 +89,7 @@ const TABLE := {
 		"dash_speed": 640.0,
 		"ai_spacing": 195.0,
 		"ai_aggression": 0.5,
+		"heads": {"calm": "p4_head_helm", "yell": "p4_head_helm", "pain": "p4_head_bloody", "bloody": "p4_head_bloody", "dead": "p4_head_dead"},
 	},
 	"venetian_bravo": {
 		"display_name": "VENETIAN BRAVO",
@@ -103,6 +108,7 @@ const TABLE := {
 		"ai_spacing": 215.0,
 		"ai_aggression": 0.7,
 		"ai_thrust_bias": 0.7,
+		"heads": {"calm": "p5_head_calm", "yell": "p5_head_yell", "pain": "p5_head_yell", "bloody": "p5_head_bloody", "dead": "p5_head_dead"},
 	},
 }
 

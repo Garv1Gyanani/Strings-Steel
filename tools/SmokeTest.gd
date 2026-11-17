@@ -81,6 +81,7 @@ func _run() -> void:
 	check(p1().fighter_id == "venetian_bravo" and p2().fighter_id == "black_knight", "fighters swapped from title selection")
 	check(is_equal_approx(p1().max_hp, 88.0) and is_equal_approx(p2().max_hp, 125.0), "max HP comes from FighterStats")
 	check(p1().move_speed > p2().move_speed, "Bravo is faster than the Black Knight")
+	check(p1()._head_textures.has("dead") and p2()._head_textures.has("dead"), "head expression sprites load from FighterStats")
 	check(arena.phase == INTRO and not p1().input_enabled, "round intro locks input")
 	await wait(INTRO_S + 0.2)
 	check(arena.phase == FIGHT and p1().input_enabled, "FIGHT phase enables input")

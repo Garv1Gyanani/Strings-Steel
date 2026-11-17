@@ -835,8 +835,14 @@ func _spawn_sparks(world_pos: Vector2, count: int) -> void:
 
 
 func _on_cut_flash(world_pos: Vector2, label_text: String, col: Color) -> void:
+	var pos := world_pos + Vector2(0, -25)
+	# Stack fresh callouts instead of drawing them on top of each other.
+	for c in callouts:
+		var cp: Vector2 = c["pos"]
+		if float(c["life"]) > 0.6 and absf(cp.x - pos.x) < 150.0 and absf(cp.y - pos.y) < 22.0:
+			pos.y = cp.y - 24.0
 	callouts.append({
-		"pos": world_pos + Vector2(0, -25),
+		"pos": pos,
 		"text": label_text,
 		"color": col,
 		"life": 1.1,
