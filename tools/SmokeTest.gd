@@ -219,6 +219,40 @@ func _run() -> void:
 	var cfg := ConfigFile.new()
 	check(cfg.load(TEST_SETTINGS) == OK and int(cfg.get_value("records", "best_wave", 0)) >= 1, "record persisted to disk")
 
+	print("== Regression: parry geometry, anti-tunneling & no 1-hit full-HP cleave")
+	_reset_both()
+	p2().anim_player.play("parry", 0.0)
+	p2().anim_player.seek(0.15, true)
+	var parry_seg := p2().get_blade_segment()
+	check(parry_seg.size() == 2 and (Vector2(parry_seg[1]).x - p2().position.x) * float(p2().facing) > 60.0, "high parry holds the sword out in front of the fighter (not behind the head)")
+
+	_reset_both()
+	p2().trigger_hurt(true) # parry_recoil at 100% HP
+	var did_chop_head := p2().apply_blade_damage("head", 26.0, p2().position + Vector2(0, -140), Vector2(1, 0), false, true, 1.0, 1.45)
+	check(not did_chop_head and not p2().is_dead, "first-clash parry recoil at full HP never one-shot decapitates")
+	_reset_both()
+	p2().trigger_hurt(true)
+	var did_chop_torso := p2().apply_blade_damage("torso", 26.0, p2().position + Vector2(0, -90), Vector2(1, 0), false, true, 1.0, 1.45)
+	check(not did_chop_torso and not p2().is_dead, "first-clash parry recoil at full HP never one-shot cleaves torso")
+	check(is_equal_approx(p2().max_hp - p2().hp, 26.0 * 1.28), "riposte on parry_recoil awards Counter-Hit bonus damage")
+
+	_reset_both()
+	p1().position.x = 460.0
+	p2().position.x = 630.0
+	p2().parrying = true
+	p2().parry_hold_time = 0.5
+	p2().guard_zone = "high"
+	p2().anim_player.play("parry", 0.0)
+	p2().anim_player.seek(0.15, true)
+	# Simulate a huge single-frame mouse flick jumping from above p2's blade straight into p2's chest.
+	p1()._prev_blade_seg = [Vector2(540, 200), Vector2(650, 180)]
+	p1().current_action = "slash_high"
+	p1().action_elapsed = 0.25
+	p1().attack_serial += 1
+	var hp_pre_flick := p2().hp
+	arena._resolve_combat()
+	check(is_equal_approx(p2().hp, hp_pre_flick), "swept parry catches fast single-frame flicks without tunneling")
+
 	print("== AI perception")
 	arena._on_start_requested({"p1": 0, "p2": 1, "mode": "duel"})
 	await wait(INTRO_S + 0.2)
@@ -235,16 +269,18 @@ func _run() -> void:
 		p1().start_attack("slash_high")
 		var saw_parry := false
 		var reacted_instantly := false
-		for f in range(30):
+		var elapsed_real := 0.0
+		for f in range(35):
 			await process_frame
+			elapsed_real += arena.get_process_delta_time()
 			if p2().parrying:
 				saw_parry = true
-				if p1().action_elapsed < 0.1:
+				if elapsed_real < 0.08:
 					reacted_instantly = true
 				break
 		if saw_parry and not reacted_instantly:
 			parries += 1
-	check(parries >= 4, "brutal AI parries telegraphed attacks after a reaction delay (%d/%d)" % [parries, trials])
+	check(parries >= 6, "brutal AI parries telegraphed attacks after a reaction delay (%d/%d)" % [parries, trials])
 	arena.ai = NullAI.new()
 
 	print("== Back to title")

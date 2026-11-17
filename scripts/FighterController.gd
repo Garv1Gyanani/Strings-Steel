@@ -59,6 +59,22 @@ var _pad_aim_cache: Vector2 = Vector2.ZERO
 const INPUT_BUFFER_TIME := 0.18
 const STAMINA_REGEN_DELAY := 0.35
 const ATTACK_MOVES := ["slash_high", "slash_low", "thrust"]
+const COMBO_WINDOW := 1.1
+const WINDUP_SPEED := 0.55
+const TIMED_ACTIONS := ["slash_high", "slash_low", "thrust", "kick", "hurt", "parry_recoil"]
+const VITAL_SLOTS := ["head", "torso"]
+const STAGGER_IMMUNITY := 0.6
+## Minimum blade-tip speed (px/s) to commit a new cursor cut, and the recovery between cuts.
+const CURSOR_CUT_SPEED := 480.0
+const CURSOR_CUT_RECOVERY := 0.38
+
+var _combo_hits: int = 0
+var _combo_timer: float = 0.0
+var _stagger_immunity: float = 0.0
+
+## Scripted aim (used by bots / tests instead of the mouse).
+var aim_override_enabled: bool = false
+var aim_override: Vector2 = Vector2.ZERO
 var attack_serial: int = 0
 var hit_registered_serial: int = -1
 var parrying: bool = false
@@ -119,6 +135,7 @@ var _stump_sprites: Array[Sprite2D] = []
 
 # Active blade trail history [[guard_world, tip_world], ...]
 var _blade_trail: Array = []
+var _prev_blade_seg: Array = []
 
 @onready var skeleton: Skeleton2D = $Skeleton2D
 @onready var anim_player: AnimationPlayer = $AnimationPlayer
@@ -190,6 +207,10 @@ func reset_fighter() -> void:
 	_stamina_regen_delay = 0.0
 	_buffered_move = ""
 	_buffer_timer = 0.0
+	_combo_hits = 0
+	_combo_timer = 0.0
+	_stagger_immunity = 0.0
+	aim_override_enabled = false
 	hit_registered_serial = -1
 	parrying = false
 	parry_hold_time = 99.0
@@ -205,6 +226,7 @@ func reset_fighter() -> void:
 	_ik_fa_r = deg_to_rad(-55.0)
 	_ik_wpn_r = deg_to_rad(-18.0)
 	_blade_trail.clear()
+	_prev_blade_seg.clear()
 	wounds.clear()
 
 	limb_hp = {
@@ -300,6 +322,20 @@ func stat(key: String) -> float:
 	return float(stats.get(key, FighterStats.DEFAULT.get(key, 0.0)))
 
 
+## Attack wind-ups play slower than the rest of the swing so they can be read and
+## reacted to (by players and the AI). Without this a slash was live 0.13 s after
+## the button press, faster than human reaction time.
+func _windup_mult() -> float:
+	match current_action:
+		"slash_high", "slash_low":
+			return WINDUP_SPEED if action_elapsed < 0.13 else 1.0
+		"thrust":
+			return WINDUP_SPEED if action_elapsed < 0.11 else 1.0
+		"kick":
+			return 0.75 if action_elapsed < 0.10 else 1.0
+	return 1.0
+
+
 func is_armored_slot(slot: String) -> bool:
 	var slots: Array = stats.get("armored_slots", [])
 	return slots.has(slot)
@@ -330,6 +366,19 @@ func can_kick() -> bool:
 
 func can_wield() -> bool:
 	return has_weapon and not bool(severed.get("arm_r", false)) and not bool(severed.get("forearm_r", false))
+
+
+## Early in an attack wind-up (before the blade commits at ~0.11-0.13), a fighter can
+## abort the swing into a parry (feint-to-guard) instead of eating an incoming blow.
+func can_feint_to_parry() -> bool:
+	return can_wield() and (current_action == "" or (current_action in ATTACK_MOVES and action_elapsed < 0.095))
+
+
+func abort_windup() -> void:
+	if current_action in ATTACK_MOVES and action_elapsed < 0.095:
+		current_action = ""
+		_action_speed = 1.0
+		_blade_trail.clear()
 
 
 ## Losing the off-hand means one-handed blocking: guards cost more stamina.
@@ -410,6 +459,8 @@ func _on_animation_finished(anim_name: StringName) -> void:
 	if is_dead:
 		return
 	if String(anim_name) in ["slash_high", "slash_low", "thrust", "kick", "hurt", "parry_recoil"]:
+		if String(anim_name) in ["hurt", "parry_recoil"]:
+			_stagger_immunity = STAGGER_IMMUNITY
 		current_action = ""
 		_blade_trail.clear()
 		play_anim("idle")
@@ -417,6 +468,7 @@ func _on_animation_finished(anim_name: StringName) -> void:
 
 
 func _process(delta: float) -> void:
+	_prev_blade_seg = get_blade_segment()
 	dash_cooldown = maxf(0.0, dash_cooldown - delta)
 	_stamina_regen_delay = maxf(0.0, _stamina_regen_delay - delta)
 	if _stamina_regen_delay <= 0.0:
@@ -483,13 +535,20 @@ func _process(delta: float) -> void:
 		skeleton.position.y = extra_pelvis_drop
 
 	if current_action != "":
-		action_elapsed += delta * _action_speed
+		action_elapsed += delta * _action_speed * _windup_mult()
+	if anim_player != null:
+		anim_player.speed_scale = _windup_mult()
 
 	_cursor_sweep_timer = maxf(0.0, _cursor_sweep_timer - delta)
 	_cursor_whoosh_cd = maxf(0.0, _cursor_whoosh_cd - delta)
 	_cursor_slash_cd = maxf(0.0, _cursor_slash_cd - delta)
 	_cursor_rearm_timer = maxf(0.0, _cursor_rearm_timer - delta)
 	_buffer_timer = maxf(0.0, _buffer_timer - delta)
+	_stagger_immunity = maxf(0.0, _stagger_immunity - delta)
+	if _combo_timer > 0.0:
+		_combo_timer -= delta
+		if _combo_timer <= 0.0:
+			_combo_hits = 0
 
 	if not is_dead and is_player and input_enabled:
 		_process_player_input(delta)
@@ -500,9 +559,16 @@ func _process(delta: float) -> void:
 	# Advance AnimationPlayer BEFORE procedural IK so animations never overwrite cursor/pommel IK!
 	if anim_player != null:
 		anim_player.advance(delta)
+		# Watchdog: an action whose animation was replaced (or stopped) can never receive
+		# animation_finished, which would freeze the fighter forever. Recover instead.
+		if current_action in TIMED_ACTIONS and String(anim_player.current_animation) != current_action:
+			current_action = ""
+			_action_speed = 1.0
+			_blade_trail.clear()
 
-	if not is_dead and is_player:
-		if cursor_aim_enabled and input_enabled and can_wield() and current_action == "":
+	var use_ik_arm := (is_player and cursor_aim_enabled and input_enabled) or (not is_player and aim_override_enabled)
+	if not is_dead:
+		if use_ik_arm and can_wield() and current_action == "":
 			_solve_sword_arm_to_cursor(delta)
 		elif bone_ua_r != null and bone_fa_r != null and bone_weapon != null:
 			_cursor_rearm_timer = 0.22
@@ -563,7 +629,7 @@ func _process_player_input(delta: float) -> void:
 	var pad_aim := _read_pad_aim()
 	var low_held := touch_low or Input.is_action_pressed("guard_low") or pad_aim.y > 0.45
 	if cursor_aim_enabled:
-		var m_y := get_global_mouse_position().y
+		var m_y := aim_override.y if aim_override_enabled else get_global_mouse_position().y
 		if m_y > position.y - 60.0 and m_y >= 110.0:
 			low_held = true
 	guard_zone = "low" if low_held else "high"
@@ -586,7 +652,8 @@ func _process_player_input(delta: float) -> void:
 		_buffer_timer = INPUT_BUFFER_TIME
 
 	var parry_held := touch_parry or Input.is_action_pressed("parry") or (mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT))
-	if parry_held and current_action == "" and can_wield():
+	if parry_held and can_feint_to_parry():
+		abort_windup()
 		if not parrying:
 			parry_hold_time = 0.0
 		else:
@@ -638,7 +705,7 @@ func get_strike_power() -> float:
 		"slash_high", "slash_low", "thrust":
 			pwr = 1.0
 		_:
-			pwr = clampf((_blade_tip_speed - 280.0) / 620.0, 0.38, 1.0)
+			pwr = _cursor_power_for_speed(_blade_tip_speed)
 	# Without the off-hand on the pommel, cuts lose leverage.
 	if bool(severed.get("arm_l", false)) or bool(severed.get("forearm_l", false)):
 		pwr *= 0.8
@@ -664,7 +731,9 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 		_using_pad_aim = true
 
 	var raw_tgt := cursor_aim_world
-	if _using_pad_aim and (absf(rx) > 0.28 or absf(ry) > 0.28):
+	if aim_override_enabled:
+		raw_tgt = aim_override
+	elif _using_pad_aim and (absf(rx) > 0.28 or absf(ry) > 0.28):
 		raw_tgt = global_position + Vector2(float(facing) * (95.0 + rx * 145.0), -110.0 + ry * 145.0)
 	else:
 		var mouse_pos := get_global_mouse_position()
@@ -775,29 +844,38 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 		_prev_tip_local = cur_tip_local
 		_blade_tip_speed = maxf(inst_tip_spd, lerpf(_blade_tip_speed, inst_tip_spd, minf(1.0, 14.0 * delta)))
 
-		# Activate cursor slash when slinging the blade fast (>= 340 px/s in fighter-local space);
-		# holding the sword still or slowly aiming (< 340 px/s) does NOT trigger hits.
-		# Every *new* committed cut costs stamina scaled by its power, so waggling the
-		# mouse is no longer a free infinite attack: an exhausted fighter can't commit cuts.
+		# Cursor cuts: flinging the blade fast commits a cut (one hit max per cut).
+		# - A NEW cut needs a real swing (>= CURSOR_CUT_SPEED) and a recovery gap since the
+		#   last one, so frantic waggling can't machine-gun hits.
+		# - Each committed cut costs stamina scaled by its power.
+		# - A cut stays "live" while the blade keeps moving fast (>= 340 px/s).
 		if parrying:
 			_cursor_rearm_timer = maxf(_cursor_rearm_timer, 0.18)
-		if inst_tip_spd >= 340.0 and not parrying and _cursor_rearm_timer <= 0.0:
+		if is_player and inst_tip_spd >= 340.0 and not parrying and _cursor_rearm_timer <= 0.0:
 			var tip_dir := tip_delta.normalized()
-			var wants_new_cut := _cursor_sweep_timer <= 0.0 or (_cursor_slash_cd <= 0.0 and _cursor_last_dir.dot(tip_dir) < 0.25)
-			if wants_new_cut:
-				var est_pwr := clampf((inst_tip_spd - 280.0) / 620.0, 0.38, 1.0)
-				var cost := (4.0 + 8.0 * est_pwr) * stat("stamina_cost_mult")
+			var fresh_swing := _cursor_sweep_timer <= 0.0 or _cursor_last_dir.dot(tip_dir) < 0.25
+			if fresh_swing and inst_tip_spd >= CURSOR_CUT_SPEED and _cursor_slash_cd <= 0.0:
+				var est_pwr := _cursor_power_for_speed(inst_tip_spd)
+				var cost := (5.0 + 9.0 * est_pwr) * stat("stamina_cost_mult")
 				if stamina >= cost:
 					spend_stamina(cost)
 					attack_serial += 1
-					_cursor_slash_cd = 0.18
+					_cursor_slash_cd = CURSOR_CUT_RECOVERY
 					_cursor_last_dir = tip_dir
 					_cursor_sweep_timer = 0.14
-					if _cursor_whoosh_cd <= 0.0 and inst_tip_spd >= 480.0:
+					if _cursor_whoosh_cd <= 0.0:
 						_cursor_whoosh_cd = 0.22
 						request_sfx.emit("whoosh", 0.16)
-			elif _cursor_sweep_timer > 0.0:
+			elif _cursor_sweep_timer > 0.0 and _cursor_last_dir.dot(tip_dir) >= 0.25:
 				_cursor_sweep_timer = 0.14
+
+
+func _cursor_power_for_speed(spd: float) -> float:
+	return clampf((spd - 300.0) / 700.0, 0.3, 1.0)
+
+
+func get_blade_tip_speed() -> float:
+	return _blade_tip_speed
 
 
 func is_kick_active() -> bool:
@@ -809,13 +887,16 @@ func is_perfect_parry() -> bool:
 
 
 ## True while this fighter's attack is visibly coming (windup or active frames).
-## Used by the AI's perception and by the HUD.
+## For cursor fighters this includes the blade visibly picking up speed, so the AI
+## can read a mouse swing the way a human reads a wind-up.
 func is_attack_threat() -> bool:
 	if is_dead:
 		return false
 	if current_action in ATTACK_MOVES and action_elapsed <= 0.36:
 		return true
-	return is_blade_active()
+	if is_blade_active():
+		return true
+	return is_player and cursor_aim_enabled and current_action == "" and can_wield() and _blade_tip_speed > 260.0 and stamina >= 5.0 * stat("stamina_cost_mult")
 
 
 func get_blade_segment() -> Array:
@@ -824,6 +905,23 @@ func get_blade_segment() -> Array:
 	if blade_guard_marker == null or blade_tip_marker == null:
 		return []
 	return [blade_guard_marker.global_position, blade_tip_marker.global_position]
+
+
+## Current blade segment plus the swept path from the previous frame, so a fast mouse
+## flick (3000+ px/s) cannot tunnel across a defender's sword in a single frame.
+func get_swept_blade_segments() -> Array:
+	var cur := get_blade_segment()
+	if cur.size() != 2:
+		return []
+	if _prev_blade_seg.size() != 2:
+		return [cur]
+	var g0: Vector2 = _prev_blade_seg[0]
+	var t0: Vector2 = _prev_blade_seg[1]
+	var g1: Vector2 = cur[0]
+	var t1: Vector2 = cur[1]
+	if t0.distance_squared_to(t1) < 324.0 and g0.distance_squared_to(g1) < 324.0:
+		return [cur]
+	return [cur, [t0, t1], [(g0 + t0) * 0.5, (g1 + t1) * 0.5], [g0, g1]]
 
 
 func get_body_segments() -> Array:
@@ -859,15 +957,24 @@ func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Ve
 
 	# Armoured slots (per FighterStats) mitigate hits unless the wearer is staggered by a parry.
 	var armored_slot: bool = is_armored_slot(slot)
-	var armor_mult: float = stat("armor_mult") if (armored_slot and current_action != "parry_recoil") else 1.0
+	var is_counter: bool = current_action == "parry_recoil"
+	var armor_mult: float = stat("armor_mult") if (armored_slot and not is_counter) else 1.0
+	var counter_mult: float = 1.28 if is_counter else 1.0
 	var pwr: float = clampf(impact_power, 0.20, 1.0)
-	var final_dmg: float = dmg * armor_mult * pwr
-	var limb_dmg: float = dmg * (1.25 if attacker_heavy else 0.92) * armor_mult * pwr * attacker_limb_mult
+	# Combo scaling: each extra hit landing inside the combo window does less damage,
+	# so a flurry can't delete a full health bar in a second.
+	var combo_mult: float = maxf(0.4, 1.0 - 0.2 * float(_combo_hits))
+	_combo_hits += 1
+	_combo_timer = COMBO_WINDOW
+	var final_dmg: float = dmg * armor_mult * counter_mult * pwr * combo_mult
+	var limb_dmg: float = dmg * (1.25 if attacker_heavy else 0.92) * armor_mult * counter_mult * pwr * attacker_limb_mult * combo_mult
 
 	hp = maxf(0.0, hp - final_dmg)
 	bleed_rate += final_dmg * 0.045
 	knockback_vx += swing_dir.x * (215.0 * pwr * pwr)
 	limb_hp[slot] = maxf(0.0, float(limb_hp.get(slot, 40.0)) - limb_dmg)
+	if is_counter:
+		request_cut_flash.emit(hit_pt, "COUNTER!", Color(1.0, 0.78, 0.32))
 
 	var node_ref: Node2D = _slot_stump_anchor(slot)
 	if node_ref != null and wounds.size() < 10 and pwr >= 0.55:
@@ -878,12 +985,20 @@ func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Ve
 	var drop_cnt := maxi(3, int(round((22.0 if gore_enabled else 6.0) * pwr)))
 	request_blood_spray.emit(hit_pt, swing_dir * (320.0 * pwr) + Vector2(0, -130.0 * pwr), drop_cnt, false)
 
-	# Earned dismemberment: only full-power committed strikes (pwr >= 0.70) or fatal blows can chop limbs!
-	var execution_window: bool = (current_action == "parry_recoil") or (current_action == "hurt" and hp < 0.48 * max_hp)
+	# Earned dismemberment:
+	# - With 1-Hit Sever OFF, healthy fighters are NEVER one-shot decapitated, bisected,
+	#   or disarmed on the first clash!
+	# - Limbs sever when their limb HP is chewed through, on a killing blow, or on a
+	#   heavy punish once the opponent is already wounded (< 42% HP).
+	# - Head & torso (fatal slots) only sever on a killing blow or critical execution (< 22% HP).
+	var staggered: bool = current_action in ["parry_recoil", "hurt"]
+	var wounded_exec: bool = staggered and hp < 0.42 * max_hp
 	var limb_depleted: bool = float(limb_hp.get(slot, 1.0)) <= 0.0
 	var lethal_finish: bool = hp <= 0.0
-	var can_chop_power: bool = pwr >= 0.70 or lethal_finish
-	var should_sever: bool = can_chop_power and (not bool(severed.get(slot, false))) and (one_hit_sever or limb_depleted or lethal_finish or (attacker_heavy and execution_window))
+	var can_chop_power: bool = attacker_heavy
+	var should_sever: bool = can_chop_power and (not bool(severed.get(slot, false))) and (one_hit_sever or limb_depleted or lethal_finish or wounded_exec)
+	if slot in VITAL_SLOTS and not one_hit_sever and not lethal_finish:
+		should_sever = can_chop_power and (not bool(severed.get(slot, false))) and staggered and hp < 0.22 * max_hp
 
 	if should_sever:
 		if lethal_finish and slot == "torso" and randf() < 0.45 and not bool(severed.get("head", false)):
@@ -893,7 +1008,9 @@ func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Ve
 	else:
 		if hp <= 0.0:
 			kill_fighter()
-		elif pwr >= 0.68:
+		elif pwr >= 0.68 and _stagger_immunity <= 0.0 and current_action != "hurt" and current_action != "parry_recoil":
+			# Stagger, but not again during the immunity window after recovering:
+			# prevents infinite hit-stun locks.
 			trigger_hurt(false)
 		return false
 

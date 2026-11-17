@@ -459,17 +459,17 @@ static func _build_animation_library(anim_player: AnimationPlayer) -> void:
 		}],
 		[0.12, {
 			"Pelvis:position:y": 6.0, "Pelvis:rotation": deg_to_rad(-4.0),
-			"Torso:rotation": deg_to_rad(-12.0), "Head:rotation": deg_to_rad(10.0), "Hat:rotation": deg_to_rad(-8.0),
+			"Torso:rotation": deg_to_rad(-10.0), "Head:rotation": deg_to_rad(10.0), "Hat:rotation": deg_to_rad(-8.0),
 			"Thigh_L:rotation": deg_to_rad(28.0), "Shin_L:rotation": deg_to_rad(-24.0), "Boot_L:rotation": deg_to_rad(-4.0),
 			"Thigh_R:rotation": deg_to_rad(-20.0), "Shin_R:rotation": deg_to_rad(20.0), "Boot_R:rotation": deg_to_rad(0.0),
-			"UpperArm_R:rotation": deg_to_rad(25.0), "Forearm_R:rotation": deg_to_rad(-105.0), "Hand_R:rotation": deg_to_rad(5.0), "WeaponBone:rotation": deg_to_rad(-5.0),
+			"UpperArm_R:rotation": deg_to_rad(18.0), "Forearm_R:rotation": deg_to_rad(-100.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(88.0),
 		}],
 		[0.24, {
 			"Pelvis:position:y": 22.0, "Pelvis:rotation": deg_to_rad(12.0),
-			"Torso:rotation": deg_to_rad(20.0), "Head:rotation": deg_to_rad(-18.0), "Hat:rotation": deg_to_rad(14.0),
+			"Torso:rotation": deg_to_rad(18.0), "Head:rotation": deg_to_rad(-18.0), "Hat:rotation": deg_to_rad(14.0),
 			"Thigh_L:rotation": deg_to_rad(44.0), "Shin_L:rotation": deg_to_rad(-12.0), "Boot_L:rotation": deg_to_rad(-32.0),
 			"Thigh_R:rotation": deg_to_rad(-52.0), "Shin_R:rotation": deg_to_rad(48.0), "Boot_R:rotation": deg_to_rad(4.0),
-			"UpperArm_R:rotation": deg_to_rad(-92.0), "Forearm_R:rotation": deg_to_rad(-6.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(0.0),
+			"UpperArm_R:rotation": deg_to_rad(-108.0), "Forearm_R:rotation": deg_to_rad(-10.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(80.0),
 		}],
 		[0.50, {
 			"Pelvis:position:y": 0.0, "Pelvis:rotation": deg_to_rad(3.0),
@@ -480,28 +480,28 @@ static func _build_animation_library(anim_player: AnimationPlayer) -> void:
 		}],
 	]))
 
-	# PARRY (Cross Guard Block)
+	# PARRY (Forward High Cross-Guard Block covering torso, throat & head)
 	lib.add_animation("parry", _make_pose_anim(0.40, Animation.LOOP_LINEAR, [
 		[0.0, {
-			"Pelvis:position:y": 8.0, "Pelvis:rotation": deg_to_rad(-4.0),
-			"Torso:rotation": deg_to_rad(-10.0), "Head:rotation": deg_to_rad(8.0), "Hat:rotation": deg_to_rad(-4.0),
+			"Pelvis:position:y": 8.0, "Pelvis:rotation": deg_to_rad(-2.0),
+			"Torso:rotation": deg_to_rad(-4.0), "Head:rotation": deg_to_rad(5.0), "Hat:rotation": deg_to_rad(-4.0),
 			"Thigh_L:rotation": deg_to_rad(28.0), "Shin_L:rotation": deg_to_rad(-26.0), "Boot_L:rotation": deg_to_rad(-2.0),
 			"Thigh_R:rotation": deg_to_rad(-28.0), "Shin_R:rotation": deg_to_rad(28.0), "Boot_R:rotation": deg_to_rad(0.0),
-			"UpperArm_R:rotation": deg_to_rad(-72.0), "Forearm_R:rotation": deg_to_rad(-52.0), "Hand_R:rotation": deg_to_rad(-12.0), "WeaponBone:rotation": deg_to_rad(-55.0),
+			"UpperArm_R:rotation": deg_to_rad(-42.0), "Forearm_R:rotation": deg_to_rad(-42.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(34.0),
 		}],
 		[0.2, {
-			"Pelvis:position:y": 10.0, "Pelvis:rotation": deg_to_rad(-5.0),
-			"Torso:rotation": deg_to_rad(-12.0), "Head:rotation": deg_to_rad(10.0), "Hat:rotation": deg_to_rad(-2.0),
+			"Pelvis:position:y": 10.0, "Pelvis:rotation": deg_to_rad(-3.0),
+			"Torso:rotation": deg_to_rad(-5.0), "Head:rotation": deg_to_rad(6.0), "Hat:rotation": deg_to_rad(-2.0),
 			"Thigh_L:rotation": deg_to_rad(30.0), "Shin_L:rotation": deg_to_rad(-28.0), "Boot_L:rotation": deg_to_rad(-2.0),
 			"Thigh_R:rotation": deg_to_rad(-30.0), "Shin_R:rotation": deg_to_rad(30.0), "Boot_R:rotation": deg_to_rad(0.0),
-			"UpperArm_R:rotation": deg_to_rad(-75.0), "Forearm_R:rotation": deg_to_rad(-54.0), "Hand_R:rotation": deg_to_rad(-12.0), "WeaponBone:rotation": deg_to_rad(-58.0),
+			"UpperArm_R:rotation": deg_to_rad(-45.0), "Forearm_R:rotation": deg_to_rad(-44.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(36.0),
 		}],
 		[0.40, {
-			"Pelvis:position:y": 8.0, "Pelvis:rotation": deg_to_rad(-4.0),
-			"Torso:rotation": deg_to_rad(-10.0), "Head:rotation": deg_to_rad(8.0), "Hat:rotation": deg_to_rad(-4.0),
+			"Pelvis:position:y": 8.0, "Pelvis:rotation": deg_to_rad(-2.0),
+			"Torso:rotation": deg_to_rad(-4.0), "Head:rotation": deg_to_rad(5.0), "Hat:rotation": deg_to_rad(-4.0),
 			"Thigh_L:rotation": deg_to_rad(28.0), "Shin_L:rotation": deg_to_rad(-26.0), "Boot_L:rotation": deg_to_rad(-2.0),
 			"Thigh_R:rotation": deg_to_rad(-28.0), "Shin_R:rotation": deg_to_rad(28.0), "Boot_R:rotation": deg_to_rad(0.0),
-			"UpperArm_R:rotation": deg_to_rad(-72.0), "Forearm_R:rotation": deg_to_rad(-52.0), "Hand_R:rotation": deg_to_rad(-12.0), "WeaponBone:rotation": deg_to_rad(-55.0),
+			"UpperArm_R:rotation": deg_to_rad(-42.0), "Forearm_R:rotation": deg_to_rad(-42.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(34.0),
 		}],
 	]))
 
@@ -579,7 +579,7 @@ static func _build_animation_library(anim_player: AnimationPlayer) -> void:
 			"Torso:rotation": deg_to_rad(14.0), "Head:rotation": deg_to_rad(-10.0), "Hat:rotation": deg_to_rad(14.0),
 			"Thigh_L:rotation": deg_to_rad(30.0), "Shin_L:rotation": deg_to_rad(-16.0), "Boot_L:rotation": deg_to_rad(-14.0),
 			"Thigh_R:rotation": deg_to_rad(-40.0), "Shin_R:rotation": deg_to_rad(36.0), "Boot_R:rotation": deg_to_rad(4.0),
-			"UpperArm_R:rotation": deg_to_rad(-108.0), "Forearm_R:rotation": deg_to_rad(-28.0), "Hand_R:rotation": deg_to_rad(-14.0), "WeaponBone:rotation": deg_to_rad(-44.0),
+			"UpperArm_R:rotation": deg_to_rad(-96.0), "Forearm_R:rotation": deg_to_rad(-24.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(28.0),
 		}],
 		[0.54, {
 			"Pelvis:position:y": 0.0, "Pelvis:rotation": deg_to_rad(3.0),
@@ -590,21 +590,21 @@ static func _build_animation_library(anim_player: AnimationPlayer) -> void:
 		}],
 	]))
 
-	# PARRY_LOW (Alber / Lower Cross Block)
+	# PARRY_LOW (Alber / Lower Hanging Block covering pelvis, thighs & shins)
 	lib.add_animation("parry_low", _make_pose_anim(0.40, Animation.LOOP_LINEAR, [
 		[0.0, {
 			"Pelvis:position:y": 14.0, "Pelvis:rotation": deg_to_rad(-2.0),
-			"Torso:rotation": deg_to_rad(4.0), "Head:rotation": deg_to_rad(-4.0), "Hat:rotation": deg_to_rad(0.0),
+			"Torso:rotation": deg_to_rad(6.0), "Head:rotation": deg_to_rad(-4.0), "Hat:rotation": deg_to_rad(0.0),
 			"Thigh_L:rotation": deg_to_rad(34.0), "Shin_L:rotation": deg_to_rad(-30.0), "Boot_L:rotation": deg_to_rad(-4.0),
 			"Thigh_R:rotation": deg_to_rad(-32.0), "Shin_R:rotation": deg_to_rad(32.0), "Boot_R:rotation": deg_to_rad(0.0),
-			"UpperArm_R:rotation": deg_to_rad(-30.0), "Forearm_R:rotation": deg_to_rad(-38.0), "Hand_R:rotation": deg_to_rad(16.0), "WeaponBone:rotation": deg_to_rad(36.0),
+			"UpperArm_R:rotation": deg_to_rad(-36.0), "Forearm_R:rotation": deg_to_rad(-34.0), "Hand_R:rotation": deg_to_rad(6.0), "WeaponBone:rotation": deg_to_rad(96.0),
 		}],
 		[0.40, {
 			"Pelvis:position:y": 14.0, "Pelvis:rotation": deg_to_rad(-2.0),
-			"Torso:rotation": deg_to_rad(4.0), "Head:rotation": deg_to_rad(-4.0), "Hat:rotation": deg_to_rad(0.0),
+			"Torso:rotation": deg_to_rad(6.0), "Head:rotation": deg_to_rad(-4.0), "Hat:rotation": deg_to_rad(0.0),
 			"Thigh_L:rotation": deg_to_rad(34.0), "Shin_L:rotation": deg_to_rad(-30.0), "Boot_L:rotation": deg_to_rad(-4.0),
 			"Thigh_R:rotation": deg_to_rad(-32.0), "Shin_R:rotation": deg_to_rad(32.0), "Boot_R:rotation": deg_to_rad(0.0),
-			"UpperArm_R:rotation": deg_to_rad(-30.0), "Forearm_R:rotation": deg_to_rad(-38.0), "Hand_R:rotation": deg_to_rad(16.0), "WeaponBone:rotation": deg_to_rad(36.0),
+			"UpperArm_R:rotation": deg_to_rad(-36.0), "Forearm_R:rotation": deg_to_rad(-34.0), "Hand_R:rotation": deg_to_rad(6.0), "WeaponBone:rotation": deg_to_rad(96.0),
 		}],
 	]))
 

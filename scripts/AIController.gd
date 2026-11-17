@@ -3,60 +3,69 @@ extends RefCounted
 
 ## Rival AI for Strings & Steel.
 ##
-## Unlike the old frame-perfect version, this AI *perceives* threats with a
-## human-like reaction delay, guesses the guard line imperfectly, only lands
-## perfect parries with a difficulty-based probability, and reacts to cursor
-## slings as well as button attacks (it watches is_attack_threat(), not just
-## current_action). Spacing and aggression come from the piloted fighter's
-## FighterStats, so each rival plays differently.
+## - Perceives threats (both button wind-ups and fast mouse-blade accelerations) with a
+##   human-like reaction delay.
+## - Uses real-time 2-bone sword-arm IK in neutral and guard so its blade visibly shadows
+##   the opponent's weapon and physically meets incoming cuts on high/low lines.
+## - Continuous footwork every frame: yields ground against live flurries, closes in on
+##   whiffs/staggers, and kicks or cuts around held cursor guards.
+## - Spacing, tempo and attack preferences come from the piloted fighter's FighterStats.
 
 enum State { NEUTRAL, DEFEND, RETREAT }
 
 const DIFFICULTY := {
 	"normal": {
-		"reaction": 0.30, "reaction_jitter": 0.12,
-		"parry_skill": 0.42, "perfect_chance": 0.12, "zone_read": 0.6,
-		"attack_cd": Vector2(0.85, 1.40), "think": Vector2(0.24, 0.45),
-		"speed": 0.85, "punish": 0.25, "anti_turtle": 0.25, "dash_use": 0.0,
-		"retreat_hp": 0.0,
+		"reaction": 0.25, "reaction_jitter": 0.10,
+		"parry_skill": 0.48, "perfect_chance": 0.12, "zone_read": 0.62,
+		"attack_cd": Vector2(0.75, 1.25), "think": Vector2(0.22, 0.40),
+		"speed": 0.88, "punish": 0.40, "anti_turtle": 0.35, "dash_use": 0.10,
+		"retreat_hp": 0.0, "riposte": 0.42, "whiff_bait": 0.15,
 	},
 	"hard": {
-		"reaction": 0.21, "reaction_jitter": 0.08,
-		"parry_skill": 0.62, "perfect_chance": 0.30, "zone_read": 0.75,
-		"attack_cd": Vector2(0.55, 1.00), "think": Vector2(0.16, 0.32),
-		"speed": 0.96, "punish": 0.6, "anti_turtle": 0.6, "dash_use": 0.3,
-		"retreat_hp": 0.28,
+		"reaction": 0.14, "reaction_jitter": 0.05,
+		"parry_skill": 0.80, "perfect_chance": 0.32, "zone_read": 0.84,
+		"attack_cd": Vector2(0.40, 0.76), "think": Vector2(0.12, 0.24),
+		"speed": 0.98, "punish": 0.80, "anti_turtle": 0.72, "dash_use": 0.42,
+		"retreat_hp": 0.26, "riposte": 0.80, "whiff_bait": 0.38,
 	},
 	"brutal": {
-		"reaction": 0.15, "reaction_jitter": 0.05,
-		"parry_skill": 0.80, "perfect_chance": 0.50, "zone_read": 0.88,
-		"attack_cd": Vector2(0.38, 0.75), "think": Vector2(0.11, 0.24),
-		"speed": 1.04, "punish": 0.85, "anti_turtle": 0.85, "dash_use": 0.5,
-		"retreat_hp": 0.32,
+		"reaction": 0.10, "reaction_jitter": 0.04,
+		"parry_skill": 0.90, "perfect_chance": 0.50, "zone_read": 0.93,
+		"attack_cd": Vector2(0.28, 0.54), "think": Vector2(0.08, 0.18),
+		"speed": 1.06, "punish": 0.94, "anti_turtle": 0.90, "dash_use": 0.60,
+		"retreat_hp": 0.30, "riposte": 0.92, "whiff_bait": 0.55,
 	},
 }
 
-const THREAT_RANGE := 275.0
+const THREAT_RANGE := 305.0
+const EPISODE_GAP := 0.28
+const DEFEND_MAX := 1.25
 
 var difficulty: String = "hard"
 var state: State = State.NEUTRAL
 
 var _cfg: Dictionary = DIFFICULTY["hard"]
-var _think: float = 0.25
-var _attack_cd: float = 0.6
-var _move_dir: float = 0.0
-var _desired_dist: float = 200.0
+var _think: float = 0.2
+var _attack_cd: float = 0.45
+var _spacing_bias: float = 0.0
+var _stalk_bias: float = 0.0
 var _state_timer: float = 0.0
+var _defend_total: float = 0.0
+var _zone_retrack: float = 0.0
+var _guard_shadow_y: float = -125.0
 
 # Perception
 var _threat_time: float = 0.0
-var _reaction_needed: float = 0.2
-var _decided_serial: int = -1
+var _calm_time: float = 0.0
+var _reaction_needed: float = 0.18
+var _episode_decided: bool = false
+var _redecide_timer: float = 0.0
+var _last_button_serial: int = -1
 var _punish_time: float = 0.0
 var _punish_decided: bool = false
 var _turtle_decided: bool = false
 
-# Dash-in followed by an attack
+# Queued follow-up (riposte / dash-in strike)
 var _pending_attack: String = ""
 var _pending_delay: float = 0.0
 
@@ -68,18 +77,34 @@ func set_difficulty(d: String) -> void:
 
 func reset() -> void:
 	state = State.NEUTRAL
-	_think = 0.25
-	_attack_cd = 0.6
-	_move_dir = 0.0
+	_think = 0.18
+	_attack_cd = 0.42
+	_spacing_bias = 0.0
+	_stalk_bias = 0.0
 	_state_timer = 0.0
+	_defend_total = 0.0
+	_guard_shadow_y = -125.0
 	_threat_time = 0.0
-	_decided_serial = -1
+	_calm_time = 0.0
+	_episode_decided = false
+	_redecide_timer = 0.0
+	_last_button_serial = -1
 	_punish_time = 0.0
 	_punish_decided = false
 	_turtle_decided = false
 	_pending_attack = ""
 	_pending_delay = 0.0
 	_roll_reaction()
+
+
+## Called by the arena when this AI's guard stopped an attack.
+func notify_blocked(perfect: bool) -> void:
+	if perfect or randf() < float(_cfg["riposte"]):
+		state = State.NEUTRAL
+		_state_timer = 0.0
+		# Riposte immediately; _pending_attack=="auto" picks the open line at launch time.
+		_pending_attack = "auto"
+		_pending_delay = randf_range(0.03, 0.09) if perfect else randf_range(0.06, 0.15)
 
 
 func _roll_reaction() -> void:
@@ -99,66 +124,127 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 	_attack_cd = maxf(0.0, _attack_cd - delta)
 	_think -= delta
 	_state_timer = maxf(0.0, _state_timer - delta)
+	_redecide_timer = maxf(0.0, _redecide_timer - delta)
 
-	# --- Perception: how long has the foe's attack been visibly coming? ---
+	# Drive smooth 2-bone IK guard posture whenever the AI isn't in a committed animation.
+	_update_guard_ik(delta, me, foe, dist, dir_to_foe)
+
+	# --- Perception: threat episodes with a reaction delay ---
 	var threat := not foe.is_dead and foe.is_attack_threat() and dist < THREAT_RANGE
 	if threat:
 		_threat_time += delta
+		_calm_time = 0.0
 	else:
+		_calm_time += delta
+		if _calm_time > EPISODE_GAP:
+			_threat_time = 0.0
+			_episode_decided = false
+	if foe.current_action in FighterController.ATTACK_MOVES and foe.attack_serial != _last_button_serial:
+		_last_button_serial = foe.attack_serial
 		_threat_time = 0.0
+		_episode_decided = false
 
-	# --- 1. React to a perceived attack (once per foe attack serial) ---
-	if threat and _threat_time >= _reaction_needed and foe.attack_serial != _decided_serial:
-		_decided_serial = foe.attack_serial
+	# --- 1. React to a perceived threat (never burn the decision while staggered) ---
+	var can_act := me.current_action == "" or (difficulty != "normal" and me.can_feint_to_parry())
+	var under_fire := threat and _threat_time >= _reaction_needed
+	if under_fire and can_act and (not _episode_decided or _redecide_timer <= 0.0) and state != State.DEFEND:
+		_episode_decided = true
+		_redecide_timer = 0.24
 		_roll_reaction()
-		if me.current_action == "" and me.can_wield() and randf() < float(_cfg["parry_skill"]):
-			_begin_defend(me, foe)
-		elif me.current_action == "" and foe.current_action == "thrust" and dist < 190.0 and randf() < float(_cfg["dash_use"]):
+		# Sometimes back-dash to make a committed swing whiff, then lunge-punish recovery!
+		if me.current_action == "" and dist > 165.0 and dist < 245.0 and me.dash_cooldown <= 0.0 and foe.current_action in FighterController.ATTACK_MOVES and randf() < float(_cfg["whiff_bait"]) * 0.45:
 			me.start_dash(-dir_to_foe)
-			_attack_cd = maxf(_attack_cd, 0.22)
+			_pending_attack = "thrust"
+			_pending_delay = 0.16
+			return
+		if me.can_wield() and randf() < float(_cfg["parry_skill"]):
+			me.abort_windup()
+			_begin_defend(me, foe)
+		elif me.current_action == "" and me.dash_cooldown <= 0.0 and dist < 210.0 and randf() < float(_cfg["dash_use"]):
+			me.start_dash(-dir_to_foe)
+			_attack_cd = maxf(_attack_cd, 0.16)
 			return
 
-	# --- 2. Hold an active guard ---
+	# --- 2. Hold the guard while the flurry continues, tracking the blade line ---
 	if state == State.DEFEND:
-		if _state_timer > 0.0 and me.current_action == "" and me.can_wield():
-			# Keep guarding while the threat continues, up to a cap.
-			if threat and _state_timer < 0.12:
-				_state_timer = 0.12
+		_defend_total += delta
+		var foe_spent := foe.stamina < 12.0 or foe.current_action in ["hurt", "parry_recoil"]
+		if me.current_action == "" and me.can_wield() and not foe_spent and _defend_total < DEFEND_MAX and (_state_timer > 0.0 or threat):
+			if threat:
+				_state_timer = maxf(_state_timer, 0.15)
+			_zone_retrack -= delta
+			if _zone_retrack <= 0.0:
+				_zone_retrack = _reaction_needed
+				_set_guard_zone(me, foe)
 			me.parry_hold_time += delta
 			me.parrying = true
+			# Gently give ground if the attacker crowds inside guard distance while swinging.
+			if dist < 148.0:
+				me.position.x = clampf(me.position.x - dir_to_foe * me.get_move_speed() * 0.55 * delta, 120.0, 1160.0)
 			me.play_anim("parry_low" if me.guard_zone == "low" else "parry", 0.05)
 			return
 		state = State.NEUTRAL
+		me.parrying = false
+		me.parry_hold_time = 99.0
+		# Exiting a maxed-out guard while the opponent is still swinging: back-dash or kick!
+		if threat and _defend_total >= DEFEND_MAX:
+			if dist < 178.0 and me.can_kick() and randf() < float(_cfg["anti_turtle"]):
+				if _try_attack(me, "kick"):
+					return
+			if me.dash_cooldown <= 0.0 and randf() < float(_cfg["dash_use"]) + 0.25:
+				me.start_dash(-dir_to_foe)
+				return
+		elif dist < me.stat("ai_spacing") + 50.0 and randf() < float(_cfg["riposte"]) * 0.75:
+			_pending_attack = "auto"
+			_pending_delay = 0.04
 	me.parrying = false
 	me.parry_hold_time = 99.0
 
 	if me.current_action != "":
 		return
 
-	# --- 3. Pending follow-up after a dash-in ---
+	# --- 3. Queued riposte / dash-in strike ---
 	if _pending_attack != "":
 		_pending_delay -= delta
 		if _pending_delay <= 0.0:
-			me.start_attack(_pending_attack)
+			var mv := _choose_attack(me, foe, dist) if _pending_attack == "auto" else _pending_attack
 			_pending_attack = ""
-			_attack_cd = _next_attack_cd(me)
-		return
+			if dist > me.stat("ai_spacing") + 45.0 and dist < me.stat("ai_spacing") + 135.0 and mv != "thrust" and me.can_wield():
+				mv = "thrust"
+			if dist < me.stat("ai_spacing") + 110.0:
+				if _try_attack(me, mv):
+					return
+		else:
+			# Step into range during the brief riposte delay so the counter connects!
+			if dist > 185.0:
+				_walk(me, dir_to_foe, delta)
+			return
 
-	# --- 4. Punish a staggered / exhausted foe (after reaction time) ---
-	var foe_open := foe.current_action in ["hurt", "parry_recoil"] or foe.stamina < 12.0
+	# --- 4. Punish a staggered / exhausted / whiff-recovering foe ---
+	var foe_recovering := foe.current_action in FighterController.ATTACK_MOVES and foe.action_elapsed > 0.35
+	var foe_open := foe.current_action in ["hurt", "parry_recoil"] or foe.stamina < 12.0 or foe_recovering
 	if foe_open and not foe.is_dead:
 		_punish_time += delta
-		if not _punish_decided and _punish_time >= _reaction_needed:
+		if dist > 190.0 and dist < 295.0:
+			_walk(me, dir_to_foe, delta)
+		if not _punish_decided and _punish_time >= _reaction_needed * 0.75:
 			_punish_decided = true
-			if dist < me.stat("ai_spacing") + 45.0 and _attack_cd <= 0.15 and randf() < float(_cfg["punish"]):
-				if _try_attack(me, "thrust" if dist > 180.0 else "slash_high"):
+			if _attack_cd <= 0.22 and randf() < float(_cfg["punish"]):
+				if dist < me.stat("ai_spacing") + 55.0:
+					var punish_mv := "thrust" if dist > 195.0 else ("slash_low" if _foe_blade_line(foe) == "high" else "slash_high")
+					if _try_attack(me, punish_mv):
+						return
+				elif dist < me.stat("ai_spacing") + 145.0 and me.dash_cooldown <= 0.0 and me.can_wield():
+					me.start_dash(dir_to_foe)
+					_pending_attack = "thrust"
+					_pending_delay = 0.11
 					return
 	else:
 		_punish_time = 0.0
 		_punish_decided = false
 
 	# --- 5. Break a turtling foe with a push kick ---
-	if foe.parrying and foe.parry_hold_time > 0.34 + _reaction_needed:
+	if foe.parrying and foe.parry_hold_time > 0.28 + _reaction_needed:
 		if not _turtle_decided:
 			_turtle_decided = true
 			if dist < 185.0 and me.can_kick() and randf() < float(_cfg["anti_turtle"]):
@@ -167,11 +253,17 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 	else:
 		_turtle_decided = false
 
-	# --- 6. Self-preservation: back off when badly hurt ---
+	# --- 6. Crowded clinch: shove them off with a boot or create space ---
+	if dist < 138.0 and _attack_cd <= 0.12:
+		if me.can_kick() and randf() < 0.72:
+			if _try_attack(me, "kick"):
+				return
+
+	# --- 7. Self-preservation: back off briefly when badly hurt and low on stamina ---
 	var hp_frac := me.hp / maxf(1.0, me.max_hp)
-	if state == State.NEUTRAL and hp_frac < float(_cfg["retreat_hp"]) and dist < 210.0 and randf() < 0.9 * delta:
+	if state == State.NEUTRAL and hp_frac < float(_cfg["retreat_hp"]) and me.stamina < 35.0 and dist < 210.0 and randf() < 0.9 * delta:
 		state = State.RETREAT
-		_state_timer = randf_range(0.5, 0.9)
+		_state_timer = randf_range(0.45, 0.8)
 		if randf() < float(_cfg["dash_use"]):
 			me.start_dash(-dir_to_foe)
 	if state == State.RETREAT:
@@ -181,52 +273,90 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 			_walk(me, -dir_to_foe, delta)
 			return
 
-	# --- 7. Neutral game: spacing + attack choice ---
+	# --- 8. Neutral offense & continuous fencing footwork ---
+	var spacing := me.stat("ai_spacing")
+	if not me.can_wield():
+		spacing = 148.0 if me.can_kick() else 330.0
+
 	if _think <= 0.0:
 		_think = _rand_range_v(_cfg["think"])
-		var spacing := me.stat("ai_spacing")
-		if not me.can_wield():
-			spacing = 150.0 if me.can_kick() else 320.0
-		_desired_dist = spacing + randf_range(-28.0, 22.0)
-		if dist > _desired_dist + 22.0:
-			_move_dir = dir_to_foe
-		elif dist < _desired_dist - 42.0:
-			_move_dir = -dir_to_foe
-		else:
-			_move_dir = dir_to_foe * 0.45 if randf() < 0.5 else 0.0
+		_spacing_bias = randf_range(-22.0, 18.0)
+		_stalk_bias = dir_to_foe * 0.55 if randf() < 0.55 else 0.0
 
-		if _attack_cd <= 0.0:
-			if dist < spacing + 40.0:
-				_try_attack(me, _choose_attack(me, foe, dist))
-			elif dist < spacing + 150.0 and me.can_wield() and me.dash_cooldown <= 0.0 and randf() < float(_cfg["dash_use"]) * 0.5:
-				# Close the gap with a dash, then strike.
-				me.start_dash(dir_to_foe)
-				_pending_attack = "thrust" if randf() < 0.5 + 0.3 * me.stat("ai_thrust_bias") else "slash_high"
-				_pending_delay = 0.12
+	# Attack immediately whenever cooldown is ready and we are in striking measure
+	# (don't start a slow windup if the opponent's shoulders are already swinging toward us).
+	var incoming_glint := threat and _threat_time >= 0.05
+	if _attack_cd <= 0.0 and not under_fire and not incoming_glint and not foe.is_dead:
+		if dist < spacing + 38.0:
+			if _try_attack(me, _choose_attack(me, foe, dist)):
 				return
+		elif dist < spacing + 145.0 and me.can_wield() and me.dash_cooldown <= 0.0 and randf() < float(_cfg["dash_use"]) * delta * 3.5:
+			me.start_dash(dir_to_foe)
+			_pending_attack = "thrust" if randf() < 0.55 + 0.3 * me.stat("ai_thrust_bias") else "slash_high"
+			_pending_delay = 0.11
+			return
 
-	if absf(_move_dir) > 0.1:
-		_walk(me, _move_dir, delta)
+	# Continuous spacing every frame so the AI never walks blindly into a swinging sword.
+	var target_dist := spacing + _spacing_bias + (65.0 if under_fire else 0.0)
+	var move_dir := 0.0
+	if dist > target_dist + 18.0:
+		move_dir = dir_to_foe
+	elif dist < target_dist - 24.0:
+		move_dir = -dir_to_foe
+	else:
+		move_dir = _stalk_bias if not under_fire else -dir_to_foe * 0.7
+
+	if absf(move_dir) > 0.1:
+		_walk(me, move_dir, delta)
 	else:
 		me.play_anim("idle", 0.1)
 
 
+func _update_guard_ik(delta: float, me: FighterController, foe: FighterController, dist: float, dir_to_foe: float) -> void:
+	if not me.can_wield() or foe.is_dead:
+		me.aim_override_enabled = false
+		return
+	me.aim_override_enabled = true
+	var foe_seg := foe.get_blade_segment()
+	var desired_y := -128.0
+	if me.parrying:
+		desired_y = -152.0 if me.guard_zone == "high" else -22.0
+	elif foe_seg.size() == 2:
+		var foe_tip_rel_y := clampf(Vector2(foe_seg[1]).y - me.position.y, -210.0, -25.0)
+		var weave := sin(Time.get_ticks_msec() * 0.0045) * 14.0
+		desired_y = lerpf(-122.0 + weave, foe_tip_rel_y, 0.55)
+	var track_rate := 18.0 if me.parrying else (6.0 + 6.0 * float(_cfg["zone_read"]))
+	_guard_shadow_y = lerpf(_guard_shadow_y, desired_y, minf(1.0, track_rate * delta))
+	# Pull hands closer to chest in tight measure so the crossguard stays between the fighters.
+	var reach_x := clampf(dist * 0.62, 92.0, 178.0)
+	if me.parrying:
+		reach_x = clampf(dist * 0.54, 86.0, 142.0)
+	me.aim_override = me.position + Vector2(dir_to_foe * reach_x, _guard_shadow_y)
+
+
 func _walk(me: FighterController, dir: float, delta: float) -> void:
+	if me.current_action != "":
+		return
 	me.position.x = clampf(me.position.x + dir * me.get_move_speed() * float(_cfg["speed"]) * delta, 120.0, 1160.0)
 	me.play_anim("walk", 0.08)
 
 
 func _begin_defend(me: FighterController, foe: FighterController) -> void:
 	state = State.DEFEND
-	_state_timer = randf_range(0.30, 0.42)
+	_state_timer = randf_range(0.26, 0.38)
+	_defend_total = 0.0
+	_zone_retrack = _reaction_needed
+	_set_guard_zone(me, foe)
+	me.parrying = true
+	me.parry_hold_time = 0.0 if randf() < float(_cfg["perfect_chance"]) else me.stat("perfect_parry_window") + 0.01
+
+
+func _set_guard_zone(me: FighterController, foe: FighterController) -> void:
 	var true_zone := _foe_attack_zone(foe)
 	if randf() < float(_cfg["zone_read"]):
 		me.guard_zone = true_zone
 	else:
 		me.guard_zone = "high" if true_zone == "low" else "low"
-	me.parrying = true
-	# Only a fraction of AI guards are raised in the perfect-parry window.
-	me.parry_hold_time = 0.0 if randf() < float(_cfg["perfect_chance"]) else me.stat("perfect_parry_window") + 0.01
 
 
 func _foe_attack_zone(foe: FighterController) -> String:
@@ -234,9 +364,13 @@ func _foe_attack_zone(foe: FighterController) -> String:
 		return "low"
 	if foe.current_action in ["slash_high", "thrust"]:
 		return "high"
-	# Cursor sling: judge by where the blade tip is relative to the hips.
+	return _foe_blade_line(foe)
+
+
+## Which line the foe's blade tip currently occupies ("high" / "low").
+func _foe_blade_line(foe: FighterController) -> String:
 	var seg := foe.get_blade_segment()
-	if seg.size() == 2 and Vector2(seg[1]).y > foe.position.y - 70.0:
+	if seg.size() == 2 and Vector2(seg[1]).y > foe.position.y - 58.0:
 		return "low"
 	return "high"
 
@@ -244,11 +378,21 @@ func _foe_attack_zone(foe: FighterController) -> String:
 func _choose_attack(me: FighterController, foe: FighterController, dist: float) -> String:
 	if not me.can_wield():
 		return "kick" if me.can_kick() and dist < 190.0 else ""
-	# Attack the line the foe is NOT guarding, but only as often as the AI reads it correctly.
-	if foe.parrying and randf() < float(_cfg["zone_read"]) * 0.8:
+	var read := float(_cfg["zone_read"])
+	# Attack the line the foe is NOT guarding!
+	if foe.parrying and randf() < read * 0.85:
+		if me.can_kick() and dist < 182.0 and randf() < 0.35:
+			return "kick"
 		return "slash_low" if foe.guard_zone == "high" else "slash_high"
-	var thrust_w := clampf(0.22 + 0.18 * me.stat("ai_thrust_bias"), 0.05, 0.6)
-	var kick_w := 0.12 if (me.can_kick() and dist < 190.0) else 0.0
+	# A cursor fighter holding the blade out is fishing for a passive block: kick it or cut around it!
+	var foe_blade_held := foe.is_player and foe.cursor_aim_enabled and foe.current_action == "" and foe.can_wield() and foe.get_blade_tip_speed() < 260.0
+	if foe_blade_held and randf() < read * 0.82:
+		if me.can_kick() and dist < 182.0 and randf() < 0.45:
+			return "kick"
+		return "slash_low" if _foe_blade_line(foe) == "high" else ("thrust" if dist > 195.0 else "slash_high")
+	# At longer measure, favour thrusts; up close, mix high/low cuts and kicks.
+	var thrust_w := clampf(0.24 + 0.20 * me.stat("ai_thrust_bias") + (0.22 if dist > 205.0 else 0.0), 0.06, 0.68)
+	var kick_w := 0.14 if (me.can_kick() and dist < 178.0) else 0.0
 	var slash_w := 1.0 - thrust_w - kick_w
 	var roll := randf()
 	if roll < slash_w * 0.52:
@@ -271,4 +415,4 @@ func _try_attack(me: FighterController, move_name: String) -> bool:
 
 func _next_attack_cd(me: FighterController) -> float:
 	var aggr := clampf(me.stat("ai_aggression"), 0.0, 1.0)
-	return _rand_range_v(_cfg["attack_cd"]) * lerpf(1.3, 0.75, aggr)
+	return _rand_range_v(_cfg["attack_cd"]) * lerpf(1.25, 0.72, aggr)

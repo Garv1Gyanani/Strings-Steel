@@ -750,7 +750,7 @@ tracks/1/keys = {
 "times": PackedFloat32Array(0, 0.2, 0.4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [-0.06981317007977318, -0.08726646259971647, -0.06981317007977318]
+"values": [-0.03490658503988659, -0.05235987755982989, -0.03490658503988659]
 }
 tracks/2/type = "value"
 tracks/2/imported = false
@@ -762,7 +762,7 @@ tracks/2/keys = {
 "times": PackedFloat32Array(0, 0.2, 0.4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [-0.17453292519943295, -0.20943951023931956, -0.17453292519943295]
+"values": [-0.06981317007977318, -0.08726646259971647, -0.06981317007977318]
 }
 tracks/3/type = "value"
 tracks/3/imported = false
@@ -774,7 +774,7 @@ tracks/3/keys = {
 "times": PackedFloat32Array(0, 0.2, 0.4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [0.13962634015954636, 0.17453292519943295, 0.13962634015954636]
+"values": [0.08726646259971647, 0.10471975511965978, 0.08726646259971647]
 }
 tracks/4/type = "value"
 tracks/4/imported = false
@@ -870,7 +870,7 @@ tracks/11/keys = {
 "times": PackedFloat32Array(0, 0.2, 0.4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [-1.2566370614359172, -1.3089969389957472, -1.2566370614359172]
+"values": [-0.7330382858376184, -0.7853981633974483, -0.7330382858376184]
 }
 tracks/12/type = "value"
 tracks/12/imported = false
@@ -882,7 +882,7 @@ tracks/12/keys = {
 "times": PackedFloat32Array(0, 0.2, 0.4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [-0.9075712110370514, -0.9424777960769379, -0.9075712110370514]
+"values": [-0.7330382858376184, -0.767944870877505, -0.7330382858376184]
 }
 tracks/13/type = "value"
 tracks/13/imported = false
@@ -894,7 +894,7 @@ tracks/13/keys = {
 "times": PackedFloat32Array(0, 0.2, 0.4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [-0.20943951023931956, -0.20943951023931956, -0.20943951023931956]
+"values": [0.0, 0.0, 0.0]
 }
 tracks/14/type = "value"
 tracks/14/imported = false
@@ -906,7 +906,7 @@ tracks/14/keys = {
 "times": PackedFloat32Array(0, 0.2, 0.4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [-0.9599310885968813, -1.0122909661567112, -0.9599310885968813]
+"values": [0.5934119456780721, 0.6283185307179586, 0.5934119456780721]
 }
 
 [sub_resource type="Animation" id="Animation_3v6du"]
@@ -946,7 +946,7 @@ tracks/2/keys = {
 "times": PackedFloat32Array(0, 0.4),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": [0.06981317007977318, 0.06981317007977318]
+"values": [0.10471975511965978, 0.10471975511965978]
 }
 tracks/3/type = "value"
 tracks/3/imported = false
@@ -1054,7 +1054,7 @@ tracks/11/keys = {
 "times": PackedFloat32Array(0, 0.4),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": [-0.5235987755982988, -0.5235987755982988]
+"values": [-0.6283185307179586, -0.6283185307179586]
 }
 tracks/12/type = "value"
 tracks/12/imported = false
@@ -1066,7 +1066,7 @@ tracks/12/keys = {
 "times": PackedFloat32Array(0, 0.4),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": [-0.6632251157578453, -0.6632251157578453]
+"values": [-0.5934119456780721, -0.5934119456780721]
 }
 tracks/13/type = "value"
 tracks/13/imported = false
@@ -1078,7 +1078,7 @@ tracks/13/keys = {
 "times": PackedFloat32Array(0, 0.4),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": [0.2792526803190927, 0.2792526803190927]
+"values": [0.10471975511965978, 0.10471975511965978]
 }
 tracks/14/type = "value"
 tracks/14/imported = false
@@ -1090,7 +1090,7 @@ tracks/14/keys = {
 "times": PackedFloat32Array(0, 0.4),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": [0.6283185307179586, 0.6283185307179586]
+"values": [1.6755160819145565, 1.6755160819145565]
 }
 
 [sub_resource type="Animation" id="Animation_dtu1q"]
@@ -1519,7 +1519,7 @@ tracks/11/keys = {
 "times": PackedFloat32Array(0, 0.14, 0.28, 0.54),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [-0.9075712110370514, 0.3839724354387525, -1.8849555921538759, -0.9075712110370514]
+"values": [-0.9075712110370514, 0.3839724354387525, -1.6755160819145565, -0.9075712110370514]
 }
 tracks/12/type = "value"
 tracks/12/imported = false
@@ -1531,7 +1531,7 @@ tracks/12/keys = {
 "times": PackedFloat32Array(0, 0.14, 0.28, 0.54),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [-0.9599310885968813, -0.4188790204786391, -0.4886921905584123, -0.9599310885968813]
+"values": [-0.9599310885968813, -0.4188790204786391, -0.4188790204786391, -0.9599310885968813]
 }
 tracks/13/type = "value"
 tracks/13/imported = false
@@ -1543,7 +1543,7 @@ tracks/13/keys = {
 "times": PackedFloat32Array(0, 0.14, 0.28, 0.54),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [0.17453292519943295, 0.20943951023931956, -0.24434609527920614, 0.17453292519943295]
+"values": [0.17453292519943295, 0.20943951023931956, 0.0, 0.17453292519943295]
 }
 tracks/14/type = "value"
 tracks/14/imported = false
@@ -1555,7 +1555,7 @@ tracks/14/keys = {
 "times": PackedFloat32Array(0, 0.14, 0.28, 0.54),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [-0.4886921905584123, 0.9075712110370514, -0.767944870877505, -0.4886921905584123]
+"values": [-0.4886921905584123, 0.9075712110370514, 0.4886921905584123, -0.4886921905584123]
 }
 
 [sub_resource type="Animation" id="Animation_603fc"]
@@ -1594,7 +1594,7 @@ tracks/2/keys = {
 "times": PackedFloat32Array(0, 0.12, 0.24, 0.5),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [-0.08726646259971647, -0.20943951023931956, 0.3490658503988659, -0.08726646259971647]
+"values": [-0.08726646259971647, -0.17453292519943295, 0.3141592653589793, -0.08726646259971647]
 }
 tracks/3/type = "value"
 tracks/3/imported = false
@@ -1702,7 +1702,7 @@ tracks/11/keys = {
 "times": PackedFloat32Array(0, 0.12, 0.24, 0.5),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [-0.9075712110370514, 0.4363323129985824, -1.6057029118347832, -0.9075712110370514]
+"values": [-0.9075712110370514, 0.3141592653589793, -1.8849555921538759, -0.9075712110370514]
 }
 tracks/12/type = "value"
 tracks/12/imported = false
@@ -1714,7 +1714,7 @@ tracks/12/keys = {
 "times": PackedFloat32Array(0, 0.12, 0.24, 0.5),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [-0.9599310885968813, -1.8325957145940461, -0.10471975511965978, -0.9599310885968813]
+"values": [-0.9599310885968813, -1.7453292519943295, -0.17453292519943295, -0.9599310885968813]
 }
 tracks/13/type = "value"
 tracks/13/imported = false
@@ -1726,7 +1726,7 @@ tracks/13/keys = {
 "times": PackedFloat32Array(0, 0.12, 0.24, 0.5),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [0.17453292519943295, 0.08726646259971647, 0.0, 0.17453292519943295]
+"values": [0.17453292519943295, 0.0, 0.0, 0.17453292519943295]
 }
 tracks/14/type = "value"
 tracks/14/imported = false
@@ -1738,7 +1738,7 @@ tracks/14/keys = {
 "times": PackedFloat32Array(0, 0.12, 0.24, 0.5),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [-0.4886921905584123, -0.08726646259971647, 0.0, -0.4886921905584123]
+"values": [-0.4886921905584123, 1.53588974175501, 1.3962634015954636, -0.4886921905584123]
 }
 
 [sub_resource type="Animation" id="Animation_e5n2p"]
@@ -1940,27 +1940,27 @@ _data = {
 &"walk": SubResource("Animation_e5n2p")
 }
 
-[node name="PlagueExecutioner" type="Node2D" unique_id=1634461830]
+[node name="PlagueExecutioner" type="Node2D" unique_id=1027471067]
 script = ExtResource("1_ib5h8")
 fighter_id = "plague_executioner"
 
-[node name="Skeleton2D" type="Skeleton2D" parent="." unique_id=2060569060]
+[node name="Skeleton2D" type="Skeleton2D" parent="." unique_id=282261328]
 scale = Vector2(0.68, 0.68)
 
-[node name="Pelvis" type="Bone2D" parent="Skeleton2D" unique_id=1120026406]
+[node name="Pelvis" type="Bone2D" parent="Skeleton2D" unique_id=817292173]
 rest = Transform2D(1, 0, 0, 1, 0, 0)
 auto_calculate_length_and_angle = false
 length = 26.6
 bone_angle = -90.0
 
-[node name="PelvisSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=1888598553]
+[node name="PelvisSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=867843820]
 z_index = 28
 scale = Vector2(0.95, 0.95)
 texture = ExtResource("2_1wxv3")
 centered = false
 offset = Vector2(-73, -46)
 
-[node name="ScabbardSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=1322557485]
+[node name="ScabbardSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=498041209]
 z_index = 20
 position = Vector2(-31.35, -5.7)
 rotation = 0.31415927
@@ -1969,198 +1969,198 @@ texture = ExtResource("3_q20cw")
 centered = false
 offset = Vector2(-60, -18)
 
-[node name="Thigh_L" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=1038819487]
+[node name="Thigh_L" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=1269942117]
 position = Vector2(-29.449999, 70.299995)
 rest = Transform2D(1, 0, 0, 1, -29.449999, 70.299995)
 auto_calculate_length_and_angle = false
 length = 96.72
 bone_angle = 90.0
 
-[node name="ThighSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=455029346]
+[node name="ThighSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=1371497251]
 z_index = 10
 scale = Vector2(0.62, 0.62)
 texture = ExtResource("4_83a35")
 centered = false
 offset = Vector2(-47, -20)
 
-[node name="Shin_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=873227713]
+[node name="Shin_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=463757135]
 position = Vector2(0, 96.72)
 rest = Transform2D(1, 0, 0, 1, 0, 96.72)
 auto_calculate_length_and_angle = false
 length = 86.64
 bone_angle = 90.0
 
-[node name="ShinSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=1951809742]
+[node name="ShinSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=710287736]
 z_index = 12
 scale = Vector2(0.76, 0.76)
 texture = ExtResource("5_k3gsf")
 centered = false
 offset = Vector2(-40, -18)
 
-[node name="PoleynSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=1200045822]
+[node name="PoleynSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=278178059]
 z_index = 13
 scale = Vector2(0.68, 0.68)
 texture = ExtResource("6_cb57q")
 centered = false
 offset = Vector2(-35, -36)
 
-[node name="Boot_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=1699902205]
+[node name="Boot_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=2137387618]
 position = Vector2(0, 86.64)
 rest = Transform2D(1, 0, 0, 1, 0, 86.64)
 auto_calculate_length_and_angle = false
 length = 28.0
 bone_angle = 0.0
 
-[node name="BootSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L/Boot_L" unique_id=510997963]
+[node name="BootSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L/Boot_L" unique_id=1179308052]
 z_index = 11
 scale = Vector2(0.88, 0.88)
 texture = ExtResource("7_mbq36")
 centered = false
 offset = Vector2(-28, -12)
 
-[node name="Thigh_R" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=1957665052]
+[node name="Thigh_R" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=1467167248]
 position = Vector2(33.25, 70.299995)
 rest = Transform2D(1, 0, 0, 1, 33.25, 70.299995)
 auto_calculate_length_and_angle = false
 length = 96.72
 bone_angle = 90.0
 
-[node name="ThighSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=2033383004]
+[node name="ThighSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=1529241711]
 z_index = 14
 scale = Vector2(0.62, 0.62)
 texture = ExtResource("4_83a35")
 centered = false
 offset = Vector2(-47, -20)
 
-[node name="Shin_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=1779350831]
+[node name="Shin_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=499921041]
 position = Vector2(0, 96.72)
 rest = Transform2D(1, 0, 0, 1, 0, 96.72)
 auto_calculate_length_and_angle = false
 length = 86.64
 bone_angle = 90.0
 
-[node name="ShinSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=875291628]
+[node name="ShinSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=1824564365]
 z_index = 16
 scale = Vector2(0.76, 0.76)
 texture = ExtResource("5_k3gsf")
 centered = false
 offset = Vector2(-40, -18)
 
-[node name="PoleynSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=387704779]
+[node name="PoleynSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=1443304281]
 z_index = 17
 scale = Vector2(0.68, 0.68)
 texture = ExtResource("6_cb57q")
 centered = false
 offset = Vector2(-35, -36)
 
-[node name="Boot_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=1987850857]
+[node name="Boot_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=1100294026]
 position = Vector2(0, 86.64)
 rest = Transform2D(1, 0, 0, 1, 0, 86.64)
 auto_calculate_length_and_angle = false
 length = 28.0
 bone_angle = 0.0
 
-[node name="BootSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R/Boot_R" unique_id=2102720077]
+[node name="BootSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R/Boot_R" unique_id=428816345]
 z_index = 15
 scale = Vector2(0.88, 0.88)
 texture = ExtResource("7_mbq36")
 centered = false
 offset = Vector2(-28, -12)
 
-[node name="Torso" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=851760759]
+[node name="Torso" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=1056587502]
 position = Vector2(0, -26.6)
 rest = Transform2D(1, 0, 0, 1, 0, -26.6)
 auto_calculate_length_and_angle = false
 length = 141.11276
 bone_angle = -92.2906
 
-[node name="TorsoSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=404413914]
+[node name="TorsoSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=522049036]
 z_index = 30
 scale = Vector2(0.94, 0.94)
 texture = ExtResource("8_djj2j")
 centered = false
 offset = Vector2(-70, -174)
 
-[node name="Head" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=979472636]
+[node name="Head" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1188559090]
 position = Vector2(-5.64, -141)
 rest = Transform2D(1, 0, 0, 1, -5.64, -141)
 auto_calculate_length_and_angle = false
 length = 78.0
 bone_angle = -90.0
 
-[node name="HeadSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=684848937]
+[node name="HeadSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=1973545119]
 z_index = 36
 scale = Vector2(0.78, 0.78)
 texture = ExtResource("9_stlls")
 centered = false
 offset = Vector2(-58, -122)
 
-[node name="Hat" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=572419645]
+[node name="Hat" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=6245821]
 position = Vector2(0, -78)
 rest = Transform2D(1, 0, 0, 1, 0, -78)
 auto_calculate_length_and_angle = false
 length = 32.0
 bone_angle = -90.0
 
-[node name="StringHead" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=2006249954]
+[node name="StringHead" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=1840261988]
 position = Vector2(0, -45)
 
-[node name="UpperArm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=2109232007]
+[node name="UpperArm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=771040926]
 position = Vector2(43.24, -112.8)
 rest = Transform2D(1, 0, 0, 1, 43.24, -112.8)
 auto_calculate_length_and_angle = false
 length = 78.96
 bone_angle = 90.0
 
-[node name="UpperArmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=447482792]
+[node name="UpperArmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=177057155]
 z_index = 22
 scale = Vector2(0.94, 0.94)
 texture = ExtResource("10_0c5j6")
 centered = false
 offset = Vector2(-18, -12)
 
-[node name="Forearm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=1124729105]
+[node name="Forearm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=2083989036]
 position = Vector2(0, 78.96)
 rest = Transform2D(1, 0, 0, 1, 0, 78.96)
 auto_calculate_length_and_angle = false
 length = 73.96
 bone_angle = 90.0
 
-[node name="ForearmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=374227263]
+[node name="ForearmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=760098445]
 z_index = 24
 scale = Vector2(0.86, 0.86)
 texture = ExtResource("11_j46tm")
 centered = false
 offset = Vector2(-34, -14)
 
-[node name="CouterSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1761888349]
+[node name="CouterSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1270156057]
 z_index = 25
 scale = Vector2(1.05, 1.05)
 texture = ExtResource("12_ftn4h")
 centered = false
 offset = Vector2(-10, -10)
 
-[node name="Hand_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1537604269]
+[node name="Hand_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1256554212]
 position = Vector2(0, 73.96)
 rest = Transform2D(1, 0, 0, 1, 0, 73.96)
 auto_calculate_length_and_angle = false
 length = 34.0
 bone_angle = 90.0
 
-[node name="HandSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=333020636]
+[node name="HandSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=773441725]
 z_index = 46
 scale = Vector2(0.68, 0.68)
 texture = ExtResource("13_a705d")
 centered = false
 offset = Vector2(-30, -12)
 
-[node name="GripCenter" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=180593481]
+[node name="GripCenter" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=2017054214]
 position = Vector2(0, 34)
 
-[node name="StringHandL" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=285902723]
+[node name="StringHandL" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1984833693]
 position = Vector2(0, 73.96)
 
-[node name="PauldronSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=952107769]
+[node name="PauldronSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=2102026341]
 z_index = 23
 position = Vector2(43.24, -112.8)
 scale = Vector2(0.68, 0.68)
@@ -2168,81 +2168,81 @@ texture = ExtResource("14_qyp61")
 centered = false
 offset = Vector2(-47, -46)
 
-[node name="UpperArm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=913297690]
+[node name="UpperArm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=739405487]
 position = Vector2(-43.24, -109.04)
 rest = Transform2D(1, 0, 0, 1, -43.24, -109.04)
 auto_calculate_length_and_angle = false
 length = 78.96
 bone_angle = 90.0
 
-[node name="UpperArmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=473246026]
+[node name="UpperArmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=1091614959]
 z_index = 40
 scale = Vector2(0.94, 0.94)
 texture = ExtResource("10_0c5j6")
 centered = false
 offset = Vector2(-18, -12)
 
-[node name="Forearm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=1769909543]
+[node name="Forearm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=1482718648]
 position = Vector2(0, 78.96)
 rest = Transform2D(1, 0, 0, 1, 0, 78.96)
 auto_calculate_length_and_angle = false
 length = 73.96
 bone_angle = 90.0
 
-[node name="ForearmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=1747763946]
+[node name="ForearmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=402213185]
 z_index = 47
 scale = Vector2(0.86, 0.86)
 texture = ExtResource("11_j46tm")
 centered = false
 offset = Vector2(-34, -14)
 
-[node name="CouterSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=1572961523]
+[node name="CouterSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=1457294240]
 z_index = 48
 scale = Vector2(1.05, 1.05)
 texture = ExtResource("12_ftn4h")
 centered = false
 offset = Vector2(-10, -10)
 
-[node name="Hand_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=105751227]
+[node name="Hand_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=1533587882]
 position = Vector2(0, 73.96)
 rest = Transform2D(1, 0, 0, 1, 0, 73.96)
 auto_calculate_length_and_angle = false
 length = 34.0
 bone_angle = 90.0
 
-[node name="HandSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=65189794]
+[node name="HandSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=1803387565]
 z_index = 46
 scale = Vector2(0.68, 0.68)
 texture = ExtResource("13_a705d")
 centered = false
 offset = Vector2(-30, -12)
 
-[node name="WeaponBone" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=264486077]
+[node name="WeaponBone" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=231645160]
 position = Vector2(0, 34)
 rest = Transform2D(1, 0, 0, 1, 0, 34)
 auto_calculate_length_and_angle = false
 length = 270.04
 bone_angle = 0.0
 
-[node name="WeaponSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=437046638]
+[node name="WeaponSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=1503421598]
 z_index = 45
 scale = Vector2(0.86, 0.86)
 texture = ExtResource("15_ttak5")
 centered = false
 offset = Vector2(-108, -47)
 
-[node name="PommelGripTarget" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=629699051]
+[node name="PommelGripTarget" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=27854458]
 position = Vector2(-56.760002, 0)
 
-[node name="BladeGuardMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=306426247]
+[node name="BladeGuardMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=215969057]
 position = Vector2(29.24, 0)
 
-[node name="BladeTipMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=1881663070]
+[node name="BladeTipMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=428918261]
 position = Vector2(270.04, 0)
 
-[node name="StringHandR" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=1365509346]
+[node name="StringHandR" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=95734544]
 
-[node name="PauldronSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=425654752]
+[node name="PauldronSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=2049008541]
 z_index = 43
 position = Vector2(-43.24, -109.04)
 scale = Vector2(0.68, 0.68)
@@ -2250,5 +2250,5 @@ texture = ExtResource("14_qyp61")
 centered = false
 offset = Vector2(-47, -46)
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=9418528]
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=551193575]
 libraries/ = SubResource("AnimationLibrary_7qob2")

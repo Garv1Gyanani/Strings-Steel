@@ -26,7 +26,7 @@ const ROUND_TIME := 90.0
 const INTRO_TIME := 1.4
 const ROUND_END_TIME := 2.8
 const FLOOR_Y := 562.0
-const MIN_FIGHTER_GAP := 74.0
+const MIN_FIGHTER_GAP := 116.0
 const SETTINGS_PATH := "user://settings.cfg"
 
 @onready var cam: Camera2D = $Camera2D
@@ -95,6 +95,8 @@ var shake_mag: float = 0.0
 var cam_zoom_target: float = 1.0
 var cam_focus: Vector2 = Vector2(640, 360)
 var _last_clash_serial: Dictionary = {}
+## Debug counters (read by tools/BalanceSim.gd).
+var debug_blocks: Array[int] = [0, 0]
 
 
 func _ready() -> void:
@@ -525,6 +527,7 @@ func _update_camera(unscaled_dt: float) -> void:
 func _idle_ai_fighter() -> void:
 	if p2 != null and not p2.is_dead:
 		p2.parrying = false
+		p2.aim_override_enabled = false
 		if p2.current_action == "":
 			p2.play_anim("idle", 0.1)
 
@@ -557,14 +560,21 @@ func _separate_fighters() -> void:
 # ---------------------------------------------------------------------------
 
 func _resolve_combat() -> void:
-	# 1. Blade vs blade (clash / parry / block)
-	var b1 := p1.get_blade_segment()
-	var b2 := p2.get_blade_segment()
-	if b1.size() == 2 and b2.size() == 2:
-		var clash_info := _closest_segments(b1[0], b1[1], b2[0], b2[1])
-		if clash_info["dist"] < 26.0:
-			_handle_blade_clash(p1, p2, clash_info["pt"])
-			_handle_blade_clash(p2, p1, clash_info["pt"])
+	# 1. Blade vs blade (clash / parry / block), using swept paths so fast flicks never tunnel.
+	var s1 := p1.get_swept_blade_segments()
+	var s2 := p2.get_swept_blade_segments()
+	if s1.size() > 0 and s2.size() > 0:
+		var best_d := 9999.0
+		var best_pt := Vector2.ZERO
+		for seg_a in s1:
+			for seg_b in s2:
+				var info := _closest_segments(seg_a[0], seg_a[1], seg_b[0], seg_b[1])
+				if float(info["dist"]) < best_d:
+					best_d = float(info["dist"])
+					best_pt = info["pt"]
+		if best_d < 28.0:
+			_handle_blade_clash(p1, p2, best_pt)
+			_handle_blade_clash(p2, p1, best_pt)
 
 	# 2. Kicks
 	_check_kick(p1, p2)
@@ -594,6 +604,8 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 		return
 	_last_clash_serial[key] = true
 	_spawn_sparks(pt, 24)
+	if explicit_guard:
+		debug_blocks[0 if def == p1 else 1] += 1
 
 	if explicit_guard and def.is_perfect_parry():
 		atk.hit_registered_serial = atk.attack_serial
@@ -607,6 +619,8 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 		atk.knockback_vx = -float(atk.facing) * 320.0
 		_spawn_sparks(pt, 36)
 		_on_cut_flash(pt, "PERFECT PARRY!", Color(1.0, 0.88, 0.35))
+		if def == p2:
+			ai.notify_blocked(true)
 		return
 
 	var cost := 14.0 if explicit_guard else (8.0 if blades_meet else 20.0)
@@ -631,6 +645,8 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 	atk.knockback_vx = -float(atk.facing) * 140.0
 	def.knockback_vx = -float(def.facing) * 110.0
 	_on_cut_flash(pt, "CLANG!" if not passive_guard or explicit_guard else "BLOCKED", Color(0.95, 0.92, 0.72))
+	if def == p2 and explicit_guard:
+		ai.notify_blocked(false)
 
 
 func _check_kick(atk: FighterController, def: FighterController) -> void:
@@ -671,21 +687,32 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 	if atk.hit_registered_serial == atk.attack_serial:
 		return
 
+	var swept := atk.get_swept_blade_segments()
 	var segs := def.get_body_segments()
 	var best_slot := ""
 	var best_dist := 9999.0
 	var best_pt := Vector2.ZERO
 	for s in segs:
 		var slot: String = s[0]
-		var info := _closest_segments(blade[0], blade[1], s[1], s[2])
-		var d: float = info["dist"] - float(s[3])
-		if d < 0.0 and d < best_dist:
-			best_dist = d
-			best_slot = slot
-			best_pt = info["pt"]
+		for b_seg in swept:
+			var info := _closest_segments(b_seg[0], b_seg[1], s[1], s[2])
+			var d: float = info["dist"] - float(s[3])
+			if d < 0.0 and d < best_dist:
+				best_dist = d
+				best_slot = slot
+				best_pt = info["pt"]
 
 	if best_slot == "":
 		return
+
+	# Explicit directional guard: if the defender is actively parrying the attacked line,
+	# catch the blow on their crossguard even in close measure (unless their guard breaks!).
+	if _is_covered_by_parry(atk, def, best_slot, best_pt):
+		var def_b := def.get_blade_segment()
+		var spark_pt: Vector2 = (Vector2(def_b[0]) + best_pt) * 0.5 if def_b.size() == 2 else best_pt
+		_handle_blade_clash(atk, def, spark_pt)
+		if atk.hit_registered_serial == atk.attack_serial:
+			return
 
 	atk.hit_registered_serial = atk.attack_serial
 	var pwr := atk.get_strike_power()
@@ -696,6 +723,9 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 	var attacker_heavy := pwr >= 0.72
 	var is_thrust := atk.current_action == "thrust"
 	var dmg := (24.0 if is_thrust else 20.0) * atk.stat("damage_mult") * (atk.stat("thrust_mult") if is_thrust else 1.0)
+	if atk.current_action == "":
+		# Free-form cursor cuts have no wind-up to read, so they hit lighter than committed moves.
+		dmg *= 0.8
 	var did_sever := def.apply_blade_damage(best_slot, dmg, best_pt, swing_dir, bool(settings["one_hit_sever"]), attacker_heavy, pwr, atk.stat("limb_damage_mult"))
 	atk.blade_blood = minf(1.0, atk.blade_blood + (0.65 if did_sever else 0.24 * pwr))
 
@@ -709,6 +739,19 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 		_rumble(0.85 if did_sever else 0.35, 0.95 if did_sever else 0.25, 0.26 if did_sever else 0.10)
 	if did_sever:
 		slow_mo_timer = maxf(slow_mo_timer, 0.95)
+
+
+func _is_covered_by_parry(atk: FighterController, def: FighterController, slot: String, hit_pt: Vector2) -> bool:
+	if not def.parrying or not def.can_wield() or def.is_dead:
+		return false
+	var facing_atk := (atk.position.x - def.position.x) * float(def.facing) >= -20.0
+	if not facing_atk:
+		return false
+	var is_low_leg := slot in ["thigh_r", "shin_r", "thigh_l", "shin_l"]
+	var is_low_strike := atk.current_action == "slash_low" or is_low_leg or (atk.current_action == "" and hit_pt.y > def.position.y - 36.0)
+	if def.guard_zone == "low":
+		return is_low_strike or (slot == "torso" and hit_pt.y > def.position.y - 68.0)
+	return not is_low_strike
 
 
 func _check_debris_rope_cut(atk: FighterController) -> void:
