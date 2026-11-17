@@ -253,6 +253,56 @@ func _run() -> void:
 	arena._resolve_combat()
 	check(is_equal_approx(p2().hp, hp_pre_flick), "swept parry catches fast single-frame flicks without tunneling")
 
+	print("== Momentum, sweet-spot, thrusts, rebound, riposte & live strings")
+	_reset_both()
+	# 1. Small splash (low power) never slices torso or pops limbs, even with 1-Hit Sever ON!
+	var splash_sever := p2().apply_blade_damage("torso", 20.0, p2().position + Vector2(0, -90), Vector2(1, 0), true, false, 0.25, 1.25, 0.75, false, 0.0)
+	check(not splash_sever and not p2().is_dead, "low-intensity splash never slices torso even in 1-Hit Sever mode")
+
+	# 2. Hilt / ricasso bump deals reduced blunt chip and never chops limbs.
+	_reset_both()
+	var hp_pre_hilt := p1().hp
+	var hilt_sever := p1().apply_blade_damage("forearm_r", 20.0, p1().position + Vector2(40, -90), Vector2(-1, 0), true, true, 1.0, 1.25, 0.15, false, 0.0)
+	check(not hilt_sever and is_equal_approx(hp_pre_hilt - p1().hp, 20.0 * 0.35), "hilt bump deals 0.35x blunt chip and never severs")
+
+	# 3. Limb HP survives single heavy hits and warns before severing.
+	_reset_both()
+	var sev1 := p1().apply_blade_damage("forearm_r", 24.0, p1().position + Vector2(40, -90), Vector2(-1, 0), false, true, 0.90, 1.25, 0.75, false, 0.0)
+	check(not sev1 and p1().can_wield(), "sword forearm survives an opening heavy slash without instant disarm")
+	p1()._combo_hits = 0
+	var sev2 := p1().apply_blade_damage("forearm_r", 24.0, p1().position + Vector2(40, -90), Vector2(-1, 0), false, true, 0.95, 1.25, 0.75, false, 0.0)
+	check(not sev2 and bool(p1()._limb_warned.get("forearm_r", false)), "second heavy hit triggers progressive mangled-limb warning")
+	p1()._combo_hits = 0
+	var sev3 := p1().apply_blade_damage("forearm_r", 24.0, p1().position + Vector2(40, -90), Vector2(-1, 0), false, true, 0.95, 1.25, 0.75, false, 0.0)
+	check(sev3 and not p1().can_wield(), "sustained heavy focus on the mangled forearm earns the disarming sever")
+
+	# 4. Thrusts pierce plate armour gaps and never bisect/chop limbs on kill.
+	_reset_both()
+	var bk_hp0 := p2().hp
+	p2().apply_blade_damage("torso", 20.0, p2().position + Vector2(0, -90), Vector2(1, 0), false, false, 1.0, 1.0, 0.85, true, 0.45)
+	var thrust_dmg_taken := bk_hp0 - p2().hp
+	check(thrust_dmg_taken > 20.0 * 0.58 + 1.5, "rapier point thrust partially bypasses plate armour")
+	p2().hp = 5.0
+	var thrust_kill_sever := p2().apply_blade_damage("torso", 24.0, p2().position + Vector2(0, -90), Vector2(1, 0), true, true, 1.0, 1.25, 0.90, true, 0.45)
+	check(p2().is_dead and not thrust_kill_sever and not bool(p2().severed.get("torso", false)), "killing thrust impales without slicing torso in half")
+
+	# 5. Rebound & riposte window on parry.
+	_reset_both()
+	_prime_attack(p2())
+	p1().parrying = true
+	p1().parry_hold_time = 0.8
+	arena._handle_blade_clash(p2(), p1(), Vector2(550, 360))
+	check(p1().riposte_timer > 0.2 and p2()._rebound_ua > 0.1, "blocking grants riposte window to defender and rebounds attacker's arm")
+
+	# 6. Live marionette string cutting ("Strings & Steel").
+	_reset_both()
+	check(p2().get_live_string_segments().size() == 3, "living fighter exposes 3 overhead marionette strings")
+	var base_w := p2().effective_blade_weight()
+	p2().cut_live_string("arm_r", p2().position + Vector2(0, -260))
+	check(p2().effective_blade_weight() > base_w * 1.2, "cutting sword-arm string makes the blade sag heavier")
+	p2().cut_live_string("arm_l", p2().position + Vector2(0, -260))
+	check(p2().get_guard_cost_mult() > 1.25, "cutting off-hand string weakens two-handed guard")
+
 	print("== AI perception")
 	arena._on_start_requested({"p1": 0, "p2": 1, "mode": "duel"})
 	await wait(INTRO_S + 0.2)

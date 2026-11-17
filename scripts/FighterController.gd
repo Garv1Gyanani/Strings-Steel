@@ -64,13 +64,23 @@ const WINDUP_SPEED := 0.55
 const TIMED_ACTIONS := ["slash_high", "slash_low", "thrust", "kick", "hurt", "parry_recoil"]
 const VITAL_SLOTS := ["head", "torso"]
 const STAGGER_IMMUNITY := 0.6
-## Minimum blade-tip speed (px/s) to commit a new cursor cut, and the recovery between cuts.
-const CURSOR_CUT_SPEED := 480.0
+## Minimum blade-tip speed (px/s), swing arc (px), and recovery between cursor cuts.
+const CURSOR_CUT_SPEED := 520.0
+const CURSOR_CUT_MIN_ARC := 52.0
 const CURSOR_CUT_RECOVERY := 0.38
+const HEAVY_POWER_THRESHOLD := 0.78
+const RIPOSTE_WINDOW := 0.42
 
 var _combo_hits: int = 0
 var _combo_timer: float = 0.0
 var _stagger_immunity: float = 0.0
+var riposte_timer: float = 0.0
+var _riposte_active_attack: bool = false
+var _swing_arc_px: float = 0.0
+var _swing_arc_dir: Vector2 = Vector2.ZERO
+var _cursor_strike_mode: String = "cut" # "cut" | "thrust"
+var _rebound_ua: float = 0.0
+var _rebound_wpn: float = 0.0
 
 ## Scripted aim (used by bots / tests instead of the mouse).
 var aim_override_enabled: bool = false
@@ -122,6 +132,8 @@ var touch_low: bool = false
 
 # Limb HP & Dismemberment state
 var limb_hp: Dictionary = {}
+var max_limb_hp: Dictionary = {}
+var _limb_warned: Dictionary = {}
 var severed: Dictionary = {}
 var severed_strings: Dictionary = {}
 var wounds: Array[Dictionary] = []
@@ -210,6 +222,13 @@ func reset_fighter() -> void:
 	_combo_hits = 0
 	_combo_timer = 0.0
 	_stagger_immunity = 0.0
+	riposte_timer = 0.0
+	_riposte_active_attack = false
+	_swing_arc_px = 0.0
+	_swing_arc_dir = Vector2.ZERO
+	_cursor_strike_mode = "cut"
+	_rebound_ua = 0.0
+	_rebound_wpn = 0.0
 	aim_override_enabled = false
 	hit_registered_serial = -1
 	parrying = false
@@ -230,14 +249,16 @@ func reset_fighter() -> void:
 	wounds.clear()
 
 	limb_hp = {
-		"head": 58.0, "torso": 100.0,
-		"arm_r": 44.0, "forearm_r": 32.0,
-		"arm_l": 42.0, "forearm_l": 30.0,
-		"thigh_l": 50.0, "shin_l": 38.0,
-		"thigh_r": 50.0, "shin_r": 38.0,
+		"head": 96.0, "torso": 150.0,
+		"arm_r": 74.0, "forearm_r": 64.0,
+		"arm_l": 68.0, "forearm_l": 58.0,
+		"thigh_l": 76.0, "shin_l": 62.0,
+		"thigh_r": 76.0, "shin_r": 62.0,
 	}
 	for k in limb_hp.keys():
 		limb_hp[k] = float(limb_hp[k]) * limb_hp_scale
+	max_limb_hp = limb_hp.duplicate()
+	_limb_warned.clear()
 	severed = {
 		"head": false, "torso": false,
 		"arm_r": false, "forearm_r": false,
@@ -383,8 +404,46 @@ func abort_windup() -> void:
 
 ## Losing the off-hand means one-handed blocking: guards cost more stamina.
 func get_guard_cost_mult() -> float:
-	var off_hand_lost: bool = bool(severed.get("arm_l", false)) or bool(severed.get("forearm_l", false))
-	return 1.5 if off_hand_lost else 1.0
+	if bool(severed.get("arm_l", false)) or bool(severed.get("forearm_l", false)):
+		return 1.5
+	if bool(severed_strings.get("arm_l", false)):
+		return 1.32
+	return 1.0
+
+
+func effective_blade_weight() -> float:
+	var w := maxf(0.45, stat("blade_weight"))
+	if bool(severed_strings.get("arm_r", false)):
+		w *= 1.32
+	if bool(severed.get("arm_l", false)) or bool(severed.get("forearm_l", false)) or bool(severed_strings.get("arm_l", false)):
+		w *= 1.16
+	return w
+
+
+func effective_attack_speed() -> float:
+	var s := stat("attack_speed")
+	if bool(severed_strings.get("arm_r", false)):
+		s *= 0.82
+	return s
+
+
+func grant_riposte() -> void:
+	riposte_timer = RIPOSTE_WINDOW
+
+
+func is_riposte_ready() -> bool:
+	return riposte_timer > 0.0 or _riposte_active_attack
+
+
+## Physical deflection bounce when a swing clangs off a parry or heavy plate armour.
+func apply_blade_rebound(strength: float = 1.0) -> void:
+	var s := clampf(strength, 0.25, 1.5)
+	_rebound_ua = clampf(_rebound_ua + 0.44 * s, -0.7, 0.85)
+	_rebound_wpn = clampf(_rebound_wpn - 0.38 * s, -0.85, 0.7)
+	_cursor_sweep_timer = 0.0
+	_swing_arc_px = 0.0
+	_swing_arc_dir = Vector2.ZERO
+	_cursor_rearm_timer = maxf(_cursor_rearm_timer, 0.24 * s)
 
 
 func spend_stamina(amount: float) -> void:
@@ -399,15 +458,19 @@ func start_attack(move_name: String) -> bool:
 		return false
 	if move_name == "kick" and not can_kick():
 		return false
-	var cost := (12.0 if move_name != "kick" else 10.0) * stat("stamina_cost_mult")
+	var is_rip := riposte_timer > 0.0 and move_name in ATTACK_MOVES
+	var cost := (12.0 if move_name != "kick" else 10.0) * stat("stamina_cost_mult") * (0.70 if is_rip else 1.0)
 	if stamina < cost:
 		return false
 
 	spend_stamina(cost)
 	parrying = false
+	_riposte_active_attack = is_rip
+	if is_rip:
+		riposte_timer = 0.0
 	current_action = move_name
 	action_elapsed = 0.0
-	_action_speed = stat("attack_speed")
+	_action_speed = effective_attack_speed() * (1.24 if is_rip else 1.0)
 	attack_serial += 1
 	play_anim(move_name, 0.05, _action_speed)
 	request_sfx.emit("whoosh", 0.14)
@@ -429,6 +492,9 @@ func trigger_hurt(heavy: bool = false) -> void:
 	if is_dead:
 		return
 	parrying = false
+	riposte_timer = 0.0
+	_riposte_active_attack = false
+	_swing_arc_px = 0.0
 	current_action = "parry_recoil" if heavy else "hurt"
 	action_elapsed = 0.0
 	_action_speed = 1.0
@@ -462,6 +528,7 @@ func _on_animation_finished(anim_name: StringName) -> void:
 		if String(anim_name) in ["hurt", "parry_recoil"]:
 			_stagger_immunity = STAGGER_IMMUNITY
 		current_action = ""
+		_riposte_active_attack = false
 		_blade_trail.clear()
 		play_anim("idle")
 		_update_head_expression()
@@ -545,6 +612,10 @@ func _process(delta: float) -> void:
 	_cursor_rearm_timer = maxf(0.0, _cursor_rearm_timer - delta)
 	_buffer_timer = maxf(0.0, _buffer_timer - delta)
 	_stagger_immunity = maxf(0.0, _stagger_immunity - delta)
+	riposte_timer = maxf(0.0, riposte_timer - delta)
+	var reb_decay := exp(-9.5 * delta)
+	_rebound_ua *= reb_decay
+	_rebound_wpn *= reb_decay
 	if _combo_timer > 0.0:
 		_combo_timer -= delta
 		if _combo_timer <= 0.0:
@@ -573,9 +644,13 @@ func _process(delta: float) -> void:
 		elif bone_ua_r != null and bone_fa_r != null and bone_weapon != null:
 			_cursor_rearm_timer = 0.22
 			_cursor_sweep_timer = 0.0
+			_swing_arc_px = 0.0
+			_riposte_active_attack = _riposte_active_attack and current_action != ""
 			_ik_ua_r = bone_ua_r.rotation
 			_ik_fa_r = bone_fa_r.rotation
 			_ik_wpn_r = bone_weapon.rotation
+		if bool(severed_strings.get("head", false)) and bone_head != null:
+			bone_head.rotation += deg_to_rad(22.0)
 
 	# Maintain Off-hand 2-bone IK unless dead or left arm injured/severed
 	var offhand_intact: bool = has_weapon and not bool(severed.get("arm_r", false)) and not bool(severed.get("arm_l", false)) and not bool(severed.get("forearm_l", false)) and not bool(severed.get("torso", false)) and not bool(severed_strings.get("arm_l", false))
@@ -699,20 +774,33 @@ func is_blade_active() -> bool:
 			return cursor_aim_enabled and _cursor_sweep_timer > 0.0 and not parrying
 
 
+func is_thrust_strike() -> bool:
+	if current_action == "thrust":
+		return true
+	return current_action == "" and _cursor_sweep_timer > 0.0 and _cursor_strike_mode == "thrust"
+
+
 func get_strike_power() -> float:
 	var pwr := 1.0
 	match current_action:
 		"slash_high", "slash_low", "thrust":
 			pwr = 1.0
 		_:
-			pwr = _cursor_power_for_speed(_blade_tip_speed)
-	# Without the off-hand on the pommel, cuts lose leverage.
+			pwr = _cursor_power_now()
+	# Without the off-hand on the pommel, two-handed cuts lose leverage.
 	if bool(severed.get("arm_l", false)) or bool(severed.get("forearm_l", false)):
-		pwr *= 0.8
+		pwr *= 0.80
+	elif bool(severed_strings.get("arm_l", false)):
+		pwr *= 0.90
 	# Exhausted fighters swing weakly.
 	if stamina < 10.0:
-		pwr *= 0.8
+		pwr *= 0.78
 	return pwr
+
+
+func _step_angle_capped(cur: float, tgt: float, k_blend: float, max_step: float) -> float:
+	var d := wrapf(tgt - cur, -PI, PI)
+	return cur + clampf(d * k_blend, -max_step, max_step)
 
 
 func _solve_sword_arm_to_cursor(delta: float) -> void:
@@ -747,7 +835,11 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 		_prev_cursor_aim_world = raw_tgt
 
 	_prev_cursor_aim_world = raw_tgt
-	cursor_aim_world = cursor_aim_world.lerp(raw_tgt, minf(1.0, 25.0 * delta))
+	var weight := effective_blade_weight()
+	var rip_mult := 1.22 if riposte_timer > 0.0 else 1.0
+	var max_aim_step := (1950.0 / weight) * rip_mult * delta
+	var aim_delta := (raw_tgt - cursor_aim_world) * minf(1.0, 25.0 * delta)
+	cursor_aim_world += aim_delta.limit_length(max_aim_step)
 
 	var sh_pos := bone_ua_r.position
 	var l1 := bone_fa_r.position.length()
@@ -824,17 +916,18 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 	var neutral_blade_ang := chosen_lower - PI * 0.5
 	var wrist_cock := clampf(wrapf(desired_blade_ang - neutral_blade_ang, -PI, PI), deg_to_rad(-48.0), deg_to_rad(84.0))
 
-	var k := minf(1.0, 24.0 * delta)
-	_ik_ua_r = lerp_angle(_ik_ua_r, ua_target_rot, k)
-	_ik_fa_r = lerp_angle(_ik_fa_r, fa_target_rot, k)
-	_ik_wpn_r = lerp_angle(_ik_wpn_r, wrist_cock, k)
+	var k := minf(1.0, 23.0 * delta)
+	var slew_scale := (rip_mult / weight) * delta
+	_ik_ua_r = _step_angle_capped(_ik_ua_r, ua_target_rot, k, 12.6 * slew_scale)
+	_ik_fa_r = _step_angle_capped(_ik_fa_r, fa_target_rot, k, 15.2 * slew_scale)
+	_ik_wpn_r = _step_angle_capped(_ik_wpn_r, wrist_cock, k, 17.6 * slew_scale)
 
-	bone_ua_r.rotation = _ik_ua_r
+	bone_ua_r.rotation = _ik_ua_r + _rebound_ua
 	bone_fa_r.rotation = _ik_fa_r
 	bone_hand_r.rotation = 0.0
-	bone_weapon.rotation = _ik_wpn_r
+	bone_weapon.rotation = _ik_wpn_r + _rebound_wpn
 
-	# Measure true fighter-local blade-tip speed AFTER applying the new IK rotations!
+	# Measure true fighter-local blade-tip velocity & swing arc AFTER applying IK!
 	if blade_tip_marker != null:
 		var cur_tip_local := to_local(blade_tip_marker.global_position)
 		if _prev_tip_local == Vector2.ZERO:
@@ -842,36 +935,72 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 		var tip_delta := cur_tip_local - _prev_tip_local
 		var inst_tip_spd := tip_delta.length() / dt_safe
 		_prev_tip_local = cur_tip_local
-		_blade_tip_speed = maxf(inst_tip_spd, lerpf(_blade_tip_speed, inst_tip_spd, minf(1.0, 14.0 * delta)))
+		var spd_blend := 22.0 if inst_tip_spd > _blade_tip_speed else 12.0
+		_blade_tip_speed = lerpf(_blade_tip_speed, inst_tip_spd, minf(1.0, spd_blend * delta))
 
-		# Cursor cuts: flinging the blade fast commits a cut (one hit max per cut).
-		# - A NEW cut needs a real swing (>= CURSOR_CUT_SPEED) and a recovery gap since the
-		#   last one, so frantic waggling can't machine-gun hits.
-		# - Each committed cut costs stamina scaled by its power.
-		# - A cut stays "live" while the blade keeps moving fast (>= 340 px/s).
+		# Accumulate continuous swing arc so tiny wrist splashes cannot masquerade as cleaves.
+		if inst_tip_spd >= 300.0 and not parrying and _cursor_rearm_timer <= 0.0:
+			var step_dir := tip_delta.normalized()
+			if _swing_arc_dir.length_squared() < 0.1 or _swing_arc_dir.dot(step_dir) >= 0.22:
+				_swing_arc_px = minf(320.0, _swing_arc_px + tip_delta.length())
+				_swing_arc_dir = (_swing_arc_dir * 0.65 + step_dir * 0.35).normalized()
+			else:
+				_swing_arc_px = tip_delta.length()
+				_swing_arc_dir = step_dir
+		else:
+			_swing_arc_px = maxf(0.0, _swing_arc_px - 540.0 * delta)
+			if _swing_arc_px <= 1.0:
+				_swing_arc_dir = Vector2.ZERO
+
 		if parrying:
 			_cursor_rearm_timer = maxf(_cursor_rearm_timer, 0.18)
 		if is_player and inst_tip_spd >= 340.0 and not parrying and _cursor_rearm_timer <= 0.0:
 			var tip_dir := tip_delta.normalized()
-			var fresh_swing := _cursor_sweep_timer <= 0.0 or _cursor_last_dir.dot(tip_dir) < 0.25
-			if fresh_swing and inst_tip_spd >= CURSOR_CUT_SPEED and _cursor_slash_cd <= 0.0:
-				var est_pwr := _cursor_power_for_speed(inst_tip_spd)
-				var cost := (5.0 + 9.0 * est_pwr) * stat("stamina_cost_mult")
-				if stamina >= cost:
-					spend_stamina(cost)
-					attack_serial += 1
-					_cursor_slash_cd = CURSOR_CUT_RECOVERY
-					_cursor_last_dir = tip_dir
+			var blade_dir_local := Vector2.RIGHT
+			if blade_guard_marker != null:
+				var bv := cur_tip_local - to_local(blade_guard_marker.global_position)
+				if bv.length_squared() > 4.0:
+					blade_dir_local = bv.normalized()
+			var axial := tip_dir.dot(blade_dir_local)
+			var perp := sqrt(maxf(0.0, 1.0 - axial * axial))
+			# Pulling the sword backward toward our own body is a withdrawal, not an attack!
+			var withdrawing := axial < -0.38 and perp < 0.72
+			if withdrawing:
+				_cursor_sweep_timer = 0.0
+			else:
+				var fresh_swing := _cursor_sweep_timer <= 0.0 or _cursor_last_dir.dot(tip_dir) < 0.25
+				if fresh_swing and inst_tip_spd >= CURSOR_CUT_SPEED and _swing_arc_px >= CURSOR_CUT_MIN_ARC and _cursor_slash_cd <= 0.0:
+					_cursor_strike_mode = "thrust" if (axial > 0.72 and perp < 0.68) else "cut"
+					var is_rip := riposte_timer > 0.0
+					var est_pwr := _cursor_power_now()
+					var cost := (5.0 + 9.0 * est_pwr) * stat("stamina_cost_mult") * (0.70 if is_rip else 1.0)
+					if stamina >= cost:
+						spend_stamina(cost)
+						_riposte_active_attack = is_rip
+						if is_rip:
+							riposte_timer = 0.0
+						attack_serial += 1
+						_cursor_slash_cd = CURSOR_CUT_RECOVERY
+						_cursor_last_dir = tip_dir
+						_cursor_sweep_timer = 0.15
+						if _cursor_whoosh_cd <= 0.0:
+							_cursor_whoosh_cd = 0.22
+							request_sfx.emit("whoosh", 0.16)
+				elif _cursor_sweep_timer > 0.0 and _cursor_last_dir.dot(tip_dir) >= 0.25:
 					_cursor_sweep_timer = 0.14
-					if _cursor_whoosh_cd <= 0.0:
-						_cursor_whoosh_cd = 0.22
-						request_sfx.emit("whoosh", 0.16)
-			elif _cursor_sweep_timer > 0.0 and _cursor_last_dir.dot(tip_dir) >= 0.25:
-				_cursor_sweep_timer = 0.14
+
+
+func _cursor_power_now() -> float:
+	var spd_f := clampf((_blade_tip_speed - 380.0) / 920.0, 0.18, 1.0)
+	var arc_f := clampf((_swing_arc_px - 42.0) / 105.0, 0.18, 1.0)
+	var pwr := clampf(spd_f * (0.28 + 0.72 * arc_f), 0.18, 1.0)
+	if _riposte_active_attack or riposte_timer > 0.0:
+		pwr = minf(1.0, pwr * 1.20)
+	return pwr
 
 
 func _cursor_power_for_speed(spd: float) -> float:
-	return clampf((spd - 300.0) / 700.0, 0.3, 1.0)
+	return clampf((spd - 380.0) / 920.0, 0.18, 1.0)
 
 
 func get_blade_tip_speed() -> float:
@@ -883,7 +1012,8 @@ func is_kick_active() -> bool:
 
 
 func is_perfect_parry() -> bool:
-	return parrying and parry_hold_time <= stat("perfect_parry_window")
+	var win := stat("perfect_parry_window") * (0.65 if bool(severed_strings.get("head", false)) else 1.0)
+	return parrying and parry_hold_time <= win
 
 
 ## True while this fighter's attack is visibly coming (windup or active frames).
@@ -896,7 +1026,7 @@ func is_attack_threat() -> bool:
 		return true
 	if is_blade_active():
 		return true
-	return is_player and cursor_aim_enabled and current_action == "" and can_wield() and _blade_tip_speed > 260.0 and stamina >= 5.0 * stat("stamina_cost_mult")
+	return is_player and cursor_aim_enabled and current_action == "" and can_wield() and _blade_tip_speed > 320.0 and _swing_arc_px >= 38.0 and stamina >= 5.0 * stat("stamina_cost_mult")
 
 
 func get_blade_segment() -> Array:
@@ -929,9 +1059,11 @@ func get_body_segments() -> Array:
 	if bone_pelvis == null:
 		return segs
 	if not severed.get("torso", false) and bone_torso != null:
-		segs.append(["torso", bone_pelvis.global_position, bone_torso.global_position + Vector2(0, -65), 24.0])
+		var neck_pt := bone_head.global_position if bone_head != null else bone_torso.to_global(Vector2(0, -85))
+		segs.append(["torso", bone_pelvis.global_position, neck_pt, 21.0])
 		if not severed.get("head", false) and bone_head != null:
-			segs.append(["head", bone_head.global_position, bone_head.global_position + Vector2(0, -48), 20.0])
+			var crown_pt := str_head.global_position if str_head != null else bone_head.to_global(Vector2(0, -45))
+			segs.append(["head", bone_head.global_position, crown_pt, 19.0])
 		if not severed.get("arm_r", false) and bone_ua_r != null and bone_fa_r != null:
 			segs.append(["arm_r", bone_ua_r.global_position, bone_fa_r.global_position, 15.0])
 			if not severed.get("forearm_r", false) and bone_hand_r != null:
@@ -951,28 +1083,82 @@ func get_body_segments() -> Array:
 	return segs
 
 
-func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Vector2, one_hit_sever: bool, attacker_heavy: bool = false, impact_power: float = 1.0, attacker_limb_mult: float = 1.0) -> bool:
+## Overhead live marionette strings exposed to high slashes (above the crown / hands).
+func get_live_string_segments() -> Array:
+	var out: Array = []
+	if is_dead or not show_strings:
+		return out
+	var bar_y := -345.0
+	for item in [
+		["head", str_head, Vector2(0.0, bar_y)],
+		["arm_l", str_hand_l, Vector2(-58.0, bar_y)],
+		["arm_r", str_hand_r, Vector2(58.0, bar_y)],
+	]:
+		var skey: String = item[0]
+		var marker: Node2D = item[1]
+		var bar_local: Vector2 = item[2]
+		if bool(severed_strings.get(skey, false)) or marker == null or not marker.is_visible_in_tree():
+			continue
+		var top_w := to_global(bar_local)
+		var bot_w := marker.global_position + Vector2(0, -32.0)
+		if bot_w.y > top_w.y + 24.0:
+			out.append([skey, top_w, bot_w])
+	return out
+
+
+func cut_live_string(skey: String, hit_pt: Vector2) -> bool:
+	if is_dead or bool(severed_strings.get(skey, false)):
+		return false
+	severed_strings[skey] = true
+	request_sfx.emit("snap", 0.10)
+	var label := "STRING CUT!"
+	match skey:
+		"arm_l": label = "OFF-STRING CUT!"
+		"arm_r": label = "SWORD STRING CUT!"
+		"head": label = "HEAD STRING CUT!"
+	request_cut_flash.emit(hit_pt, label, Color(0.96, 0.86, 0.50))
+	limb_state_changed.emit(self)
+	return true
+
+
+func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Vector2, one_hit_sever: bool, attacker_heavy: bool = false, impact_power: float = 1.0, attacker_limb_mult: float = 1.0, blade_pos_frac: float = 0.75, is_thrust: bool = false, armor_pierce: float = 0.0) -> bool:
 	if is_dead:
 		return false
 
-	# Armoured slots (per FighterStats) mitigate hits unless the wearer is staggered by a parry.
+	# Armoured slots mitigate hits unless staggered by a parry; thrusts partially slip into gaps.
 	var armored_slot: bool = is_armored_slot(slot)
 	var is_counter: bool = current_action == "parry_recoil"
-	var armor_mult: float = stat("armor_mult") if (armored_slot and not is_counter) else 1.0
+	var armor_mult: float = 1.0
+	if armored_slot and not is_counter:
+		armor_mult = stat("armor_mult")
+		if is_thrust and armor_pierce > 0.0:
+			armor_mult = lerpf(armor_mult, 1.0, clampf(armor_pierce, 0.0, 0.85))
 	var counter_mult: float = 1.28 if is_counter else 1.0
-	var pwr: float = clampf(impact_power, 0.20, 1.0)
-	# Combo scaling: each extra hit landing inside the combo window does less damage,
-	# so a flurry can't delete a full health bar in a second.
+	var pwr: float = clampf(impact_power, 0.15, 1.0)
+	# Blade sweet-spot: outer half of blade cuts cleanly; hilt/ricasso bumps only bruise.
+	var sweet_mult: float = 1.0
+	var limb_sweet: float = 1.0
+	if not is_thrust:
+		if blade_pos_frac < 0.28:
+			sweet_mult = 0.35
+			limb_sweet = 0.22
+		elif blade_pos_frac < 0.42:
+			sweet_mult = 0.72
+			limb_sweet = 0.65
+
+	# Combo scaling: each extra hit landing inside the combo window does less damage.
 	var combo_mult: float = maxf(0.4, 1.0 - 0.2 * float(_combo_hits))
 	_combo_hits += 1
 	_combo_timer = COMBO_WINDOW
-	var final_dmg: float = dmg * armor_mult * counter_mult * pwr * combo_mult
-	var limb_dmg: float = dmg * (1.25 if attacker_heavy else 0.92) * armor_mult * counter_mult * pwr * attacker_limb_mult * combo_mult
+	var final_dmg: float = dmg * armor_mult * counter_mult * pwr * sweet_mult * combo_mult
+	var limb_dmg: float = dmg * (1.08 if attacker_heavy else 0.75) * armor_mult * counter_mult * pwr * limb_sweet * attacker_limb_mult * combo_mult
+	if is_thrust:
+		limb_dmg *= 0.45
 
 	hp = maxf(0.0, hp - final_dmg)
-	bleed_rate += final_dmg * 0.045
-	knockback_vx += swing_dir.x * (215.0 * pwr * pwr)
-	limb_hp[slot] = maxf(0.0, float(limb_hp.get(slot, 40.0)) - limb_dmg)
+	bleed_rate += final_dmg * (0.075 if is_thrust else 0.045)
+	knockback_vx += swing_dir.x * (215.0 * pwr * pwr * sweet_mult)
+	limb_hp[slot] = maxf(0.0, float(limb_hp.get(slot, 80.0)) - limb_dmg)
 	if is_counter:
 		request_cut_flash.emit(hit_pt, "COUNTER!", Color(1.0, 0.78, 0.32))
 
@@ -982,37 +1168,60 @@ func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Ve
 	_stain_limb_bloody(node_ref)
 
 	request_sfx.emit("flesh", 0.14)
-	var drop_cnt := maxi(3, int(round((22.0 if gore_enabled else 6.0) * pwr)))
+	var drop_cnt := maxi(3, int(round((22.0 if gore_enabled else 6.0) * pwr * sweet_mult)))
 	request_blood_spray.emit(hit_pt, swing_dir * (320.0 * pwr) + Vector2(0, -130.0 * pwr), drop_cnt, false)
 
-	# Earned dismemberment:
-	# - With 1-Hit Sever OFF, healthy fighters are NEVER one-shot decapitated, bisected,
-	#   or disarmed on the first clash!
-	# - Limbs sever when their limb HP is chewed through, on a killing blow, or on a
-	#   heavy punish once the opponent is already wounded (< 42% HP).
-	# - Head & torso (fatal slots) only sever on a killing blow or critical execution (< 22% HP).
 	var staggered: bool = current_action in ["parry_recoil", "hurt"]
-	var wounded_exec: bool = staggered and hp < 0.42 * max_hp
-	var limb_depleted: bool = float(limb_hp.get(slot, 1.0)) <= 0.0
+	var wounded_exec: bool = staggered and hp < 0.40 * max_hp
+	var cur_lhp: float = float(limb_hp.get(slot, 1.0))
+	var max_lhp: float = maxf(1.0, float(max_limb_hp.get(slot, 80.0)))
+	var limb_frac: float = cur_lhp / max_lhp
+	var limb_depleted: bool = cur_lhp <= 0.0
 	var lethal_finish: bool = hp <= 0.0
-	var can_chop_power: bool = attacker_heavy
-	var should_sever: bool = can_chop_power and (not bool(severed.get(slot, false))) and (one_hit_sever or limb_depleted or lethal_finish or wounded_exec)
-	if slot in VITAL_SLOTS and not one_hit_sever and not lethal_finish:
-		should_sever = can_chop_power and (not bool(severed.get(slot, false))) and staggered and hp < 0.22 * max_hp
+
+	# Earned dismemberment rules:
+	# - Thrusts pierce rather than chopping limbs off.
+	# - Hilt bumps & small splashes NEVER pop limbs or slice fighters in half (even in 1-Hit Sever mode).
+	# - Torso bisection ("slice in half") is reserved for true full-momentum sweet-spot killing cleaves!
+	var should_sever := false
+	if not is_thrust and not bool(severed.get(slot, false)):
+		if one_hit_sever:
+			should_sever = pwr >= 0.65 and blade_pos_frac >= 0.32
+		else:
+			var can_chop := attacker_heavy and pwr >= HEAVY_POWER_THRESHOLD and blade_pos_frac >= 0.38
+			if slot == "torso":
+				should_sever = can_chop and lethal_finish and pwr >= 0.92 and blade_pos_frac >= 0.45
+			elif slot == "head":
+				should_sever = can_chop and ((lethal_finish and pwr >= 0.82) or (staggered and hp < 0.20 * max_hp and pwr >= 0.85))
+			else:
+				should_sever = can_chop and (limb_depleted or (lethal_finish and pwr >= 0.82) or (wounded_exec and limb_frac < 0.55))
 
 	if should_sever:
-		if lethal_finish and slot == "torso" and randf() < 0.45 and not bool(severed.get("head", false)):
+		if lethal_finish and slot == "torso" and randf() < 0.40 and not bool(severed.get("head", false)):
 			slot = "head"
 		sever_limb(slot, hit_pt, swing_dir)
 		return true
 	else:
 		if hp <= 0.0:
+			if is_thrust and pwr >= 0.65:
+				request_cut_flash.emit(hit_pt, "IMPALED!", Color(0.96, 0.24, 0.26))
 			kill_fighter()
-		elif pwr >= 0.68 and _stagger_immunity <= 0.0 and current_action != "hurt" and current_action != "parry_recoil":
-			# Stagger, but not again during the immunity window after recovering:
-			# prevents infinite hit-stun locks.
-			trigger_hurt(false)
+		else:
+			if not (slot in VITAL_SLOTS) and limb_frac <= 0.38 and not bool(_limb_warned.get(slot, false)):
+				_limb_warned[slot] = true
+				_stain_limb_bloody(node_ref)
+				request_cut_flash.emit(hit_pt, _limb_wound_label(slot), Color(1.0, 0.56, 0.28))
+			if pwr * sweet_mult >= 0.68 and _stagger_immunity <= 0.0 and current_action != "hurt" and current_action != "parry_recoil":
+				trigger_hurt(false)
 		return false
+
+
+func _limb_wound_label(slot: String) -> String:
+	match slot:
+		"arm_r", "forearm_r": return "SWORD ARM MANGLED!"
+		"arm_l", "forearm_l": return "OFF-ARM MANGLED!"
+		"thigh_l", "shin_l", "thigh_r", "shin_r": return "LEG CRIPPLED!"
+	return "WOUNDED!"
 
 
 func _stain_limb_bloody(root_node: Node2D) -> void:
@@ -1347,22 +1556,35 @@ func _solve_offhand_two_bone_ik() -> void:
 
 
 func _draw() -> void:
-	# 1. Weapon Motion Slash Ribbon
+	# 1. Weapon Motion Slash Ribbon (intensity & colour reflect real strike power!)
 	if _blade_trail.size() >= 2:
+		var pwr_vis := get_strike_power()
+		var heavy_vis := pwr_vis >= HEAVY_POWER_THRESHOLD or is_riposte_ready()
+		var weak_vis := pwr_vis < 0.45
 		for i in range(_blade_trail.size() - 1):
 			var a_pts: Array = _blade_trail[i]
 			var b_pts: Array = _blade_trail[i + 1]
 			if Vector2(a_pts[1]).distance_squared_to(Vector2(b_pts[1])) < 16.0:
 				continue
 			var frac := float(i + 1) / float(_blade_trail.size())
-			var col := Color(0.92, 0.95, 1.0, 0.28 * frac * frac)
+			var rib_alpha := (0.12 if weak_vis else (0.36 if heavy_vis else 0.25)) * frac * frac
+			var col := Color(1.0, 0.90, 0.58, rib_alpha) if heavy_vis else (Color(0.75, 0.78, 0.84, rib_alpha) if weak_vis else Color(0.92, 0.95, 1.0, rib_alpha))
 			var pts := PackedVector2Array([
 				to_local(a_pts[0]), to_local(a_pts[1]),
 				to_local(b_pts[1]), to_local(b_pts[0])
 			])
 			if Geometry2D.triangulate_polygon(pts).size() > 0:
 				draw_colored_polygon(pts, col)
-			draw_line(to_local(a_pts[1]), to_local(b_pts[1]), Color(1.0, 0.98, 0.90, 0.65 * frac), 2.4, true)
+			var edge_col := Color(1.0, 0.94, 0.68, 0.85 * frac) if heavy_vis else (Color(0.82, 0.84, 0.88, 0.35 * frac) if weak_vis else Color(1.0, 0.98, 0.90, 0.65 * frac))
+			var edge_w := 3.4 if heavy_vis else (1.4 if weak_vis else 2.4)
+			draw_line(to_local(a_pts[1]), to_local(b_pts[1]), edge_col, edge_w, true)
+
+	# 1a. Golden Riposte Gleam along the blade right after a successful block/parry
+	if riposte_timer > 0.0 and has_weapon and blade_guard_marker != null and blade_tip_marker != null:
+		var rg := to_local(blade_guard_marker.global_position)
+		var rt := to_local(blade_tip_marker.global_position)
+		var r_alpha := clampf(riposte_timer / RIPOSTE_WINDOW, 0.0, 1.0) * 0.7
+		draw_line(rg, rt, Color(1.0, 0.88, 0.42, r_alpha), 3.2, true)
 
 	# 1b. Wet Blood Coating Along Sword Blade
 	if gore_enabled and blade_blood > 0.04 and has_weapon and blade_guard_marker != null and blade_tip_marker != null:

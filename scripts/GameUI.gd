@@ -592,7 +592,7 @@ func _build_pause() -> void:
 	var settings_center := CenterContainer.new()
 	settings_center.add_child(_build_settings_grid())
 	vb.add_child(settings_center)
-	var help := _label("Fling the mouse to cut: faster swings hit harder but cost more stamina.\nHold parry just before a blow lands for a PERFECT PARRY. Kicks break a turtling guard.\nSevered legs slow you down, a lost off-hand weakens your guard.", 12, Color(0.8, 0.74, 0.62), HORIZONTAL_ALIGNMENT_CENTER)
+	var help := _label("Swing through a wide arc for heavy limb-chopping cuts (gold trail); drive the point forward to thrust.\nParry just before impact for a PERFECT PARRY, then strike in the gold RIPOSTE window!\nHigh slashes above an unguarded rival can snap their marionette strings. Kicks break turtling guards.", 12, Color(0.8, 0.74, 0.62), HORIZONTAL_ALIGNMENT_CENTER)
 	vb.add_child(help)
 
 

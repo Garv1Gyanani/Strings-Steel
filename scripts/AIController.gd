@@ -68,6 +68,7 @@ var _turtle_decided: bool = false
 # Queued follow-up (riposte / dash-in strike)
 var _pending_attack: String = ""
 var _pending_delay: float = 0.0
+var _last_chosen_move: String = ""
 
 
 func set_difficulty(d: String) -> void:
@@ -94,6 +95,7 @@ func reset() -> void:
 	_turtle_decided = false
 	_pending_attack = ""
 	_pending_delay = 0.0
+	_last_chosen_move = ""
 	_roll_reaction()
 
 
@@ -145,6 +147,9 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 		_episode_decided = false
 
 	# --- 1. React to a perceived threat (never burn the decision while staggered) ---
+	var style := String(me.stats.get("ai_style", "balanced"))
+	var parry_p := clampf(float(_cfg["parry_skill"]) + (0.08 if style == "master" else 0.0), 0.0, 0.96)
+	var bait_p := float(_cfg["whiff_bait"]) * (1.45 if style == "duelist" else 1.0)
 	var can_act := me.current_action == "" or (difficulty != "normal" and me.can_feint_to_parry())
 	var under_fire := threat and _threat_time >= _reaction_needed
 	if under_fire and can_act and (not _episode_decided or _redecide_timer <= 0.0) and state != State.DEFEND:
@@ -152,12 +157,12 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 		_redecide_timer = 0.24
 		_roll_reaction()
 		# Sometimes back-dash to make a committed swing whiff, then lunge-punish recovery!
-		if me.current_action == "" and dist > 165.0 and dist < 245.0 and me.dash_cooldown <= 0.0 and foe.current_action in FighterController.ATTACK_MOVES and randf() < float(_cfg["whiff_bait"]) * 0.45:
+		if me.current_action == "" and dist > 165.0 and dist < 245.0 and me.dash_cooldown <= 0.0 and foe.current_action in FighterController.ATTACK_MOVES and randf() < bait_p * 0.45:
 			me.start_dash(-dir_to_foe)
 			_pending_attack = "thrust"
 			_pending_delay = 0.16
 			return
-		if me.can_wield() and randf() < float(_cfg["parry_skill"]):
+		if me.can_wield() and randf() < parry_p:
 			me.abort_windup()
 			_begin_defend(me, foe)
 		elif me.current_action == "" and me.dash_cooldown <= 0.0 and dist < 210.0 and randf() < float(_cfg["dash_use"]):
@@ -261,7 +266,7 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 
 	# --- 7. Self-preservation: back off briefly when badly hurt and low on stamina ---
 	var hp_frac := me.hp / maxf(1.0, me.max_hp)
-	if state == State.NEUTRAL and hp_frac < float(_cfg["retreat_hp"]) and me.stamina < 35.0 and dist < 210.0 and randf() < 0.9 * delta:
+	if style != "bully" and state == State.NEUTRAL and hp_frac < float(_cfg["retreat_hp"]) and me.stamina < 35.0 and dist < 210.0 and randf() < 0.9 * delta:
 		state = State.RETREAT
 		_state_timer = randf_range(0.45, 0.8)
 		if randf() < float(_cfg["dash_use"]):
@@ -281,7 +286,14 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 	if _think <= 0.0:
 		_think = _rand_range_v(_cfg["think"])
 		_spacing_bias = randf_range(-22.0, 18.0)
-		_stalk_bias = dir_to_foe * 0.55 if randf() < 0.55 else 0.0
+		if style == "bully":
+			_stalk_bias = dir_to_foe * 0.80
+		elif style == "duelist":
+			_stalk_bias = -dir_to_foe * 0.35 if _attack_cd > 0.15 else dir_to_foe * 0.45
+		elif style == "master":
+			_stalk_bias = 0.0
+		else:
+			_stalk_bias = dir_to_foe * 0.55 if randf() < 0.55 else 0.0
 
 	# Attack immediately whenever cooldown is ready and we are in striking measure
 	# (don't start a slow windup if the opponent's shoulders are already swinging toward us).
@@ -348,7 +360,8 @@ func _begin_defend(me: FighterController, foe: FighterController) -> void:
 	_zone_retrack = _reaction_needed
 	_set_guard_zone(me, foe)
 	me.parrying = true
-	me.parry_hold_time = 0.0 if randf() < float(_cfg["perfect_chance"]) else me.stat("perfect_parry_window") + 0.01
+	var perf_p := float(_cfg["perfect_chance"]) + (0.12 if String(me.stats.get("ai_style", "")) == "master" else 0.0)
+	me.parry_hold_time = 0.0 if randf() < perf_p else me.stat("perfect_parry_window") + 0.01
 
 
 func _set_guard_zone(me: FighterController, foe: FighterController) -> void:
@@ -379,20 +392,26 @@ func _choose_attack(me: FighterController, foe: FighterController, dist: float) 
 	if not me.can_wield():
 		return "kick" if me.can_kick() and dist < 190.0 else ""
 	var read := float(_cfg["zone_read"])
+	var style := String(me.stats.get("ai_style", "balanced"))
 	# Attack the line the foe is NOT guarding!
 	if foe.parrying and randf() < read * 0.85:
-		if me.can_kick() and dist < 182.0 and randf() < 0.35:
+		var kick_p := 0.55 if style == "bully" else 0.35
+		if me.can_kick() and dist < 182.0 and randf() < kick_p:
 			return "kick"
 		return "slash_low" if foe.guard_zone == "high" else "slash_high"
 	# A cursor fighter holding the blade out is fishing for a passive block: kick it or cut around it!
 	var foe_blade_held := foe.is_player and foe.cursor_aim_enabled and foe.current_action == "" and foe.can_wield() and foe.get_blade_tip_speed() < 260.0
 	if foe_blade_held and randf() < read * 0.82:
-		if me.can_kick() and dist < 182.0 and randf() < 0.45:
+		var kick_p2 := 0.62 if style == "bully" else 0.45
+		if me.can_kick() and dist < 182.0 and randf() < kick_p2:
 			return "kick"
 		return "slash_low" if _foe_blade_line(foe) == "high" else ("thrust" if dist > 195.0 else "slash_high")
+	# Landsknecht "pressure" style alternates high/low lines so it rarely repeats a slash line!
+	if style == "pressure" and _last_chosen_move in ["slash_high", "slash_low"] and randf() < 0.72:
+		return "slash_low" if _last_chosen_move == "slash_high" else "slash_high"
 	# At longer measure, favour thrusts; up close, mix high/low cuts and kicks.
-	var thrust_w := clampf(0.24 + 0.20 * me.stat("ai_thrust_bias") + (0.22 if dist > 205.0 else 0.0), 0.06, 0.68)
-	var kick_w := 0.14 if (me.can_kick() and dist < 178.0) else 0.0
+	var thrust_w := clampf(0.24 + 0.20 * me.stat("ai_thrust_bias") + (0.22 if dist > 205.0 else 0.0), 0.06, 0.72)
+	var kick_w := (0.24 if style == "bully" else 0.14) if (me.can_kick() and dist < 178.0) else 0.0
 	var slash_w := 1.0 - thrust_w - kick_w
 	var roll := randf()
 	if roll < slash_w * 0.52:
@@ -408,6 +427,7 @@ func _try_attack(me: FighterController, move_name: String) -> bool:
 	if move_name == "":
 		return false
 	if me.start_attack(move_name):
+		_last_chosen_move = move_name
 		_attack_cd = _next_attack_cd(me)
 		return true
 	return false

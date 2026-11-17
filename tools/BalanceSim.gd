@@ -43,8 +43,8 @@ func _run() -> void:
 		rounds = 1
 		await _run_matchup(trace_bot, "brutal")
 	else:
-		print("bot      | AI diff | bot wins | AI wins | draws | avg round s | AI guards/rd | AI blocks/rd | bot hits/rd")
-		for bot in ["waggler", "swinger", "masher", "ai"]:
+		print("bot      | AI diff | bot wins | AI wins | draws | avg round s | AI guards/rd | AI blocks/rd | bot hits/rd | bot severs/rd")
+		for bot in ["splasher", "waggler", "swinger", "masher", "ai"]:
 			for diff in ["normal", "hard", "brutal"]:
 				await _run_matchup(bot, diff)
 
@@ -56,7 +56,7 @@ func _run() -> void:
 
 func _run_matchup(bot: String, diff: String) -> void:
 	arena.settings["difficulty"] = diff
-	arena.settings["cursor_aim"] = bot in ["waggler", "swinger"]
+	arena.settings["cursor_aim"] = bot in ["splasher", "waggler", "swinger"]
 	arena._on_start_requested({"p1": 1, "p2": 1, "mode": "duel"}) # Fechtmeister mirror
 	bot_ai.set_difficulty(diff)
 	var bot_wins := 0
@@ -65,6 +65,7 @@ func _run_matchup(bot: String, diff: String) -> void:
 	var total_time := 0.0
 	var parries := 0
 	var hits := 0
+	var bot_severs := 0
 	arena.debug_blocks.assign([0, 0])
 	for r in range(rounds):
 		arena.wins_p1 = 0
@@ -74,7 +75,7 @@ func _run_matchup(bot: String, diff: String) -> void:
 		var p1: FighterController = arena.p1
 		var p2: FighterController = arena.p2
 		p1.is_player = bot != "ai"
-		p1.aim_override_enabled = bot in ["waggler", "swinger"]
+		p1.aim_override_enabled = bot in ["splasher", "waggler", "swinger"]
 		# Skip the intro.
 		arena.phase_timer = 0.0
 		await process_frame
@@ -98,6 +99,9 @@ func _run_matchup(bot: String, diff: String) -> void:
 			if t > 95.0:
 				break
 		total_time += 90.0 - arena.round_time_left
+		for sv in p2.severed.values():
+			if bool(sv):
+				bot_severs += 1
 		match arena.last_round_winner:
 			1: bot_wins += 1
 			2: ai_wins += 1
@@ -106,7 +110,7 @@ func _run_matchup(bot: String, diff: String) -> void:
 		p1.touch_move = 0.0
 		p1.touch_parry = false
 		p1.is_player = true
-	print("%-8s | %-7s | %8d | %7d | %5d | %11.1f | %12.1f | %12.1f | %11.1f" % [bot, diff, bot_wins, ai_wins, draws, total_time / rounds, float(parries) / rounds, float(arena.debug_blocks[1]) / rounds, float(hits) / rounds])
+	print("%-8s | %-7s | %8d | %7d | %5d | %11.1f | %12.1f | %12.1f | %11.1f | %13.2f" % [bot, diff, bot_wins, ai_wins, draws, total_time / rounds, float(parries) / rounds, float(arena.debug_blocks[1]) / rounds, float(hits) / rounds, float(bot_severs) / rounds])
 
 
 func _drive_bot(bot: String, me: FighterController, foe: FighterController, dt: float) -> void:
@@ -115,6 +119,11 @@ func _drive_bot(bot: String, me: FighterController, foe: FighterController, dt: 
 	match bot:
 		"ai":
 			bot_ai.step(dt, me, foe)
+		"splasher":
+			# Small micro-wiggles (+-26 px) right on top of the opponent's chest/arms.
+			me.touch_move = dir if dist > 165.0 else 0.0
+			var center_s := foe.position + Vector2(-dir * 35.0, -135.0)
+			me.aim_override = center_s + Vector2(0, 26.0 * sin(TAU * 5.0 * t))
 		"waggler":
 			# Walk in to ~165 px and waggle the blade up/down at 4 Hz across the foe.
 			me.touch_move = dir if dist > 175.0 else (-dir if dist < 140.0 else 0.0)

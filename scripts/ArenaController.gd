@@ -580,11 +580,15 @@ func _resolve_combat() -> void:
 	_check_kick(p1, p2)
 	_check_kick(p2, p1)
 
-	# 3. Blade vs body capsules
+	# 3. Blade vs live overhead marionette strings ("Strings & Steel"!)
+	_check_live_string_cut(p1, p2)
+	_check_live_string_cut(p2, p1)
+
+	# 4. Blade vs body capsules
 	_check_blade_vs_body(p1, p2)
 	_check_blade_vs_body(p2, p1)
 
-	# 4. Blade vs dangling marionette ropes
+	# 5. Blade vs dangling marionette ropes
 	_check_debris_rope_cut(p1)
 	_check_debris_rope_cut(p2)
 
@@ -614,8 +618,10 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 		sfx.play_sfx("perfect_parry", 0.06, 2.0)
 		_rumble(0.75, 0.90, 0.22)
 		atk.trigger_hurt(true)
+		atk.apply_blade_rebound(1.25)
 		atk.spend_stamina(20.0)
 		def.stamina = minf(def.max_stamina, def.stamina + 10.0)
+		def.grant_riposte()
 		atk.knockback_vx = -float(atk.facing) * 320.0
 		_spawn_sparks(pt, 36)
 		_on_cut_flash(pt, "PERFECT PARRY!", Color(1.0, 0.88, 0.35))
@@ -635,9 +641,13 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 		return
 
 	atk.hit_registered_serial = atk.attack_serial
+	atk.apply_blade_rebound(0.95)
 	def.spend_stamina(cost)
+	if explicit_guard:
+		def.grant_riposte()
 	if blades_meet:
 		atk.spend_stamina(8.0)
+		def.apply_blade_rebound(0.80)
 	hitstop_timer = 0.065
 	shake_mag = maxf(shake_mag, 12.0)
 	sfx.play_sfx("clang", 0.12)
@@ -690,15 +700,18 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 	var swept := atk.get_swept_blade_segments()
 	var segs := def.get_body_segments()
 	var best_slot := ""
-	var best_dist := 9999.0
+	var best_score := 9999.0
 	var best_pt := Vector2.ZERO
 	for s in segs:
 		var slot: String = s[0]
+		# Exposed sword/off arms sit in front of the torso: prefer them on shallow grazes
+		# instead of letting torso's wider capsule swallow every brush.
+		var outer_bias := 5.0 if slot in ["forearm_r", "arm_r", "forearm_l", "arm_l"] else 0.0
 		for b_seg in swept:
 			var info := _closest_segments(b_seg[0], b_seg[1], s[1], s[2])
-			var d: float = info["dist"] - float(s[3])
-			if d < 0.0 and d < best_dist:
-				best_dist = d
+			var d: float = float(info["dist"]) - float(s[3])
+			if d < 0.0 and (d - outer_bias) < best_score:
+				best_score = d - outer_bias
 				best_slot = slot
 				best_pt = info["pt"]
 
@@ -716,22 +729,32 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 
 	atk.hit_registered_serial = atk.attack_serial
 	var pwr := atk.get_strike_power()
+	var b_guard: Vector2 = blade[0]
+	var b_vec: Vector2 = Vector2(blade[1]) - b_guard
+	var blade_pos_frac := clampf((best_pt - b_guard).dot(b_vec) / maxf(1.0, b_vec.length_squared()), 0.0, 1.0)
 	var swing_dir := Vector2(float(atk.facing), -0.35 if atk.current_action == "slash_low" else 0.25).normalized()
 	if atk.current_action == "" and atk._cursor_last_dir.length() > 0.1:
 		var cx := float(atk.facing) * absf(atk._cursor_last_dir.x) if absf(atk._cursor_last_dir.x) > 0.2 else float(atk.facing)
 		swing_dir = Vector2(cx, atk._cursor_last_dir.y).normalized()
-	var attacker_heavy := pwr >= 0.72
-	var is_thrust := atk.current_action == "thrust"
+	var is_thrust := atk.is_thrust_strike()
+	var attacker_heavy := pwr >= FighterController.HEAVY_POWER_THRESHOLD and blade_pos_frac >= 0.38 and not is_thrust
+	var is_rip := atk._riposte_active_attack
+	atk._riposte_active_attack = false
 	var dmg := (24.0 if is_thrust else 20.0) * atk.stat("damage_mult") * (atk.stat("thrust_mult") if is_thrust else 1.0)
 	if atk.current_action == "":
-		# Free-form cursor cuts have no wind-up to read, so they hit lighter than committed moves.
-		dmg *= 0.8
-	var did_sever := def.apply_blade_damage(best_slot, dmg, best_pt, swing_dir, bool(settings["one_hit_sever"]), attacker_heavy, pwr, atk.stat("limb_damage_mult"))
+		# Free-form cursor cuts have less body-weight behind them than full animated lunges.
+		dmg *= 0.85 if is_thrust else 0.78
+	if is_rip:
+		dmg *= 1.18
+		_on_cut_flash(best_pt, "RIPOSTE!", Color(1.0, 0.88, 0.42))
+	var did_sever := def.apply_blade_damage(best_slot, dmg, best_pt, swing_dir, bool(settings["one_hit_sever"]), attacker_heavy, pwr, atk.stat("limb_damage_mult"), blade_pos_frac, is_thrust, atk.stat("armor_pierce_thrust"))
 	atk.blade_blood = minf(1.0, atk.blade_blood + (0.65 if did_sever else 0.24 * pwr))
 
 	if def.is_armored_slot(best_slot):
 		_spawn_sparks(best_pt, maxi(4, int(10.0 * pwr)))
 		sfx.play_sfx("clang", 0.2, -5.0)
+		if not did_sever and not is_thrust:
+			atk.apply_blade_rebound(0.60)
 
 	if did_sever or pwr >= 0.68:
 		hitstop_timer = 0.105 if did_sever else 0.042
@@ -752,6 +775,32 @@ func _is_covered_by_parry(atk: FighterController, def: FighterController, slot: 
 	if def.guard_zone == "low":
 		return is_low_strike or (slot == "torso" and hit_pt.y > def.position.y - 68.0)
 	return not is_low_strike
+
+
+func _check_live_string_cut(atk: FighterController, def: FighterController) -> void:
+	if not atk.is_blade_active() or def.is_dead or atk.is_thrust_strike():
+		return
+	if atk.hit_registered_serial == atk.attack_serial:
+		return
+	if atk.get_strike_power() < 0.52:
+		return
+	# High parry protects the overhead strings!
+	if def.parrying and def.can_wield() and def.guard_zone == "high":
+		return
+	var swept := atk.get_swept_blade_segments()
+	var strings := def.get_live_string_segments()
+	for s_entry in strings:
+		var skey: String = s_entry[0]
+		for b_seg in swept:
+			# Only outer half of blade slicing high above the puppet's shoulders snaps strings.
+			var mid_tip := Vector2(b_seg[0]).lerp(Vector2(b_seg[1]), 0.35)
+			var info := _closest_segments(mid_tip, b_seg[1], s_entry[1], s_entry[2])
+			if float(info["dist"]) < 12.0:
+				if def.cut_live_string(skey, info["pt"]):
+					atk.hit_registered_serial = atk.attack_serial
+					_spawn_sparks(info["pt"], 10)
+					hitstop_timer = 0.04
+					return
 
 
 func _check_debris_rope_cut(atk: FighterController) -> void:
@@ -1191,6 +1240,8 @@ func _refresh_hud() -> void:
 	else:
 		center = "%s  ROUND %d  %s" % [_pips(wins_p1), round_num, _pips(wins_p2)]
 		timer_text = str(ceili(maxf(0.0, round_time_left)))
+	if phase != Phase.TITLE and bool(settings["one_hit_sever"]):
+		center += "   ·   1-HIT SEVER"
 	ui.update_hud(p1, p2, _format_limbs(p1), _format_limbs(p2), center, timer_text)
 
 

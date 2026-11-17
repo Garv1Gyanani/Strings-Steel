@@ -2,8 +2,8 @@ class_name FighterStats
 extends RefCounted
 
 ## Per-fighter gameplay tuning. Each roster entry differs in more than visuals:
-## health, footwork, attack tempo, damage profile, armour coverage, parry skill
-## and the spacing the AI prefers when piloting that fighter.
+## health, footwork, attack tempo, blade weight/inertia, damage profile, armour
+## coverage, parry skill and the AI archetype when piloting that fighter.
 ##
 ## Keys missing from a fighter entry fall back to DEFAULT.
 
@@ -13,8 +13,10 @@ const DEFAULT := {
 	"max_hp": 100.0,
 	"move_speed": 300.0,
 	"attack_speed": 1.0, # AnimationPlayer playback multiplier for slash/thrust/kick
+	"blade_weight": 1.0, # Cursor IK inertia (>1 = heavier, slower slew; <1 = nimble)
 	"damage_mult": 1.0, # all blade damage
 	"thrust_mult": 1.0, # extra multiplier on thrusts
+	"armor_pierce_thrust": 0.15, # fraction of armour mitigation ignored on point thrusts
 	"limb_damage_mult": 1.0, # how quickly blows chew through limb HP (dismemberment)
 	"stamina_regen": 22.0,
 	"stamina_cost_mult": 1.0,
@@ -26,6 +28,7 @@ const DEFAULT := {
 	"ai_spacing": 195.0,
 	"ai_aggression": 0.55, # 0..1, shortens AI attack cooldowns
 	"ai_thrust_bias": 0.0, # -1..1, shifts AI attack choice toward slashes / thrusts
+	"ai_style": "balanced", # "pressure" | "master" | "executioner" | "bully" | "duelist"
 	# Head sprite part ids (from rig_metadata.json) per facial expression.
 	"heads": {"calm": "p1_head_calm", "yell": "p1_head_yell", "pain": "p1_head_grimace", "bloody": "p1_head_bloody", "dead": "p1_head_dead"},
 }
@@ -33,81 +36,94 @@ const DEFAULT := {
 const TABLE := {
 	"landsknecht": {
 		"display_name": "LANDSKNECHT",
-		"blurb": "Doppelsöldner. Hits hard, recovers fast, wears no armour.",
-		"max_hp": 110.0,
-		"move_speed": 300.0,
-		"damage_mult": 1.15,
-		"limb_damage_mult": 1.1,
+		"blurb": "Doppelsöldner. Relentless high-low combos & fast stamina, no armour.",
+		"max_hp": 112.0,
+		"move_speed": 305.0,
+		"blade_weight": 0.96,
+		"damage_mult": 1.12,
+		"limb_damage_mult": 1.08,
 		"stamina_regen": 26.0,
-		"ai_spacing": 190.0,
-		"ai_aggression": 0.65,
+		"ai_spacing": 188.0,
+		"ai_aggression": 0.68,
+		"ai_style": "pressure",
 	},
 	"fechtmeister": {
 		"display_name": "FECHTMEISTER",
-		"blurb": "Master of defence. Wide perfect-parry window, half plate.",
+		"blurb": "Master of defence. Wide perfect-parry window, steel gauntlets & half plate.",
 		"attack_speed": 1.05,
+		"blade_weight": 0.90,
 		"armor_mult": 0.72,
-		"armored_slots": ["torso", "head", "shin_r", "shin_l"],
+		"armored_slots": ["torso", "head", "shin_r", "shin_l", "forearm_r", "forearm_l"],
 		"perfect_parry_window": 0.34,
-		"ai_spacing": 200.0,
-		"ai_aggression": 0.45,
+		"ai_spacing": 202.0,
+		"ai_aggression": 0.48,
+		"ai_style": "master",
 		"heads": {"calm": "p2_head_calm", "yell": "p2_head_yell", "pain": "p2_head_pain", "bloody": "p2_head_bloody", "dead": "p2_head_dead"},
 	},
 	"plague_executioner": {
 		"display_name": "PLAGUE EXECUTIONER",
-		"blurb": "Slow, brutal chops that cleave limbs. Brigandine coat.",
+		"blurb": "Heavy executioner's blade. Slow wind-up, brutal limb-chopping momentum.",
 		"max_hp": 115.0,
 		"move_speed": 265.0,
 		"attack_speed": 0.86,
-		"damage_mult": 1.3,
-		"thrust_mult": 0.85,
-		"limb_damage_mult": 1.45,
+		"blade_weight": 1.32,
+		"damage_mult": 1.24,
+		"thrust_mult": 0.82,
+		"armor_pierce_thrust": 0.05,
+		"limb_damage_mult": 1.25,
 		"stamina_regen": 19.0,
 		"stamina_cost_mult": 1.15,
-		"armor_mult": 0.8,
-		"armored_slots": ["torso", "head"],
+		"armor_mult": 0.80,
+		"armored_slots": ["torso", "head", "arm_r"],
 		"perfect_parry_window": 0.22,
-		"dash_cooldown": 0.7,
-		"ai_spacing": 180.0,
-		"ai_aggression": 0.6,
-		"ai_thrust_bias": -0.6,
+		"dash_cooldown": 0.70,
+		"ai_spacing": 186.0,
+		"ai_aggression": 0.58,
+		"ai_thrust_bias": -0.65,
+		"ai_style": "executioner",
 		"heads": {"calm": "p3_head_mask", "yell": "p3_head_mask", "pain": "p3_head_bloody", "bloody": "p3_head_bloody", "dead": "p3_head_dead"},
 	},
 	"black_knight": {
 		"display_name": "BLACK KNIGHT",
-		"blurb": "Full plate. Shrugs off blows but tires quickly.",
+		"blurb": "Full plate harness. Shrugs off slashes and bullies guards, tires quickly.",
 		"max_hp": 125.0,
 		"move_speed": 245.0,
-		"attack_speed": 0.9,
-		"damage_mult": 1.1,
+		"attack_speed": 0.90,
+		"blade_weight": 1.22,
+		"damage_mult": 1.10,
+		"limb_damage_mult": 1.05,
 		"stamina_regen": 17.0,
-		"stamina_cost_mult": 1.2,
+		"stamina_cost_mult": 1.20,
 		"armor_mult": 0.58,
-		"armored_slots": ["torso", "head", "shin_r", "shin_l", "thigh_r", "thigh_l"],
+		"armored_slots": ["torso", "head", "arm_r", "forearm_r", "arm_l", "forearm_l", "shin_r", "shin_l", "thigh_r", "thigh_l"],
 		"perfect_parry_window": 0.24,
-		"dash_cooldown": 0.8,
+		"dash_cooldown": 0.80,
 		"dash_speed": 640.0,
-		"ai_spacing": 195.0,
-		"ai_aggression": 0.5,
+		"ai_spacing": 182.0,
+		"ai_aggression": 0.62,
+		"ai_style": "bully",
 		"heads": {"calm": "p4_head_helm", "yell": "p4_head_helm", "pain": "p4_head_bloody", "bloody": "p4_head_bloody", "dead": "p4_head_dead"},
 	},
 	"venetian_bravo": {
 		"display_name": "VENETIAN BRAVO",
-		"blurb": "Rapier duellist. Lightning thrusts and footwork, but fragile.",
+		"blurb": "Rapier duellist. Nimble armour-piercing thrusts and footwork, fragile.",
 		"max_hp": 88.0,
 		"move_speed": 345.0,
-		"attack_speed": 1.2,
-		"damage_mult": 0.9,
+		"attack_speed": 1.20,
+		"blade_weight": 0.72,
+		"damage_mult": 0.88,
 		"thrust_mult": 1.45,
-		"limb_damage_mult": 0.85,
+		"armor_pierce_thrust": 0.45,
+		"limb_damage_mult": 0.70,
 		"stamina_regen": 25.0,
 		"stamina_cost_mult": 0.85,
 		"perfect_parry_window": 0.28,
-		"dash_cooldown": 0.4,
+		"dash_cooldown": 0.40,
 		"dash_speed": 860.0,
-		"ai_spacing": 215.0,
-		"ai_aggression": 0.7,
-		"ai_thrust_bias": 0.7,
+		"ai_spacing": 226.0,
+		"ai_aggression": 0.70,
+		"ai_thrust_bias": 0.75,
+		"ai_style": "duelist",
 		"heads": {"calm": "p5_head_calm", "yell": "p5_head_yell", "pain": "p5_head_yell", "bloody": "p5_head_bloody", "dead": "p5_head_dead"},
 	},
 }
