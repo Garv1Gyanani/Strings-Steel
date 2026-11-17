@@ -23,16 +23,42 @@ signal limb_state_changed(fighter: FighterController)
 @export var gore_enabled: bool = true
 @export var max_hp: float = 100.0
 
+## Gameplay tuning for this fighter (see FighterStats.gd). Loaded in _ready from fighter_id.
+var stats: Dictionary = {}
+## Multiplier on stats.max_hp (Gauntlet waves raise it for the rival).
+var hp_scale: float = 1.0
+## Multiplier on limb HP pools (Gauntlet waves raise it so limbs don't stay paper-thin).
+var limb_hp_scale: float = 1.0
+## When true, player input is ignored (title screen, round intro, round end).
+var input_enabled: bool = true
+## When true, bleeding no longer drains HP (set once a round is decided).
+var combat_frozen: bool = false
+
 var hp: float = 100.0
 var stamina: float = 100.0
 var max_stamina: float = 100.0
+## Current bleed in HP/s. Decays (clots) toward bleed_floor over time.
 var bleed_rate: float = 0.0
+## Permanent bleed from severed limbs that never clots.
+var bleed_floor: float = 0.0
 var is_dead: bool = false
 var has_weapon: bool = true
 var rig_scale: float = 0.68
 
 var current_action: String = ""
+## Animation-time seconds since the current action started (scaled by attack speed).
 var action_elapsed: float = 0.0
+var _action_speed: float = 1.0
+var _stamina_regen_delay: float = 0.0
+var _buffered_move: String = ""
+var _buffer_timer: float = 0.0
+var _lmb_prev: bool = false
+var _pad_aim_frame: int = -1
+var _pad_aim_cache: Vector2 = Vector2.ZERO
+
+const INPUT_BUFFER_TIME := 0.18
+const STAMINA_REGEN_DELAY := 0.35
+const ATTACK_MOVES := ["slash_high", "slash_low", "thrust"]
 var attack_serial: int = 0
 var hit_registered_serial: int = -1
 var parrying: bool = false
@@ -57,6 +83,9 @@ var _cursor_sweep_timer: float = 0.0
 var _cursor_whoosh_cd: float = 0.0
 var _cursor_slash_cd: float = 0.0
 var _cursor_last_dir: Vector2 = Vector2.ZERO
+## Blocks cursor cuts briefly after the IK re-engages (after an animated move or a parry),
+## so the arm snapping back to the cursor is not mistaken for a fast committed swing.
+var _cursor_rearm_timer: float = 0.0
 var _cursor_initialized: bool = false
 var _last_mouse_vp_pos: Vector2 = Vector2.ZERO
 var _prev_tip_local: Vector2 = Vector2.ZERO
@@ -74,7 +103,6 @@ var _ik_torso_lean: float = 0.0
 var touch_move: float = 0.0
 var touch_parry: bool = false
 var touch_low: bool = false
-var _pad_dash_prev: bool = false
 
 # Limb HP & Dismemberment state
 var limb_hp: Dictionary = {}
@@ -129,6 +157,9 @@ var _blade_trail: Array = []
 
 
 func _ready() -> void:
+	GameInput.register()
+	stats = FighterStats.get_stats(fighter_id)
+	move_speed = float(stats["move_speed"])
 	_load_character_assets()
 	reset_fighter()
 	if skeleton != null:
@@ -143,13 +174,22 @@ func _ready() -> void:
 
 
 func reset_fighter() -> void:
+	if stats.is_empty():
+		stats = FighterStats.get_stats(fighter_id)
+	max_hp = float(stats["max_hp"]) * hp_scale
 	hp = max_hp
 	stamina = max_stamina
 	bleed_rate = 0.0
+	bleed_floor = 0.0
+	combat_frozen = false
 	is_dead = false
 	has_weapon = true
 	current_action = ""
 	action_elapsed = 0.0
+	_action_speed = 1.0
+	_stamina_regen_delay = 0.0
+	_buffered_move = ""
+	_buffer_timer = 0.0
 	hit_registered_serial = -1
 	parrying = false
 	parry_hold_time = 99.0
@@ -174,6 +214,8 @@ func reset_fighter() -> void:
 		"thigh_l": 50.0, "shin_l": 38.0,
 		"thigh_r": 50.0, "shin_r": 38.0,
 	}
+	for k in limb_hp.keys():
+		limb_hp[k] = float(limb_hp[k]) * limb_hp_scale
 	severed = {
 		"head": false, "torso": false,
 		"arm_r": false, "forearm_r": false,
@@ -195,6 +237,9 @@ func reset_fighter() -> void:
 		weapon_sprite.visible = true
 	if skeleton != null:
 		skeleton.position = Vector2.ZERO
+	if anim_player != null and anim_player.has_animation("idle"):
+		anim_player.play("idle")
+		anim_player.advance(0.0)
 	_update_head_expression()
 	limb_state_changed.emit(self)
 
@@ -257,40 +302,90 @@ func set_facing(new_facing: int) -> void:
 	_apply_facing()
 
 
-func play_anim(anim_name: String, blend: float = 0.08) -> void:
+func play_anim(anim_name: String, blend: float = 0.08, speed: float = 1.0) -> void:
 	if anim_player == null or not anim_player.has_animation(anim_name):
 		return
 	if anim_player.current_animation != anim_name:
-		anim_player.play(anim_name, blend)
+		anim_player.play(anim_name, blend, speed)
+
+
+func stat(key: String) -> float:
+	return float(stats.get(key, FighterStats.DEFAULT.get(key, 0.0)))
+
+
+func is_armored_slot(slot: String) -> bool:
+	var slots: Array = stats.get("armored_slots", [])
+	return slots.has(slot)
+
+
+## Fraction of normal walking speed left after leg wounds (1.0 = intact).
+func get_mobility() -> float:
+	var m := 1.0
+	for side in ["l", "r"]:
+		if bool(severed.get("thigh_" + side, false)):
+			m *= 0.45
+		elif bool(severed.get("shin_" + side, false)):
+			m *= 0.7
+	return maxf(0.2, m)
+
+
+func get_move_speed() -> float:
+	return move_speed * get_mobility()
+
+
+func can_dash() -> bool:
+	return not bool(severed.get("thigh_l", false)) and not bool(severed.get("thigh_r", false))
+
+
+func can_kick() -> bool:
+	return not bool(severed.get("thigh_r", false)) and not bool(severed.get("shin_r", false))
+
+
+func can_wield() -> bool:
+	return has_weapon and not bool(severed.get("arm_r", false)) and not bool(severed.get("forearm_r", false))
+
+
+## Losing the off-hand means one-handed blocking: guards cost more stamina.
+func get_guard_cost_mult() -> float:
+	var off_hand_lost: bool = bool(severed.get("arm_l", false)) or bool(severed.get("forearm_l", false))
+	return 1.5 if off_hand_lost else 1.0
+
+
+func spend_stamina(amount: float) -> void:
+	stamina = maxf(0.0, stamina - amount)
+	_stamina_regen_delay = STAMINA_REGEN_DELAY
 
 
 func start_attack(move_name: String) -> bool:
 	if is_dead or current_action != "":
 		return false
-	if (move_name in ["slash_high", "slash_low", "thrust"]) and (not has_weapon or severed.get("arm_r", false) or severed.get("forearm_r", false)):
+	if (move_name in ATTACK_MOVES) and not can_wield():
 		return false
-	var cost := 12.0 if move_name != "kick" else 10.0
+	if move_name == "kick" and not can_kick():
+		return false
+	var cost := (12.0 if move_name != "kick" else 10.0) * stat("stamina_cost_mult")
 	if stamina < cost:
 		return false
 
-	stamina = maxf(0.0, stamina - cost)
+	spend_stamina(cost)
 	parrying = false
 	current_action = move_name
 	action_elapsed = 0.0
+	_action_speed = stat("attack_speed")
 	attack_serial += 1
-	play_anim(move_name, 0.05)
+	play_anim(move_name, 0.05, _action_speed)
 	request_sfx.emit("whoosh", 0.14)
 	_update_head_expression()
 	return true
 
 
 func start_dash(dir_sign: float) -> void:
-	if is_dead or dash_cooldown > 0.0 or stamina < 15.0:
+	if is_dead or dash_cooldown > 0.0 or stamina < 15.0 or not can_dash():
 		return
-	stamina -= 15.0
+	spend_stamina(15.0)
 	dash_dir = 1.0 if dir_sign >= 0.0 else -1.0
 	dash_timer = 0.14
-	dash_cooldown = 0.55
+	dash_cooldown = stat("dash_cooldown")
 	request_sfx.emit("whoosh", 0.2)
 
 
@@ -300,6 +395,8 @@ func trigger_hurt(heavy: bool = false) -> void:
 	parrying = false
 	current_action = "parry_recoil" if heavy else "hurt"
 	action_elapsed = 0.0
+	_action_speed = 1.0
+	_buffered_move = ""
 	play_anim(current_action, 0.04)
 	_update_head_expression()
 
@@ -310,6 +407,7 @@ func kill_fighter() -> void:
 	is_dead = true
 	parrying = false
 	current_action = "death"
+	_action_speed = 1.0
 	# Snap 1-2 strings asymmetrically so the fallen marionette collapses naturally
 	severed_strings["arm_l"] = true
 	if randf() < 0.6:
@@ -333,11 +431,21 @@ func _on_animation_finished(anim_name: StringName) -> void:
 
 func _process(delta: float) -> void:
 	dash_cooldown = maxf(0.0, dash_cooldown - delta)
-	stamina = minf(max_stamina, stamina + (22.0 if not parrying else 8.0) * delta)
+	_stamina_regen_delay = maxf(0.0, _stamina_regen_delay - delta)
+	if _stamina_regen_delay <= 0.0:
+		var regen := stat("stamina_regen")
+		if parrying:
+			regen *= 0.36
+		elif current_action != "" or _cursor_sweep_timer > 0.0:
+			regen *= 0.35
+		stamina = minf(max_stamina, stamina + regen * delta)
 
-	# Arterial blood bleed over time
+	# Bleeding: fresh wounds clot exponentially toward the permanent stump bleed.
+	if bleed_rate > bleed_floor:
+		bleed_rate = bleed_floor + (bleed_rate - bleed_floor) * exp(-0.35 * delta)
 	if bleed_rate > 0.0 and not is_dead:
-		hp = maxf(0.0, hp - bleed_rate * delta)
+		if not combat_frozen:
+			hp = maxf(0.0, hp - bleed_rate * delta)
 		bleed_emit_timer -= delta
 		if gore_enabled and bleed_emit_timer <= 0.0:
 			bleed_emit_timer = randf_range(0.06, 0.14)
@@ -346,6 +454,8 @@ func _process(delta: float) -> void:
 				if m != null and is_instance_valid(m):
 					request_blood_spray.emit(m.global_position, Vector2(randf_range(-90, 90), randf_range(-120, -20)), 2, false)
 		if hp <= 0.0:
+			if head_sprite != null:
+				request_cut_flash.emit(head_sprite.global_position, "BLED OUT", Color(0.85, 0.2, 0.22))
 			kill_fighter()
 
 	if is_dead and gore_enabled and wounds.size() > 0:
@@ -368,7 +478,7 @@ func _process(delta: float) -> void:
 	# Knockback & Dash Physics
 	if dash_timer > 0.0:
 		dash_timer -= delta
-		position.x = clampf(position.x + dash_dir * 760.0 * delta, 120.0, 1160.0)
+		position.x = clampf(position.x + dash_dir * stat("dash_speed") * get_mobility() * delta, 120.0, 1160.0)
 	if absf(knockback_vx) > 2.0:
 		position.x = clampf(position.x + knockback_vx * delta, 120.0, 1160.0)
 		knockback_vx *= maxf(0.0, 1.0 - 9.0 * delta)
@@ -386,23 +496,30 @@ func _process(delta: float) -> void:
 		skeleton.position.y = extra_pelvis_drop
 
 	if current_action != "":
-		action_elapsed += delta
+		action_elapsed += delta * _action_speed
 
 	_cursor_sweep_timer = maxf(0.0, _cursor_sweep_timer - delta)
 	_cursor_whoosh_cd = maxf(0.0, _cursor_whoosh_cd - delta)
 	_cursor_slash_cd = maxf(0.0, _cursor_slash_cd - delta)
+	_cursor_rearm_timer = maxf(0.0, _cursor_rearm_timer - delta)
+	_buffer_timer = maxf(0.0, _buffer_timer - delta)
 
-	if not is_dead and is_player:
+	if not is_dead and is_player and input_enabled:
 		_process_player_input(delta)
+	elif is_player and not is_dead and not input_enabled and current_action == "":
+		parrying = false
+		play_anim("idle", 0.1)
 
 	# Advance AnimationPlayer BEFORE procedural IK so animations never overwrite cursor/pommel IK!
 	if anim_player != null:
 		anim_player.advance(delta)
 
 	if not is_dead and is_player:
-		if cursor_aim_enabled and has_weapon and not bool(severed.get("arm_r", false)) and not bool(severed.get("forearm_r", false)) and current_action == "":
+		if cursor_aim_enabled and input_enabled and can_wield() and current_action == "":
 			_solve_sword_arm_to_cursor(delta)
 		elif bone_ua_r != null and bone_fa_r != null and bone_weapon != null:
+			_cursor_rearm_timer = 0.22
+			_cursor_sweep_timer = 0.0
 			_ik_ua_r = bone_ua_r.rotation
 			_ik_fa_r = bone_fa_r.rotation
 			_ik_wpn_r = bone_weapon.rotation
@@ -429,105 +546,88 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func _read_gamepad() -> Dictionary:
-	var res := {
-		"move": 0.0, "low": false, "parry": false,
-		"slash": false, "thrust": false, "kick": false, "dash": false,
-		"rx": 0.0, "ry": 0.0,
-	}
-	var pads := Input.get_connected_joypads()
-	for pid in pads:
-		var lx := Input.get_joy_axis(pid, JOY_AXIS_LEFT_X)
-		if absf(lx) > 0.22:
-			res["move"] = clampf(float(res["move"]) + lx, -1.0, 1.0)
-		if Input.is_joy_button_pressed(pid, JOY_BUTTON_DPAD_RIGHT):
-			res["move"] = 1.0
-		if Input.is_joy_button_pressed(pid, JOY_BUTTON_DPAD_LEFT):
-			res["move"] = -1.0
-
-		var ly := Input.get_joy_axis(pid, JOY_AXIS_LEFT_Y)
-		var ry := Input.get_joy_axis(pid, JOY_AXIS_RIGHT_Y)
+## Right-stick aim (calibrated against the stick's resting offset). Cached once per frame.
+func _read_pad_aim() -> Vector2:
+	var frame := Engine.get_process_frames()
+	if frame == _pad_aim_frame:
+		return _pad_aim_cache
+	_pad_aim_frame = frame
+	var res := Vector2.ZERO
+	for pid in Input.get_connected_joypads():
 		var rx := Input.get_joy_axis(pid, JOY_AXIS_RIGHT_X)
+		var ry := Input.get_joy_axis(pid, JOY_AXIS_RIGHT_Y)
 		if not _pad_rest_calibrated:
 			_pad_rest_calibrated = true
 			_pad_rest_rx = rx
 			_pad_rest_ry = ry
 		if absf(rx - _pad_rest_rx) > 0.28:
-			res["rx"] = clampf(rx - _pad_rest_rx, -1.0, 1.0)
+			res.x = clampf(rx - _pad_rest_rx, -1.0, 1.0)
 		if absf(ry - _pad_rest_ry) > 0.28:
-			res["ry"] = clampf(ry - _pad_rest_ry, -1.0, 1.0)
-		if ly > 0.45 or float(res["ry"]) > 0.45 or Input.is_joy_button_pressed(pid, JOY_BUTTON_DPAD_DOWN):
-			res["low"] = true
-
-		if Input.is_joy_button_pressed(pid, JOY_BUTTON_B) or Input.is_joy_button_pressed(pid, JOY_BUTTON_LEFT_SHOULDER) or Input.get_joy_axis(pid, JOY_AXIS_TRIGGER_LEFT) > 0.35:
-			res["parry"] = true
-		if Input.is_joy_button_pressed(pid, JOY_BUTTON_X) or Input.is_joy_button_pressed(pid, JOY_BUTTON_RIGHT_SHOULDER):
-			res["slash"] = true
-		if Input.is_joy_button_pressed(pid, JOY_BUTTON_Y):
-			res["thrust"] = true
-		if Input.is_joy_button_pressed(pid, JOY_BUTTON_A):
-			res["kick"] = true
-		if Input.get_joy_axis(pid, JOY_AXIS_TRIGGER_RIGHT) > 0.40 or Input.is_joy_button_pressed(pid, JOY_BUTTON_DPAD_UP) or Input.is_joy_button_pressed(pid, JOY_BUTTON_LEFT_STICK):
-			res["dash"] = true
+			res.y = clampf(ry - _pad_rest_ry, -1.0, 1.0)
+	_pad_aim_cache = res
 	return res
 
 
+func _mouse_in_stage() -> bool:
+	return get_viewport().get_mouse_position().y >= 106.0
+
+
 func _process_player_input(delta: float) -> void:
-	var pad := _read_gamepad()
-	var low_held := touch_low or Input.is_key_pressed(KEY_S) or bool(pad["low"])
+	var pad_aim := _read_pad_aim()
+	var low_held := touch_low or Input.is_action_pressed("guard_low") or pad_aim.y > 0.45
 	if cursor_aim_enabled:
 		var m_y := get_global_mouse_position().y
 		if m_y > position.y - 60.0 and m_y >= 110.0:
 			low_held = true
 	guard_zone = "low" if low_held else "high"
 
-	var mouse_in_stage := get_viewport().get_mouse_position().y >= 106.0
-	var parry_held := touch_parry or Input.is_key_pressed(KEY_SPACE) or (mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)) or bool(pad["parry"])
-	if parry_held and current_action == "" and has_weapon and not severed.get("arm_r", false):
+	var mouse_in_stage := _mouse_in_stage()
+	var lmb := mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+	var lmb_edge := lmb and not _lmb_prev
+	_lmb_prev = lmb
+
+	# Queue one-shot moves on the press edge; the buffer lets a press made slightly
+	# before the current action ends still come out, instead of being swallowed.
+	if Input.is_action_just_pressed("slash") or (not cursor_aim_enabled and lmb_edge):
+		_buffered_move = "slash"
+		_buffer_timer = INPUT_BUFFER_TIME
+	elif Input.is_action_just_pressed("thrust"):
+		_buffered_move = "thrust"
+		_buffer_timer = INPUT_BUFFER_TIME
+	elif Input.is_action_just_pressed("kick"):
+		_buffered_move = "kick"
+		_buffer_timer = INPUT_BUFFER_TIME
+
+	var parry_held := touch_parry or Input.is_action_pressed("parry") or (mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT))
+	if parry_held and current_action == "" and can_wield():
 		if not parrying:
 			parry_hold_time = 0.0
 		else:
 			parry_hold_time += delta
 		parrying = true
 		play_anim("parry_low" if guard_zone == "low" else "parry", 0.06)
-		_pad_dash_prev = bool(pad["dash"])
 		return
 	else:
 		parrying = false
 		parry_hold_time = 99.0
 
-	var pad_dash_now := bool(pad["dash"])
-	var pad_dash_edge := pad_dash_now and not _pad_dash_prev
-	_pad_dash_prev = pad_dash_now
+	var mv := clampf(touch_move + Input.get_axis("move_left", "move_right"), -1.0, 1.0)
 
-	if Input.is_action_just_pressed("ui_up") or Input.is_key_pressed(KEY_SHIFT) or pad_dash_edge:
-		var d_dir := touch_move + float(pad["move"])
-		if absf(d_dir) < 0.2:
-			if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
-				d_dir = 1.0
-			elif Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
-				d_dir = -1.0
-			else:
-				d_dir = float(facing)
-		start_dash(d_dir)
+	if Input.is_action_just_pressed("dash"):
+		start_dash(mv if absf(mv) >= 0.2 else float(facing))
 
-	if Input.is_key_pressed(KEY_J) or bool(pad["slash"]) or (not cursor_aim_enabled and mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)):
-		start_attack("slash_low" if low_held else "slash_high")
-	elif Input.is_key_pressed(KEY_K) or bool(pad["thrust"]):
-		start_attack("thrust")
-	elif Input.is_key_pressed(KEY_E) or bool(pad["kick"]):
-		start_attack("kick")
+	if _buffer_timer > 0.0 and _buffered_move != "" and current_action == "":
+		var move_name := _buffered_move
+		if move_name == "slash":
+			move_name = "slash_low" if low_held else "slash_high"
+		if start_attack(move_name):
+			_buffered_move = ""
+			_buffer_timer = 0.0
 
 	if current_action == "":
-		var mv := clampf(touch_move + float(pad["move"]), -1.0, 1.0)
-		if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
-			mv += 1.0
-		if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
-			mv -= 1.0
-		mv = clampf(mv, -1.0, 1.0)
 		bar_tilt = lerpf(bar_tilt, mv * 0.08, 8.0 * delta)
 		if absf(mv) > 0.12:
-			position.x = clampf(position.x + mv * move_speed * delta, 120.0, 1160.0)
+			position.x = clampf(position.x + mv * get_move_speed() * delta, 120.0, 1160.0)
 			play_anim("walk", 0.08)
 		else:
 			play_anim("idle", 0.1)
@@ -546,11 +646,19 @@ func is_blade_active() -> bool:
 
 
 func get_strike_power() -> float:
+	var pwr := 1.0
 	match current_action:
 		"slash_high", "slash_low", "thrust":
-			return 1.0
+			pwr = 1.0
 		_:
-			return clampf((_blade_tip_speed - 280.0) / 620.0, 0.38, 1.0)
+			pwr = clampf((_blade_tip_speed - 280.0) / 620.0, 0.38, 1.0)
+	# Without the off-hand on the pommel, cuts lose leverage.
+	if bool(severed.get("arm_l", false)) or bool(severed.get("forearm_l", false)):
+		pwr *= 0.8
+	# Exhausted fighters swing weakly.
+	if stamina < 10.0:
+		pwr *= 0.8
+	return pwr
 
 
 func _solve_sword_arm_to_cursor(delta: float) -> void:
@@ -558,9 +666,9 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 		return
 
 	var dt_safe := maxf(0.005, delta)
-	var pad := _read_gamepad()
-	var rx := float(pad["rx"])
-	var ry := float(pad["ry"])
+	var pad_aim := _read_pad_aim()
+	var rx := pad_aim.x
+	var ry := pad_aim.y
 	var vp_mouse := get_viewport().get_mouse_position()
 	if vp_mouse.distance_to(_last_mouse_vp_pos) > 1.5:
 		_last_mouse_vp_pos = vp_mouse
@@ -681,25 +789,46 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 		_blade_tip_speed = maxf(inst_tip_spd, lerpf(_blade_tip_speed, inst_tip_spd, minf(1.0, 14.0 * delta)))
 
 		# Activate cursor slash when slinging the blade fast (>= 340 px/s in fighter-local space);
-		# holding the sword still or slowly aiming (< 340 px/s) does NOT trigger hits!
-		if inst_tip_spd >= 340.0 and not parrying:
+		# holding the sword still or slowly aiming (< 340 px/s) does NOT trigger hits.
+		# Every *new* committed cut costs stamina scaled by its power, so waggling the
+		# mouse is no longer a free infinite attack: an exhausted fighter can't commit cuts.
+		if parrying:
+			_cursor_rearm_timer = maxf(_cursor_rearm_timer, 0.18)
+		if inst_tip_spd >= 340.0 and not parrying and _cursor_rearm_timer <= 0.0:
 			var tip_dir := tip_delta.normalized()
-			if _cursor_sweep_timer <= 0.0 or (_cursor_slash_cd <= 0.0 and _cursor_last_dir.dot(tip_dir) < 0.25):
-				attack_serial += 1
-				_cursor_slash_cd = 0.18
-				_cursor_last_dir = tip_dir
-				if _cursor_whoosh_cd <= 0.0 and inst_tip_spd >= 480.0:
-					_cursor_whoosh_cd = 0.22
-					request_sfx.emit("whoosh", 0.16)
-			_cursor_sweep_timer = 0.14
+			var wants_new_cut := _cursor_sweep_timer <= 0.0 or (_cursor_slash_cd <= 0.0 and _cursor_last_dir.dot(tip_dir) < 0.25)
+			if wants_new_cut:
+				var est_pwr := clampf((inst_tip_spd - 280.0) / 620.0, 0.38, 1.0)
+				var cost := (4.0 + 8.0 * est_pwr) * stat("stamina_cost_mult")
+				if stamina >= cost:
+					spend_stamina(cost)
+					attack_serial += 1
+					_cursor_slash_cd = 0.18
+					_cursor_last_dir = tip_dir
+					_cursor_sweep_timer = 0.14
+					if _cursor_whoosh_cd <= 0.0 and inst_tip_spd >= 480.0:
+						_cursor_whoosh_cd = 0.22
+						request_sfx.emit("whoosh", 0.16)
+			elif _cursor_sweep_timer > 0.0:
+				_cursor_sweep_timer = 0.14
 
 
 func is_kick_active() -> bool:
-	return not is_dead and current_action == "kick" and action_elapsed >= 0.10 and action_elapsed <= 0.28 and not severed.get("thigh_r", false) and not severed.get("shin_r", false)
+	return not is_dead and current_action == "kick" and action_elapsed >= 0.10 and action_elapsed <= 0.28 and can_kick()
 
 
 func is_perfect_parry() -> bool:
-	return parrying and parry_hold_time <= 0.25
+	return parrying and parry_hold_time <= stat("perfect_parry_window")
+
+
+## True while this fighter's attack is visibly coming (windup or active frames).
+## Used by the AI's perception and by the HUD.
+func is_attack_threat() -> bool:
+	if is_dead:
+		return false
+	if current_action in ATTACK_MOVES and action_elapsed <= 0.36:
+		return true
+	return is_blade_active()
 
 
 func get_blade_segment() -> Array:
@@ -737,18 +866,16 @@ func get_body_segments() -> Array:
 	return segs
 
 
-func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Vector2, one_hit_sever: bool, attacker_heavy: bool = false, impact_power: float = 1.0) -> bool:
+func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Vector2, one_hit_sever: bool, attacker_heavy: bool = false, impact_power: float = 1.0, attacker_limb_mult: float = 1.0) -> bool:
 	if is_dead:
 		return false
 
-	# Armored fighters mitigate glancing hits on plate/brigandine armor until staggered or chipped
-	var is_plate_fighter: bool = fighter_id in ["fechtmeister", "black_knight"]
-	var is_brigandine_fighter: bool = fighter_id == "plague_executioner"
-	var armored_slot: bool = (is_plate_fighter and (slot in ["torso", "head", "shin_r", "shin_l"])) or (is_brigandine_fighter and (slot in ["torso", "head"]))
-	var armor_mult: float = 0.72 if (armored_slot and current_action != "parry_recoil") else 1.0
+	# Armoured slots (per FighterStats) mitigate hits unless the wearer is staggered by a parry.
+	var armored_slot: bool = is_armored_slot(slot)
+	var armor_mult: float = stat("armor_mult") if (armored_slot and current_action != "parry_recoil") else 1.0
 	var pwr: float = clampf(impact_power, 0.20, 1.0)
 	var final_dmg: float = dmg * armor_mult * pwr
-	var limb_dmg: float = dmg * (1.25 if attacker_heavy else 0.92) * armor_mult * pwr
+	var limb_dmg: float = dmg * (1.25 if attacker_heavy else 0.92) * armor_mult * pwr * attacker_limb_mult
 
 	hp = maxf(0.0, hp - final_dmg)
 	bleed_rate += final_dmg * 0.045
@@ -765,7 +892,7 @@ func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Ve
 	request_blood_spray.emit(hit_pt, swing_dir * (320.0 * pwr) + Vector2(0, -130.0 * pwr), drop_cnt, false)
 
 	# Earned dismemberment: only full-power committed strikes (pwr >= 0.70) or fatal blows can chop limbs!
-	var execution_window: bool = (current_action == "parry_recoil") or (current_action == "hurt" and hp < 48.0)
+	var execution_window: bool = (current_action == "parry_recoil") or (current_action == "hurt" and hp < 0.48 * max_hp)
 	var limb_depleted: bool = float(limb_hp.get(slot, 1.0)) <= 0.0
 	var lethal_finish: bool = hp <= 0.0
 	var can_chop_power: bool = pwr >= 0.70 or lethal_finish
@@ -811,7 +938,9 @@ func sever_limb(slot: String, hit_pt: Vector2, swing_dir: Vector2) -> void:
 	if severed.get(slot, false):
 		return
 	severed[slot] = true
-	bleed_rate += 7.5
+	# Fresh arterial gush that clots over ~10 s, plus a small permanent stump bleed.
+	bleed_rate += 5.0
+	bleed_floor += 0.9
 	request_sfx.emit("sever", 0.1)
 	request_blood_spray.emit(hit_pt, swing_dir * 480.0 + Vector2(0, -240), 48, true)
 	request_sever_fx.emit(hit_pt, swing_dir)
@@ -844,7 +973,6 @@ func sever_limb(slot: String, hit_pt: Vector2, swing_dir: Vector2) -> void:
 				wounds.append({"node": bone_ua_r, "radius": 10.0})
 				_attach_gore_stump_sprite(bone_torso, bone_ua_r.position, deg_to_rad(110.0), 0.44)
 			request_cut_flash.emit(hit_pt, "SWORD ARM SEVERED!", Color(1.0, 0.42, 0.22))
-			hp = minf(hp, 26.0)
 			trigger_hurt(true)
 		"forearm_r":
 			has_weapon = false
@@ -1067,7 +1195,7 @@ func _update_head_expression() -> void:
 		expr = "pain"
 	elif current_action in ["slash_high", "slash_low", "thrust", "kick"]:
 		expr = "yell"
-	elif hp < 55.0:
+	elif hp < 0.55 * max_hp:
 		expr = "bloody"
 	if _head_textures.has(expr):
 		head_sprite.texture = _head_textures[expr]
