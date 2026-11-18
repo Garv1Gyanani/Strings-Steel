@@ -1011,6 +1011,8 @@ func _process_player_input(delta: float) -> void:
 		_buffered_move = "kick"
 		_buffer_timer = INPUT_BUFFER_TIME
 
+	var mv := clampf(touch_move + Input.get_axis("move_left", "move_right"), -1.0, 1.0)
+
 	var parry_held := touch_parry or Input.is_action_pressed("parry") or (mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT))
 	if parry_held and can_feint_to_parry():
 		abort_windup()
@@ -1019,13 +1021,20 @@ func _process_player_input(delta: float) -> void:
 		else:
 			parry_hold_time += delta
 		parrying = true
+		if Input.is_action_just_pressed("dash"):
+			parrying = false
+			parry_hold_time = 99.0
+			start_dash(mv if absf(mv) >= 0.2 else float(facing))
+			return
+		# Allow cautious footwork while holding guard so thumbs never feel glued to the floor!
+		if absf(mv) > 0.12:
+			bar_tilt = lerpf(bar_tilt, mv * 0.06, 8.0 * delta)
+			position.x = clampf(position.x + mv * get_move_speed() * 0.62 * delta, 120.0, 1160.0)
 		play_anim("parry_low" if guard_zone == "low" else "parry", 0.06)
 		return
 	else:
 		parrying = false
 		parry_hold_time = 99.0
-
-	var mv := clampf(touch_move + Input.get_axis("move_left", "move_right"), -1.0, 1.0)
 
 	if Input.is_action_just_pressed("dash"):
 		start_dash(mv if absf(mv) >= 0.2 else float(facing))
@@ -1129,9 +1138,13 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 	_prev_cursor_aim_world = raw_tgt
 	var weight := effective_blade_weight()
 	var rip_mult := 1.22 if riposte_timer > 0.0 else 1.0
-	var max_aim_step := (1950.0 / weight) * rip_mult * delta
-	var aim_delta := (raw_tgt - cursor_aim_world) * minf(1.0, 25.0 * delta)
-	cursor_aim_world += aim_delta.limit_length(max_aim_step)
+	if touch_mode_active:
+		# Single-stage physical slew: eliminate double-damping lag on 60-90ms phone thumb swipes!
+		cursor_aim_world = raw_tgt
+	else:
+		var max_aim_step := (1950.0 / weight) * rip_mult * delta
+		var aim_delta := (raw_tgt - cursor_aim_world) * minf(1.0, 25.0 * delta)
+		cursor_aim_world += aim_delta.limit_length(max_aim_step)
 
 	var sh_pos := bone_ua_r.position
 	var l1 := bone_fa_r.position.length()
@@ -1208,8 +1221,8 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 	var neutral_blade_ang := chosen_lower - PI * 0.5
 	var wrist_cock := clampf(wrapf(desired_blade_ang - neutral_blade_ang, -PI, PI), deg_to_rad(-48.0), deg_to_rad(84.0))
 
-	var k := minf(1.0, 23.0 * delta)
-	var slew_scale := (rip_mult / weight) * delta
+	var k := minf(1.0, (44.0 if touch_mode_active else 23.0) * delta)
+	var slew_scale := (rip_mult / weight) * (2.15 if touch_mode_active else 1.0) * delta
 	_ik_ua_r = _step_angle_capped(_ik_ua_r, ua_target_rot, k, 12.6 * slew_scale)
 	_ik_fa_r = _step_angle_capped(_ik_fa_r, fa_target_rot, k, 15.2 * slew_scale)
 	_ik_wpn_r = _step_angle_capped(_ik_wpn_r, wrist_cock, k, 17.6 * slew_scale)
@@ -1231,7 +1244,8 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 		_blade_tip_speed = lerpf(_blade_tip_speed, inst_tip_spd, minf(1.0, spd_blend * delta))
 
 		# Accumulate continuous swing arc so tiny wrist splashes cannot masquerade as cleaves.
-		if inst_tip_spd >= 300.0 and not parrying and _cursor_rearm_timer <= 0.0:
+		var arc_spd_gate := 240.0 if touch_mode_active else 300.0
+		if inst_tip_spd >= arc_spd_gate and not parrying and _cursor_rearm_timer <= 0.0:
 			var step_dir := tip_delta.normalized()
 			if _swing_arc_dir.length_squared() < 0.1 or _swing_arc_dir.dot(step_dir) >= 0.22:
 				_swing_arc_px = minf(320.0, _swing_arc_px + tip_delta.length())
@@ -1240,13 +1254,16 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 				_swing_arc_px = tip_delta.length()
 				_swing_arc_dir = step_dir
 		else:
-			_swing_arc_px = maxf(0.0, _swing_arc_px - 540.0 * delta)
+			_swing_arc_px = maxf(0.0, _swing_arc_px - (420.0 if touch_mode_active else 540.0) * delta)
 			if _swing_arc_px <= 1.0:
 				_swing_arc_dir = Vector2.ZERO
 
 		if parrying:
-			_cursor_rearm_timer = maxf(_cursor_rearm_timer, 0.18)
-		if is_player and inst_tip_spd >= 340.0 and not parrying and _cursor_rearm_timer <= 0.0:
+			_cursor_rearm_timer = maxf(_cursor_rearm_timer, 0.04 if touch_mode_active else 0.16)
+		var min_cut_spd := 365.0 if touch_mode_active else CURSOR_CUT_SPEED
+		var min_cut_arc := 32.0 if touch_mode_active else CURSOR_CUT_MIN_ARC
+		var pre_gate_spd := 280.0 if touch_mode_active else 340.0
+		if is_player and inst_tip_spd >= pre_gate_spd and not parrying and _cursor_rearm_timer <= 0.0:
 			var tip_dir := tip_delta.normalized()
 			var blade_dir_local := Vector2.RIGHT
 			if blade_guard_marker != null:
@@ -1261,7 +1278,7 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 				_cursor_sweep_timer = 0.0
 			else:
 				var fresh_swing := _cursor_sweep_timer <= 0.0 or _cursor_last_dir.dot(tip_dir) < 0.25
-				if fresh_swing and inst_tip_spd >= CURSOR_CUT_SPEED and _swing_arc_px >= CURSOR_CUT_MIN_ARC and _cursor_slash_cd <= 0.0:
+				if fresh_swing and inst_tip_spd >= min_cut_spd and _swing_arc_px >= min_cut_arc and _cursor_slash_cd <= 0.0:
 					_cursor_strike_mode = "thrust" if (axial > 0.72 and perp < 0.68) else "cut"
 					var is_rip := riposte_timer > 0.0
 					var est_pwr := _cursor_power_now()
@@ -1272,20 +1289,24 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 						if is_rip:
 							riposte_timer = 0.0
 						attack_serial += 1
-						_cursor_slash_cd = CURSOR_CUT_RECOVERY
+						_cursor_slash_cd = 0.30 if touch_mode_active else CURSOR_CUT_RECOVERY
 						_cursor_last_dir = tip_dir
-						_cursor_sweep_timer = 0.15
+						_cursor_sweep_timer = 0.17 if touch_mode_active else 0.15
 						if _cursor_whoosh_cd <= 0.0:
 							_cursor_whoosh_cd = 0.22
 							request_sfx.emit("whoosh", 0.16)
 				elif _cursor_sweep_timer > 0.0 and _cursor_last_dir.dot(tip_dir) >= 0.25:
-					_cursor_sweep_timer = 0.14
+					_cursor_sweep_timer = 0.16 if touch_mode_active else 0.14
 
 
 func _cursor_power_now() -> float:
-	var spd_f := clampf((_blade_tip_speed - 380.0) / 920.0, 0.18, 1.0)
-	var arc_f := clampf((_swing_arc_px - 42.0) / 105.0, 0.18, 1.0)
-	var pwr := clampf(spd_f * (0.28 + 0.72 * arc_f), 0.18, 1.0)
+	var spd_base := 290.0 if touch_mode_active else 380.0
+	var spd_span := 720.0 if touch_mode_active else 920.0
+	var arc_base := 26.0 if touch_mode_active else 42.0
+	var arc_span := 78.0 if touch_mode_active else 105.0
+	var spd_f := clampf((_blade_tip_speed - spd_base) / spd_span, 0.22 if touch_mode_active else 0.18, 1.0)
+	var arc_f := clampf((_swing_arc_px - arc_base) / arc_span, 0.22 if touch_mode_active else 0.18, 1.0)
+	var pwr := clampf(spd_f * (0.28 + 0.72 * arc_f), 0.22 if touch_mode_active else 0.18, 1.0)
 	if _riposte_active_attack or riposte_timer > 0.0:
 		pwr = minf(1.0, pwr * 1.20)
 	return pwr

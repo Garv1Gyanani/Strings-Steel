@@ -29,17 +29,18 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
 
 ## Controls
 
-| Action | Keyboard / Mouse | Gamepad | Touch (Button-Free Wheels) |
+| Action | Keyboard / Mouse | Gamepad | Touch (Button-Free Translucent Wheels) |
 |---|---|---|---|
-| Move | A / D (or ← →) | Left stick / D-pad | Slide left/right on Left Wheel |
-| Aim & cut | Move and fling the mouse | Right stick | Swipe an arc on Right Wheel |
-| Thrust | K (or drive mouse forward) | Y | Push forward on Right Wheel |
-| Kick / Jab | E | A | Quick tap on Right side |
-| Half-Sword stance | Q | Right stick click (R3) | Double-tap Left side |
+| Move | A / D (or ← →) | Left stick / D-pad | Slide left/right on Left Stick (auto-recenters) |
+| Aim & cut | Move and fling the mouse | Right stick | Drag / whip across 360° Right Blade Wheel |
+| Quick slash | J (or LMB in *Keys* mode) | X / RB | Quick tap on Right side (high or low) |
+| Thrust | K (or drive mouse forward) | Y | Drive / flick forward on Right Blade Wheel |
+| Kick | E | A | Quick downward flick & release on Left Stick |
+| Half-Sword stance | Q | Right stick click (R3) | Quick upward flick & release on Left Stick |
 | Hurl weapon | F / Middle mouse | — | Two-finger flick on Right side |
-| Parry | Space / RMB | B / LB / LT | Hold center of Left Wheel |
-| Low guard | S (or aim low) | Left stick down | Pull down slightly on Left Wheel |
-| Dash | Shift / ↑ | RT / D-pad up | Quick horizontal flick on Left Wheel |
+| Parry | Space / RMB | B / LB / LT | Pull Right Wheel into Rear Guard Arc (or hold 2nd finger) |
+| Low guard | S (or aim low) | Left stick down | Pull Rear Guard Arc low (or Left Stick down) |
+| Dash | Shift / ↑ | RT / D-pad up | Quick horizontal flick & release (or 2x tap) on Left Stick |
 | Pause | Esc / P | Start | Top `II MENU` pill |
 | Restart round | R | Back | Pause menu |
 

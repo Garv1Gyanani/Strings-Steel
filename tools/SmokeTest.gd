@@ -450,36 +450,87 @@ func _run() -> void:
 	check(p1().cursor_aim_enabled and p1().touch_mode_active, "touch mode keeps live 2-bone IK blade aiming active")
 	check(is_equal_approx(tc._left_alpha, 0.0) and is_equal_approx(tc._right_alpha, 0.0), "touch wheels are completely invisible (0 opacity) until touched")
 
-	# Left wheel: stationary hold = Parry, drag = Move, flick = Dash, 2x tap = Half-Sword
+	# 1. Left wheel: resting thumb NEVER auto-parries or locks out sword; dynamic floating origin reverses instantly
 	tc._on_finger_down(0, Vector2(180, 500))
 	tc._process(0.10)
-	check(tc._left_alpha > 0.15 and tc._left_alpha <= MobileTouchController.MAX_OPACITY + 0.01 and p1().touch_parry, "touching left zone fades in translucent wheel and holds Parry")
-	tc._on_finger_drag(0, Vector2(236, 500), Vector2(120, 0))
-	check(p1().touch_move > 0.7 and not p1().touch_parry, "sliding on left wheel walks smoothly and releases stationary parry")
-	tc._on_finger_drag(0, Vector2(265, 500), Vector2(920, 0))
-	check(p1().dash_timer > 0.0, "quick horizontal flick on left wheel triggers Dash")
-	tc._on_finger_up(0, Vector2(265, 500))
+	check(tc._left_alpha > 0.15 and not p1().touch_parry and is_equal_approx(p1().touch_move, 0.0), "resting left thumb shows translucent stick without accidentally parrying")
+	tc._on_finger_drag(0, Vector2(330, 500), Vector2(1100, 0)) # slide 150 px fast (> LEFT_RADIUS) while still holding!
+	check(p1().touch_move > 0.9 and is_equal_approx(p1().dash_timer, 0.0), "fast thumb slide while holding walks at full speed without accidental stamina dash")
+	tc._on_finger_drag(0, Vector2(230, 500), Vector2(-400, 0)) # reverse 100 px left -> floating origin followed so we immediately walk left!
+	check(p1().touch_move < -0.1, "floating-origin left stick reverses walking direction immediately without dead travel")
+	tc._on_finger_up(0, Vector2(230, 500))
+
+	# 2. Intentional Left Flick & Release gestures: Horizontal = Dash, Up = Half-Sword, Down = Kick
+	tc._on_finger_down(0, Vector2(180, 500))
+	tc._process(0.06)
+	tc._on_finger_drag(0, Vector2(235, 500), Vector2(900, 0))
+	tc._on_finger_up(0, Vector2(235, 500))
+	check(p1().dash_timer > 0.0, "quick horizontal flick-and-release on left stick triggers Dash")
 	p1().dash_timer = 0.0
 	p1().dash_cooldown = 0.0
 
-	# Double-tap left toggles Half-Sword
-	tc._last_left_tap_ms = Time.get_ticks_msec()
 	tc._on_finger_down(0, Vector2(180, 500))
-	tc._on_finger_up(0, Vector2(180, 500))
-	check(p1().half_swording, "double-tapping left zone toggles Half-Sword stance without buttons")
+	tc._process(0.06)
+	tc._on_finger_drag(0, Vector2(180, 445), Vector2(0, -800))
+	tc._on_finger_up(0, Vector2(180, 445))
+	check(p1().half_swording, "upward flick-and-release on left stick toggles Half-Sword stance")
 	p1().set_half_sword(false, false)
 
-	# Right wheel: drag aims 2-bone IK blade, quick tap triggers Kick
+	tc._on_finger_down(0, Vector2(180, 500))
+	tc._process(0.06)
+	tc._on_finger_drag(0, Vector2(180, 555), Vector2(0, 800))
+	tc._on_finger_up(0, Vector2(180, 555))
+	check(p1().current_action == "kick", "downward flick-and-release on left stick triggers Push Kick")
+	p1().current_action = ""
+
+	# 3. Right 360° Blade Wheel: no touchdown snap, Rear Guard Arc parries + guard-walks + instant Riposte, thumb arc cuts enemy!
+	p1().position.x = 460.0
+	p2().position.x = 635.0
+	p1().set_facing(1)
+	p2().set_facing(-1)
+	p1().aim_override_enabled = true
+	var pre_touch_aim := Vector2(610.0, 290.0)
+	p1().aim_override = pre_touch_aim
 	tc._on_finger_down(1, Vector2(980, 460))
-	tc._on_finger_drag(1, Vector2(1045, 410), Vector2(450, -320))
-	tc._process(0.08)
-	check(tc._right_alpha > 0.15 and p1().aim_override_enabled, "dragging right side fades in translucent blade wheel and drives IK aim")
-	tc._on_finger_up(1, Vector2(1045, 410))
-	tc._on_finger_down(2, Vector2(980, 460))
+	tc._process(0.04)
+	check(p1().aim_override.distance_to(pre_touch_aim) < 1.0, "touching right blade wheel inside deadzone never teleports sword back to mid-chest")
+
+	# Pull into Rear Guard Arc (away from p2) while walking back with left stick -> Parry + Guard-Walk!
+	tc._on_finger_drag(1, Vector2(932, 452), Vector2(-200, 0))
+	tc._on_finger_down(0, Vector2(180, 500))
+	tc._on_finger_drag(0, Vector2(120, 500), Vector2(-300, 0))
+	var x_pre_gwalk := p1().position.x
+	p1()._process(0.05)
+	check(p1().parrying and p1().position.x < x_pre_gwalk - 2.0, "pulling right wheel into Rear Guard Arc parries while still allowing left-thumb footwork")
+	tc._on_finger_up(0, Vector2(120, 500))
+
+	# Whip right thumb forward out of Rear Guard Arc across p2 -> instant zero-delay live cut that deals real damage!
+	p1().position.x = 465.0
+	p2().position.x = 625.0
+	var hp_pre_swipe := p2().hp
+	var swipe_pts := [
+		Vector2(955, 395),
+		Vector2(995, 415),
+		Vector2(1035, 445),
+		Vector2(1068, 485),
+		Vector2(1090, 520),
+	]
+	for sp in swipe_pts:
+		tc._on_finger_drag(1, sp, Vector2(850, 720))
+		tc._process(0.016)
+		p1()._process(0.016)
+		arena._resolve_combat()
+	tc._on_finger_up(1, Vector2(1090, 520))
+	check(not p1().parrying and p2().hp < hp_pre_swipe, "whipping right thumb forward out of Rear Guard Arc activates live IK blade and cuts the rival")
+
+	# 4. Quick Right Tap -> Intuitive Sword Slash (not an accidental whiffing kick!)
+	p1().current_action = ""
+	p1()._cursor_sweep_timer = 0.0
+	tc._on_finger_down(2, Vector2(980, 420))
 	tc._process(0.05)
-	tc._on_finger_up(2, Vector2(982, 461))
-	check(p1().current_action == "kick", "quick tap on right side triggers Push Kick without buttons")
-	tc._process(0.5)
+	tc._on_finger_up(2, Vector2(982, 421))
+	check(p1().current_action == "slash_high", "quick tap on right side fires an intuitive Sword Slash")
+	tc._process(0.6)
 	check(tc._left_alpha < 0.05 and tc._right_alpha < 0.05, "lifting fingers fades both translucent wheels back out to a clean screen")
 	arena._on_setting_changed("touch", false)
 

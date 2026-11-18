@@ -165,7 +165,7 @@ func refresh_hint(cursor_aim: bool) -> void:
 	if _hint_lbl == null:
 		return
 	if bool(_settings.get("touch", false)):
-		_hint_lbl.text = "TOUCH:  Left hold = Parry · drag = Move · flick = Dash · 2x tap = Half-Sword   |   Right wheel = Aim & Swing · tap = Kick"
+		_hint_lbl.text = "TOUCH:  Left stick = Move · flick L/R = Dash · Down = Kick · Up = Half-Sword  |  Right wheel = 360° Swing · pull Back = Parry · Tap = Slash"
 		return
 	var pads := Input.get_connected_joypads()
 	if pads.size() > 0:
@@ -303,8 +303,15 @@ func _build_hud() -> void:
 
 	var top := PanelContainer.new()
 	top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	top.offset_left = 20
-	top.offset_right = -20
+	var safe_margin := 22.0
+	if OS.get_name() in ["Android", "iOS"]:
+		var win_sz := Vector2(DisplayServer.window_get_size())
+		var safe := Rect2(DisplayServer.get_display_safe_area())
+		if win_sz.x > 100.0 and safe.size.x > 100.0:
+			var sc := 720.0 / maxf(360.0, win_sz.y)
+			safe_margin = maxf(24.0, maxf(safe.position.x, win_sz.x - safe.end.x) * sc + 8.0)
+	top.offset_left = safe_margin
+	top.offset_right = -safe_margin
 	top.offset_top = 10
 	top.add_theme_stylebox_override("panel", _box(Color(0.07, 0.04, 0.05, 0.88), Color(0.68, 0.52, 0.24, 0.85), 10))
 	_hud_root.add_child(top)

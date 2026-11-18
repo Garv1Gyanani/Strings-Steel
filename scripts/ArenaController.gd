@@ -64,7 +64,7 @@ var _leaves: Array[Dictionary] = []
 var _stage_tex: Texture2D
 var blood_flash_alpha: float = 0.0
 
-const COURTYARD_RECT := Rect2(-112.0, -24.0, 1504.0, 846.0)
+const COURTYARD_RECT := Rect2(-208.0, -56.0, 1696.0, 954.0)
 const MAX_BLOOD_PARTICLES := 340
 const MAX_SPARKS := 260
 const MAX_CHUNKS := 120
@@ -543,24 +543,29 @@ func _process(delta: float) -> void:
 
 
 func _update_camera(unscaled_dt: float) -> void:
+	var vp_sz := get_viewport_rect().size
+	var min_z := 0.92
+	if _use_courtyard_stage() and vp_sz.x > 10.0 and vp_sz.y > 10.0:
+		min_z = maxf(min_z, maxf(vp_sz.x / COURTYARD_RECT.size.x, vp_sz.y / COURTYARD_RECT.size.y))
 	var mid := (p1.position + p2.position) * 0.5 + Vector2(0, -105)
 	var sep := absf(p1.position.x - p2.position.x)
-	var base_zoom := clampf(lerpf(1.16, 0.94, sep / 700.0), 0.92, 1.22)
+	var base_zoom := clampf(lerpf(1.16, 0.94, sep / 700.0), min_z, maxf(min_z, 1.22))
 	var ko_focus := phase == Phase.ROUND_END and (p1.is_dead or p2.is_dead)
 	if ko_focus or slow_mo_timer > 0.0:
-		cam_zoom_target = 1.38
+		cam_zoom_target = maxf(min_z, 1.38)
 		var target := p2 if p2.is_dead else p1
 		cam_focus = cam_focus.lerp(target.position + Vector2(0, -110), minf(1.0, 6.0 * unscaled_dt))
 	else:
 		cam_zoom_target = base_zoom
 		cam_focus = cam_focus.lerp(Vector2(clampf(mid.x, 420.0, 860.0), clampf(mid.y, 280.0, 380.0)), minf(1.0, 6.0 * unscaled_dt))
 	if cam != null:
-		cam.zoom = cam.zoom.lerp(Vector2(cam_zoom_target, cam_zoom_target), minf(1.0, 5.5 * unscaled_dt))
+		var z_cur := maxf(min_z, lerpf(cam.zoom.x, cam_zoom_target, minf(1.0, 5.5 * unscaled_dt)))
+		cam.zoom = Vector2(z_cur, z_cur)
 		var jitter := Vector2(randf_range(-shake_mag, shake_mag), randf_range(-shake_mag, shake_mag))
 		var cpos := cam_focus + jitter
 		if _use_courtyard_stage():
-			var hw := 640.0 / maxf(0.5, cam.zoom.x)
-			var hh := 360.0 / maxf(0.5, cam.zoom.y)
+			var hw := (maxf(1280.0, vp_sz.x) * 0.5) / maxf(0.5, cam.zoom.x)
+			var hh := (maxf(720.0, vp_sz.y) * 0.5) / maxf(0.5, cam.zoom.y)
 			var min_x := COURTYARD_RECT.position.x + hw
 			var max_x := COURTYARD_RECT.end.x - hw
 			var min_y := COURTYARD_RECT.position.y + hh
@@ -986,9 +991,8 @@ func _check_live_string_cut(atk: FighterController, def: FighterController) -> v
 			var info := _closest_segments(mid_tip, b_seg[1], s_entry[1], s_entry[2])
 			if float(info["dist"]) < 12.0:
 				if def.cut_live_string(skey, info["pt"]):
-					atk.hit_registered_serial = atk.attack_serial
 					_spawn_sparks(info["pt"], 10)
-					hitstop_timer = 0.04
+					hitstop_timer = 0.03
 					return
 
 
@@ -1407,16 +1411,16 @@ func _draw_candles() -> void:
 		var flick_l := 0.88 + 0.14 * sin(now * 1.3) + 0.08 * cos(now * 2.9)
 		var flick_r := 0.90 + 0.11 * sin(now * 1.1 + 1.7) + 0.06 * cos(now * 2.4 + 0.8)
 		# Soft full-moon atmospheric halo
-		candle_layer.draw_circle(Vector2(787.0, 117.0), 96.0, Color(0.96, 0.94, 0.82, 0.045))
+		candle_layer.draw_circle(Vector2(806.0, 103.0), 102.0, Color(0.96, 0.94, 0.82, 0.045))
 		# Left iron brazier warm firelight + wet flagstone puddle shimmer
-		candle_layer.draw_circle(Vector2(-23.0, 378.0), 125.0 * flick_l, Color(1.0, 0.56, 0.18, 0.085))
-		candle_layer.draw_circle(Vector2(-23.0, 378.0), 46.0 * flick_l, Color(1.0, 0.78, 0.32, 0.14))
-		candle_layer.draw_set_transform(Vector2(121.0, 682.0), 0.0, Vector2(1.0, 0.28))
-		candle_layer.draw_circle(Vector2.ZERO, 82.0 * flick_l, Color(1.0, 0.62, 0.22, 0.09))
+		candle_layer.draw_circle(Vector2(-108.0, 397.0), 135.0 * flick_l, Color(1.0, 0.56, 0.18, 0.085))
+		candle_layer.draw_circle(Vector2(-108.0, 397.0), 50.0 * flick_l, Color(1.0, 0.78, 0.32, 0.14))
+		candle_layer.draw_set_transform(Vector2(55.0, 740.0), 0.0, Vector2(1.0, 0.28))
+		candle_layer.draw_circle(Vector2.ZERO, 88.0 * flick_l, Color(1.0, 0.62, 0.22, 0.09))
 		candle_layer.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		# Right colonnade hanging lantern glow
-		candle_layer.draw_circle(Vector2(1058.0, 287.0), 98.0 * flick_r, Color(1.0, 0.62, 0.22, 0.075))
-		candle_layer.draw_circle(Vector2(1058.0, 287.0), 36.0 * flick_r, Color(1.0, 0.82, 0.38, 0.14))
+		candle_layer.draw_circle(Vector2(1111.0, 295.0), 104.0 * flick_r, Color(1.0, 0.62, 0.22, 0.075))
+		candle_layer.draw_circle(Vector2(1111.0, 295.0), 38.0 * flick_r, Color(1.0, 0.82, 0.38, 0.14))
 		# Drifting crimson autumn leaves in the night breeze
 		for lf in _leaves:
 			var lp: Vector2 = lf["pos"]
