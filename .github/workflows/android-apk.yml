@@ -33,33 +33,29 @@ jobs:
           wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip" -O godot.zip
           wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz" -O templates.tpz
           unzip -q godot.zip
-          mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
-          chmod +x /usr/local/bin/godot
+          sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
           mkdir -p ~/.local/share/godot/export_templates/4.7.2.stable
-          unzip -q templates.tpz
+          unzip -q templates.tpz "templates/android_*" "templates/version.txt"
           mv templates/* ~/.local/share/godot/export_templates/4.7.2.stable/
-
-      - name: Configure Godot Android SDK & Keystore paths
-        run: |
-          mkdir -p ~/.config/godot
-          cat <<EOF > ~/.config/godot/editor_settings-4.7.tres
-          [gd_resource type="EditorSettings" format=3]
-          [resource]
-          export/android/android_sdk_path = "${ANDROID_HOME}"
-          export/android/debug_keystore = "${HOME}/.android/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
-          EOF
 
       - name: Import project & run SmokeTest
         run: |
           godot --headless --path . --import
           godot --headless --path . --script res://tools/SmokeTest.gd
 
+      - name: Configure Godot Android SDK & Keystore paths
+        run: |
+          mkdir -p ~/.config/godot
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\nexport/android/debug_keystore = "%s/.android/debug.keystore"\nexport/android/debug_keystore_user = "androiddebugkey"\nexport/android/debug_keystore_pass = "android"\n' "${ANDROID_HOME}" "${JAVA_HOME}" "${HOME}" > ~/.config/godot/editor_settings-4.7.tres
+
       - name: Export Android APK
         run: |
           mkdir -p build/android
-          godot --headless --path . --export-debug "Android" build/android/StringsAndSteel.apk
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH="${HOME}/.android/debug.keystore" \
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER="androiddebugkey" \
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD="android" \
+          godot --headless --path . --export-release "Android" build/android/StringsAndSteel.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
