@@ -78,7 +78,7 @@ const STAGGER_IMMUNITY := 0.6
 const CURSOR_CUT_SPEED := 520.0
 const CURSOR_CUT_MIN_ARC := 52.0
 const CURSOR_CUT_RECOVERY := 0.38
-const HEAVY_POWER_THRESHOLD := 0.78
+const HEAVY_POWER_THRESHOLD := 0.58
 const RIPOSTE_WINDOW := 0.42
 
 var _combo_hits: int = 0
@@ -268,11 +268,11 @@ func reset_fighter() -> void:
 	wounds.clear()
 
 	limb_hp = {
-		"head": 96.0, "torso": 150.0,
-		"arm_r": 74.0, "forearm_r": 64.0,
-		"arm_l": 68.0, "forearm_l": 58.0,
-		"thigh_l": 76.0, "shin_l": 62.0,
-		"thigh_r": 76.0, "shin_r": 62.0,
+		"head": 68.0, "torso": 115.0,
+		"arm_r": 58.0, "forearm_r": 60.0,
+		"arm_l": 38.0, "forearm_l": 32.0,
+		"thigh_l": 44.0, "shin_l": 34.0,
+		"thigh_r": 44.0, "shin_r": 34.0,
 	}
 	for k in limb_hp.keys():
 		limb_hp[k] = float(limb_hp[k]) * limb_hp_scale
@@ -456,17 +456,17 @@ func stat(key: String) -> float:
 	return float(stats.get(key, FighterStats.DEFAULT.get(key, 0.0)))
 
 
-## Attack wind-ups play slower than the rest of the swing so they can be read and
-## reacted to (by players and the AI). Without this a slash was live 0.13 s after
-## the button press, faster than human reaction time.
+## AI attack wind-ups play slower so players can read and parry them; player strikes
+## snap out crisply (~0.92x) so buttons & mobile swipes feel immediate and responsive.
 func _windup_mult() -> float:
+	var w := 0.92 if is_player else WINDUP_SPEED
 	match current_action:
 		"slash_high", "slash_low":
-			return WINDUP_SPEED if action_elapsed < 0.13 else 1.0
+			return w if action_elapsed < 0.13 else 1.0
 		"thrust":
-			return WINDUP_SPEED if action_elapsed < 0.11 else 1.0
+			return w if action_elapsed < 0.11 else 1.0
 		"kick":
-			return 0.75 if action_elapsed < 0.10 else 1.0
+			return (0.95 if is_player else 0.75) if action_elapsed < 0.10 else 1.0
 	return 1.0
 
 
@@ -907,7 +907,7 @@ func _process(delta: float) -> void:
 		if use_ik_arm and can_wield() and current_action == "":
 			_solve_sword_arm_to_cursor(delta)
 		elif bone_ua_r != null and bone_fa_r != null and bone_weapon != null:
-			_cursor_rearm_timer = 0.22
+			_cursor_rearm_timer = 0.06 if touch_mode_active else 0.22
 			_cursor_sweep_timer = 0.0
 			_swing_arc_px = 0.0
 			_riposte_active_attack = _riposte_active_attack and current_action != ""
@@ -1221,8 +1221,8 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 	var neutral_blade_ang := chosen_lower - PI * 0.5
 	var wrist_cock := clampf(wrapf(desired_blade_ang - neutral_blade_ang, -PI, PI), deg_to_rad(-48.0), deg_to_rad(84.0))
 
-	var k := minf(1.0, (44.0 if touch_mode_active else 23.0) * delta)
-	var slew_scale := (rip_mult / weight) * (2.15 if touch_mode_active else 1.0) * delta
+	var k := minf(1.0, (60.0 if touch_mode_active else 23.0) * delta)
+	var slew_scale := (rip_mult / weight) * (3.60 if touch_mode_active else 1.0) * delta
 	_ik_ua_r = _step_angle_capped(_ik_ua_r, ua_target_rot, k, 12.6 * slew_scale)
 	_ik_fa_r = _step_angle_capped(_ik_fa_r, fa_target_rot, k, 15.2 * slew_scale)
 	_ik_wpn_r = _step_angle_capped(_ik_wpn_r, wrist_cock, k, 17.6 * slew_scale)
@@ -1289,7 +1289,7 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 						if is_rip:
 							riposte_timer = 0.0
 						attack_serial += 1
-						_cursor_slash_cd = 0.30 if touch_mode_active else CURSOR_CUT_RECOVERY
+						_cursor_slash_cd = 0.21 if touch_mode_active else CURSOR_CUT_RECOVERY
 						_cursor_last_dir = tip_dir
 						_cursor_sweep_timer = 0.17 if touch_mode_active else 0.15
 						if _cursor_whoosh_cd <= 0.0:
@@ -1489,47 +1489,63 @@ func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Ve
 	request_blood_spray.emit(hit_pt, swing_dir * (320.0 * pwr) + Vector2(0, -130.0 * pwr), drop_cnt, false)
 
 	var staggered: bool = current_action in ["parry_recoil", "hurt"]
-	var wounded_exec: bool = staggered and hp < 0.40 * max_hp
+	var hp_frac: float = hp / maxf(1.0, max_hp)
+	var wounded_exec: bool = staggered and hp_frac < 0.55
 	var cur_lhp: float = float(limb_hp.get(slot, 1.0))
 	var max_lhp: float = maxf(1.0, float(max_limb_hp.get(slot, 80.0)))
 	var limb_frac: float = cur_lhp / max_lhp
 	var limb_depleted: bool = cur_lhp <= 0.0
 	var lethal_finish: bool = hp <= 0.0
 
-	# Earned dismemberment rules:
-	# - Thrusts pierce rather than chopping limbs off.
-	# - Hilt bumps & small splashes NEVER pop limbs or slice fighters in half (even in 1-Hit Sever mode).
-	# - Torso bisection ("slice in half") is reserved for true full-momentum sweet-spot killing cleaves!
-	# - Headshot blows can knock off hats / crack off helmets first, leaving the bare neck open to decapitation!
+	# Visceral, paced HEMA dismemberment:
+	# - Thrusts impale rather than chopping limbs off; hilt bumps & tiny twitches never sever.
+	# - Non-lethal outer limbs (off-arm, shins, headgear) sever mid-duel so maimed puppets keep fighting on strings!
+	# - Vitals (head / torso) are protected from 1-second opening flukes, then cleave cleanly as finishers or bare-neck executions!
 	var should_sever := false
-	if not is_thrust and not bool(severed.get(slot, false)):
-		if one_hit_sever:
-			should_sever = pwr >= 0.65 and blade_pos_frac >= 0.32
+	if not is_thrust and not bool(severed.get(slot, false)) and blade_pos_frac >= 0.30:
+		if lethal_finish and pwr >= 0.46:
+			# Every real killing slash delivers a dramatic finishing sever!
+			should_sever = true
+		elif one_hit_sever:
+			# BRUTAL mode: outer limbs fly on 1 solid cut while vitals & opening sword-arm stay protected from 1-second round-enders!
+			if pwr >= 0.60 and blade_pos_frac >= 0.32:
+				if slot in ["forearm_l", "arm_l", "shin_l", "shin_r"]:
+					should_sever = true
+				elif slot in ["thigh_l", "thigh_r", "forearm_r", "arm_r"]:
+					should_sever = hp_frac <= 0.72 or limb_frac <= 0.55 or staggered
+				elif slot == "head":
+					should_sever = hp_frac <= 0.36 or (not is_armored_slot("head") and limb_depleted)
+				elif slot == "torso":
+					should_sever = hp_frac <= 0.30 and pwr >= 0.72
 		else:
-			var can_chop := attacker_heavy and pwr >= HEAVY_POWER_THRESHOLD and blade_pos_frac >= 0.38
+			# NORMAL mode: 2 solid cuts sever outer limbs mid-fight; heavy focus severs sword-arm/thighs; bare-head or low-HP stagger executes!
+			var can_chop := attacker_heavy and pwr >= HEAVY_POWER_THRESHOLD and blade_pos_frac >= 0.34
 			if slot == "torso":
-				should_sever = can_chop and lethal_finish and pwr >= 0.92 and blade_pos_frac >= 0.45
+				should_sever = can_chop and staggered and hp_frac < 0.22 and pwr >= 0.80
 			elif slot == "head":
-				var bare_neck_chop := limb_depleted and not is_armored_slot("head") and pwr >= 0.84
-				should_sever = can_chop and ((lethal_finish and pwr >= 0.82) or (staggered and hp < 0.20 * max_hp and pwr >= 0.85) or bare_neck_chop)
+				var bare_neck_chop := limb_depleted and not is_armored_slot("head") and pwr >= 0.72
+				should_sever = can_chop and ((staggered and hp_frac < 0.26 and pwr >= 0.76) or bare_neck_chop)
 			else:
-				should_sever = can_chop and (limb_depleted or (lethal_finish and pwr >= 0.82) or (wounded_exec and limb_frac < 0.55))
+				should_sever = can_chop and (limb_depleted or (wounded_exec and limb_frac < 0.58))
 
-	if not should_sever and slot == "head" and _has_removable_headgear() and pwr >= 0.58 and limb_frac <= 0.62 and hp > 0.0:
+	if not should_sever and slot == "head" and _has_removable_headgear() and pwr >= 0.52 and (limb_frac <= 0.78 or one_hit_sever) and hp > 0.0:
 		_pop_headgear(swing_dir)
 
 	if should_sever:
-		if lethal_finish and slot == "torso" and randf() < 0.40 and not bool(severed.get("head", false)):
-			slot = "head"
+		if lethal_finish and slot == "torso":
+			if pwr < 0.68 and not bool(severed.get("head", false)):
+				slot = "head"
+			elif randf() < 0.42 and not bool(severed.get("head", false)):
+				slot = "head"
 		sever_limb(slot, hit_pt, swing_dir)
 		return true
 	else:
 		if hp <= 0.0:
-			if is_thrust and pwr >= 0.65:
+			if is_thrust and pwr >= 0.55:
 				request_cut_flash.emit(hit_pt, "IMPALED!", Color(0.96, 0.24, 0.26))
 			kill_fighter()
 		else:
-			if not (slot in VITAL_SLOTS) and limb_frac <= 0.38 and not bool(_limb_warned.get(slot, false)):
+			if not (slot in VITAL_SLOTS) and limb_frac <= 0.45 and not bool(_limb_warned.get(slot, false)):
 				_limb_warned[slot] = true
 				_stain_limb_bloody(node_ref)
 				request_cut_flash.emit(hit_pt, _limb_wound_label(slot), Color(1.0, 0.56, 0.28))

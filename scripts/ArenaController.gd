@@ -895,11 +895,19 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 	var best_slot := ""
 	var best_score := 9999.0
 	var best_pt := Vector2.ZERO
+	var is_thrust_check := atk.is_thrust_strike()
 	for s in segs:
 		var slot: String = s[0]
-		# Exposed sword/off arms sit in front of the torso: prefer them on shallow grazes
-		# instead of letting torso's wider capsule swallow every brush.
-		var outer_bias := 5.0 if slot in ["forearm_r", "arm_r", "forearm_l", "arm_l"] else 0.0
+		# On slashes, outer limbs & head sit exposed around the torso: give them strong priority
+		# so torso's wide central capsule doesn't swallow every limb-chopping cut!
+		var outer_bias := 0.0
+		if not is_thrust_check:
+			if slot in ["forearm_r", "arm_r", "forearm_l", "arm_l", "shin_r", "shin_l"]:
+				outer_bias = 11.0
+			elif slot in ["thigh_r", "thigh_l", "head"]:
+				outer_bias = 8.0
+		elif slot in ["forearm_r", "arm_r", "forearm_l", "arm_l"]:
+			outer_bias = 4.0
 		for b_seg in swept:
 			var info := _closest_segments(b_seg[0], b_seg[1], s[1], s[2])
 			var d: float = float(info["dist"]) - float(s[3])
@@ -935,8 +943,9 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 	atk._riposte_active_attack = false
 	var dmg := (24.0 if is_thrust else 20.0) * atk.stat("damage_mult") * atk.get_weapon_damage_mult() * (atk.stat("thrust_mult") if is_thrust else 1.0)
 	if atk.current_action == "":
-		# Free-form cursor cuts have less body-weight behind them than full animated lunges.
-		dmg *= 0.85 if is_thrust else 0.78
+		# Free-form cursor cuts have slightly less body-weight than lunges, while touch-wheel swipes stay crisp.
+		var free_mult := (0.90 if atk.touch_mode_active else 0.82)
+		dmg *= 0.88 if is_thrust else free_mult
 	if is_rip:
 		dmg *= 1.18
 		_on_cut_flash(best_pt, "RIPOSTE!", Color(1.0, 0.88, 0.42))
@@ -1517,7 +1526,7 @@ func _refresh_hud() -> void:
 		center = "%s  ROUND %d  %s" % [_pips(wins_p1), round_num, _pips(wins_p2)]
 		timer_text = str(ceili(maxf(0.0, round_time_left)))
 	if phase != Phase.TITLE and bool(settings["one_hit_sever"]):
-		center += "   ·   1-HIT SEVER"
+		center += "   ·   BRUTAL SEVER"
 	ui.update_hud(p1, p2, _format_limbs(p1), _format_limbs(p2), center, timer_text)
 
 

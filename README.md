@@ -31,16 +31,16 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
 
 | Action | Keyboard / Mouse | Gamepad | Touch (Button-Free Translucent Wheels) |
 |---|---|---|---|
-| Move | A / D (or ← →) | Left stick / D-pad | Slide left/right on Left Stick (auto-recenters) |
-| Aim & cut | Move and fling the mouse | Right stick | Drag / whip across 360° Right Blade Wheel |
+| Move | A / D (or ← →) | Left stick / D-pad | Slide left/right on Left Stick (tight 36 px full-speed span + frame-1 reversal) |
+| Aim & cut | Move and fling the mouse | Right stick | Swipe / arc across 360° Right Blade Wheel (0 ms live 2-bone IK cuts) |
 | Quick slash | J (or LMB in *Keys* mode) | X / RB | Quick tap on Right side (high or low) |
-| Thrust | K (or drive mouse forward) | Y | Drive / flick forward on Right Blade Wheel |
-| Kick | E | A | Quick downward flick & release on Left Stick |
-| Half-Sword stance | Q | Right stick click (R3) | Quick upward flick & release on Left Stick |
+| Thrust | K (or drive mouse forward) | Y | Sharp horizontal forward whip on Right Blade Wheel (fires mid-swipe) |
+| Kick | E | A | Quick downward flick on Left Stick (fires mid-swipe) |
+| Half-Sword stance | Q | Right stick click (R3) | Quick upward flick on Left Stick (fires mid-swipe) |
 | Hurl weapon | F / Middle mouse | — | Two-finger flick on Right side |
-| Parry | Space / RMB | B / LB / LT | Pull Right Wheel into Rear Guard Arc (or hold 2nd finger) |
+| Parry | Space / RMB | B / LB / LT | Pull or flick Right Wheel into Rear Guard Arc (or hold 2nd finger) |
 | Low guard | S (or aim low) | Left stick down | Pull Rear Guard Arc low (or Left Stick down) |
-| Dash | Shift / ↑ | RT / D-pad up | Quick horizontal flick & release (or 2x tap) on Left Stick |
+| Dash | Shift / ↑ | RT / D-pad up | Quick horizontal flick (fires mid-swipe) or 2x tap on Left Stick |
 | Pause | Esc / P | Start | Top `II MENU` pill |
 | Restart round | R | Back | Pause menu |
 
@@ -67,7 +67,7 @@ scripts/
 tools/
   CharacterRigBuilder.gd  builds fighter .tscn rigs from data/rig_metadata.json
   BuildAllRigs.gd         headless rig + arena builder
-  SmokeTest.gd            82-check headless gameplay test suite
+  SmokeTest.gd            102-check headless gameplay test suite
   BalanceSim.gd           multi-bot headless AI & combat balance simulator
 data/rig_metadata.json    sprite parts, pivots and sockets for every fighter
 ```

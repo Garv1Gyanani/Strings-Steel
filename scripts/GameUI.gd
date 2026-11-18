@@ -417,7 +417,7 @@ func _setting_label(key: String) -> String:
 		"gore":
 			return "Gore: " + ("BLOOD" if bool(_settings["gore"]) else "SPARKS")
 		"one_hit_sever":
-			return "1-Hit Sever: " + _on_off(key)
+			return "Sever: " + ("BRUTAL" if bool(_settings["one_hit_sever"]) else "NORMAL")
 		"cursor_aim":
 			return "Aim: " + ("CURSOR" if bool(_settings["cursor_aim"]) else "KEYS")
 		"touch":

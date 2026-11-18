@@ -19,6 +19,7 @@ var rounds := 8
 var bot_ai := AIController.new()
 var t := 0.0
 var trace_bot := ""
+var brutal_sever := false
 
 
 func _initialize() -> void:
@@ -27,6 +28,8 @@ func _initialize() -> void:
 			rounds = int(a.substr(9))
 		if a.begins_with("--trace="):
 			trace_bot = a.substr(8)
+		if a == "--brutal":
+			brutal_sever = true
 	_run.call_deferred()
 
 
@@ -38,12 +41,14 @@ func _run() -> void:
 	await process_frame
 	arena.settings["gore"] = false # fewer particles, faster sim
 	arena.settings["sound"] = false
+	arena.settings["one_hit_sever"] = brutal_sever
 
 	if trace_bot != "":
 		rounds = 1
 		await _run_matchup(trace_bot, "brutal")
 	else:
-		print("bot      | AI diff | bot wins | AI wins | draws | avg round s | AI guards/rd | AI blocks/rd | bot hits/rd | bot severs/rd")
+		print("=== BalanceSim (Sever mode: %s) ===" % ["BRUTAL" if brutal_sever else "NORMAL"])
+		print("bot      | AI diff | bot wins | AI wins | draws | avg round s | min s | bot severs/rd | tot severs/rd")
 		for bot in ["splasher", "waggler", "swinger", "masher", "ai"]:
 			for diff in ["normal", "hard", "brutal"]:
 				await _run_matchup(bot, diff)
@@ -63,9 +68,11 @@ func _run_matchup(bot: String, diff: String) -> void:
 	var ai_wins := 0
 	var draws := 0
 	var total_time := 0.0
+	var min_time := 999.0
 	var parries := 0
 	var hits := 0
 	var bot_severs := 0
+	var tot_severs := 0
 	arena.debug_blocks.assign([0, 0])
 	for r in range(rounds):
 		arena.wins_p1 = 0
@@ -98,10 +105,16 @@ func _run_matchup(bot: String, diff: String) -> void:
 			last_hp2 = p2.hp
 			if t > 95.0:
 				break
-		total_time += 90.0 - arena.round_time_left
+		var rd_time: float = 90.0 - arena.round_time_left
+		total_time += rd_time
+		min_time = minf(min_time, rd_time)
 		for sv in p2.severed.values():
 			if bool(sv):
 				bot_severs += 1
+				tot_severs += 1
+		for sv1 in p1.severed.values():
+			if bool(sv1):
+				tot_severs += 1
 		match arena.last_round_winner:
 			1: bot_wins += 1
 			2: ai_wins += 1
@@ -110,7 +123,7 @@ func _run_matchup(bot: String, diff: String) -> void:
 		p1.touch_move = 0.0
 		p1.touch_parry = false
 		p1.is_player = true
-	print("%-8s | %-7s | %8d | %7d | %5d | %11.1f | %12.1f | %12.1f | %11.1f | %13.2f" % [bot, diff, bot_wins, ai_wins, draws, total_time / rounds, float(parries) / rounds, float(arena.debug_blocks[1]) / rounds, float(hits) / rounds, float(bot_severs) / rounds])
+	print("%-8s | %-7s | %8d | %7d | %5d | %11.1f | %5.1f | %13.2f | %13.2f" % [bot, diff, bot_wins, ai_wins, draws, total_time / rounds, min_time, float(bot_severs) / rounds, float(tot_severs) / rounds])
 
 
 func _drive_bot(bot: String, me: FighterController, foe: FighterController, dt: float) -> void:

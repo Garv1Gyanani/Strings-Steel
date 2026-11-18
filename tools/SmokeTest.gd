@@ -450,40 +450,40 @@ func _run() -> void:
 	check(p1().cursor_aim_enabled and p1().touch_mode_active, "touch mode keeps live 2-bone IK blade aiming active")
 	check(is_equal_approx(tc._left_alpha, 0.0) and is_equal_approx(tc._right_alpha, 0.0), "touch wheels are completely invisible (0 opacity) until touched")
 
-	# 1. Left wheel: resting thumb NEVER auto-parries or locks out sword; dynamic floating origin reverses instantly
+	# 1. Left wheel: resting thumb NEVER auto-parries; sustained walking (>0.15s) NEVER dashes; fresh flick dashes MID-SWIPE!
 	tc._on_finger_down(0, Vector2(180, 500))
-	tc._process(0.10)
+	tc._process(0.18)
 	check(tc._left_alpha > 0.15 and not p1().touch_parry and is_equal_approx(p1().touch_move, 0.0), "resting left thumb shows translucent stick without accidentally parrying")
-	tc._on_finger_drag(0, Vector2(330, 500), Vector2(1100, 0)) # slide 150 px fast (> LEFT_RADIUS) while still holding!
-	check(p1().touch_move > 0.9 and is_equal_approx(p1().dash_timer, 0.0), "fast thumb slide while holding walks at full speed without accidental stamina dash")
-	tc._on_finger_drag(0, Vector2(230, 500), Vector2(-400, 0)) # reverse 100 px left -> floating origin followed so we immediately walk left!
-	check(p1().touch_move < -0.1, "floating-origin left stick reverses walking direction immediately without dead travel")
-	tc._on_finger_up(0, Vector2(230, 500))
+	tc._on_finger_drag(0, Vector2(330, 500), Vector2(1100, 0))
+	check(p1().touch_move > 0.95 and is_equal_approx(p1().dash_timer, 0.0), "sustained walking thumb slide reaches 100% speed without accidental stamina dash")
+	tc._on_finger_drag(0, Vector2(265, 500), Vector2(-400, 0)) # reverse 65 px left -> tight 44 px floating origin reverses on frame 1!
+	check(p1().touch_move < -0.3, "tight floating-origin left stick reverses walking direction immediately without dead travel")
+	tc._on_finger_up(0, Vector2(265, 500))
 
-	# 2. Intentional Left Flick & Release gestures: Horizontal = Dash, Up = Half-Sword, Down = Kick
+	# 2. Instant Mid-Swipe Left Flicks (~35ms, fires BEFORE finger even lifts!): Horizontal = Dash, Up = Half-Sword, Down = Kick
 	tc._on_finger_down(0, Vector2(180, 500))
-	tc._process(0.06)
-	tc._on_finger_drag(0, Vector2(235, 500), Vector2(900, 0))
-	tc._on_finger_up(0, Vector2(235, 500))
-	check(p1().dash_timer > 0.0, "quick horizontal flick-and-release on left stick triggers Dash")
+	tc._process(0.04)
+	tc._on_finger_drag(0, Vector2(224, 500), Vector2(960, 0))
+	check(p1().dash_timer > 0.0, "fresh horizontal flick triggers Dash immediately mid-swipe without waiting for finger lift")
+	tc._on_finger_up(0, Vector2(224, 500))
 	p1().dash_timer = 0.0
 	p1().dash_cooldown = 0.0
 
 	tc._on_finger_down(0, Vector2(180, 500))
-	tc._process(0.06)
-	tc._on_finger_drag(0, Vector2(180, 445), Vector2(0, -800))
-	tc._on_finger_up(0, Vector2(180, 445))
-	check(p1().half_swording, "upward flick-and-release on left stick toggles Half-Sword stance")
+	tc._process(0.04)
+	tc._on_finger_drag(0, Vector2(180, 456), Vector2(0, -860))
+	check(p1().half_swording, "fresh upward flick toggles Half-Sword immediately mid-swipe")
+	tc._on_finger_up(0, Vector2(180, 456))
 	p1().set_half_sword(false, false)
 
 	tc._on_finger_down(0, Vector2(180, 500))
-	tc._process(0.06)
-	tc._on_finger_drag(0, Vector2(180, 555), Vector2(0, 800))
-	tc._on_finger_up(0, Vector2(180, 555))
-	check(p1().current_action == "kick", "downward flick-and-release on left stick triggers Push Kick")
+	tc._process(0.04)
+	tc._on_finger_drag(0, Vector2(180, 544), Vector2(0, 860))
+	check(p1().current_action == "kick", "fresh downward flick triggers Push Kick immediately mid-swipe")
+	tc._on_finger_up(0, Vector2(180, 544))
 	p1().current_action = ""
 
-	# 3. Right 360° Blade Wheel: no touchdown snap, Rear Guard Arc parries + guard-walks + instant Riposte, thumb arc cuts enemy!
+	# 3. Right 360° Blade Wheel: no touchdown snap, Rear Guard Arc parries + guard-walks, smooth IK cuts & instant mid-swipe whips!
 	p1().position.x = 460.0
 	p2().position.x = 635.0
 	p1().set_facing(1)
@@ -504,26 +504,33 @@ func _run() -> void:
 	check(p1().parrying and p1().position.x < x_pre_gwalk - 2.0, "pulling right wheel into Rear Guard Arc parries while still allowing left-thumb footwork")
 	tc._on_finger_up(0, Vector2(120, 500))
 
-	# Whip right thumb forward out of Rear Guard Arc across p2 -> instant zero-delay live cut that deals real damage!
+	# Smooth controlled IK sweep (< whip threshold) cuts rival directly via 1-to-1 blade IK!
 	p1().position.x = 465.0
-	p2().position.x = 625.0
+	p2().position.x = 635.0
 	var hp_pre_swipe := p2().hp
 	var swipe_pts := [
-		Vector2(955, 395),
-		Vector2(995, 415),
-		Vector2(1035, 445),
-		Vector2(1068, 485),
-		Vector2(1090, 520),
+		Vector2(980, 412),
+		Vector2(980, 434),
+		Vector2(980, 458),
+		Vector2(980, 484),
+		Vector2(980, 510),
 	]
 	for sp in swipe_pts:
-		tc._on_finger_drag(1, sp, Vector2(850, 720))
+		tc._on_finger_drag(1, sp, Vector2(0, 520))
 		tc._process(0.016)
 		p1()._process(0.016)
 		arena._resolve_combat()
-	tc._on_finger_up(1, Vector2(1090, 520))
-	check(not p1().parrying and p2().hp < hp_pre_swipe, "whipping right thumb forward out of Rear Guard Arc activates live IK blade and cuts the rival")
+	check(not p1().parrying and p2().hp < hp_pre_swipe, "vertical right-wheel IK swipe extends into the cut and slices rival cleanly")
 
-	# 4. Quick Right Tap -> Intuitive Sword Slash (not an accidental whiffing kick!)
+	# Fast mid-swipe forward whip fires instant snappy Thrust BEFORE finger lifts!
+	p1().current_action = ""
+	tc._right_whip_cd = 0.0
+	tc._right_whip_anchor = Vector2(980, 460)
+	tc._on_finger_drag(1, Vector2(1026, 462), Vector2(1150, 40))
+	check(p1().current_action == "thrust", "fast forward whip on right wheel fires snappy Thrust mid-swipe without waiting for finger lift")
+	tc._on_finger_up(1, Vector2(1026, 462))
+
+	# 4. Quick Right Tap -> Intuitive Sword Slash
 	p1().current_action = ""
 	p1()._cursor_sweep_timer = 0.0
 	tc._on_finger_down(2, Vector2(980, 420))
@@ -533,6 +540,27 @@ func _run() -> void:
 	tc._process(0.6)
 	check(tc._left_alpha < 0.05 and tc._right_alpha < 0.05, "lifting fingers fades both translucent wheels back out to a clean screen")
 	arena._on_setting_changed("touch", false)
+
+	print("== Paced visceral dismemberment (Sever: NORMAL vs Sever: BRUTAL)")
+	_reset_both()
+	# NORMAL mode: 2 solid cuts to off-arm or shin sever it mid-fight while fighter stays alive!
+	var shin_s1 := p1().apply_blade_damage("shin_l", 20.0, p1().position + Vector2(0, 60), Vector2(-1, 0), false, true, 0.90, 1.0, 0.75, false, 0.0)
+	p1()._combo_hits = 0
+	var shin_s2 := p1().apply_blade_damage("shin_l", 20.0, p1().position + Vector2(0, 60), Vector2(-1, 0), false, true, 0.90, 1.0, 0.75, false, 0.0)
+	check(not shin_s1 and shin_s2 and not p1().is_dead, "Sever: NORMAL cuts off outer limbs in 2 solid slashes while the duel continues")
+	# NORMAL mode: killing slash always delivers a dramatic finishing sever!
+	_reset_both()
+	p1().hp = 12.0
+	var kill_sev := p1().apply_blade_damage("torso", 20.0, p1().position + Vector2(0, -90), Vector2(-1, 0), false, true, 0.75, 1.0, 0.75, false, 0.0)
+	check(kill_sev and p1().is_dead and (bool(p1().severed["torso"]) or bool(p1().severed["head"])), "killing slash in NORMAL mode always delivers a visceral finishing sever")
+
+	# BRUTAL mode: opening hit to head/torso NEVER ends fight in 1 second, while outer limbs pop immediately!
+	_reset_both()
+	var brutal_open_head := p1().apply_blade_damage("head", 20.0, p1().position + Vector2(0, -140), Vector2(-1, 0), true, true, 0.95, 1.0, 0.80, false, 0.0)
+	check(not brutal_open_head and not p1().is_dead, "Sever: BRUTAL protects vitals at high HP so fights never end in 1 second")
+	p1()._combo_hits = 0
+	var brutal_off_arm := p1().apply_blade_damage("forearm_l", 20.0, p1().position + Vector2(-20, -90), Vector2(-1, 0), true, true, 0.85, 1.0, 0.75, false, 0.0)
+	check(brutal_off_arm and not p1().is_dead, "Sever: BRUTAL severs outer limbs on first clean heavy slash while keeping the fight alive")
 
 	print("== Back to title")
 	arena._go_to_title()
