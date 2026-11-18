@@ -135,7 +135,8 @@ var _ik_fa_r: float = deg_to_rad(-55.0)
 var _ik_wpn_r: float = deg_to_rad(-18.0)
 var _ik_torso_lean: float = 0.0
 
-# Virtual touch inputs (driven by UI overlay on mobile/touch)
+# Virtual touch inputs (driven by MobileTouchController translucent wheels)
+var touch_mode_active: bool = false
 var touch_move: float = 0.0
 var touch_parry: bool = false
 var touch_low: bool = false
@@ -978,13 +979,13 @@ func _mouse_in_stage() -> bool:
 func _process_player_input(delta: float) -> void:
 	var pad_aim := _read_pad_aim()
 	var low_held := touch_low or Input.is_action_pressed("guard_low") or pad_aim.y > 0.45
-	if cursor_aim_enabled:
+	if cursor_aim_enabled and (not touch_mode_active or aim_override_enabled):
 		var m_y := aim_override.y if aim_override_enabled else get_global_mouse_position().y
 		if m_y > position.y - 60.0 and m_y >= 110.0:
 			low_held = true
 	guard_zone = "low" if low_held else "high"
 
-	var mouse_in_stage := _mouse_in_stage()
+	var mouse_in_stage := not touch_mode_active and _mouse_in_stage()
 	var lmb := mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 	var lmb_edge := lmb and not _lmb_prev
 	_lmb_prev = lmb
@@ -1110,6 +1111,8 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 	var raw_tgt := cursor_aim_world
 	if aim_override_enabled:
 		raw_tgt = aim_override
+	elif touch_mode_active:
+		raw_tgt = global_position + Vector2(float(facing) * 122.0, -114.0)
 	elif _using_pad_aim and (absf(rx) > 0.28 or absf(ry) > 0.28):
 		raw_tgt = global_position + Vector2(float(facing) * (95.0 + rx * 145.0), -110.0 + ry * 145.0)
 	else:

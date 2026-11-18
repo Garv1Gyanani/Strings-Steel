@@ -25,24 +25,23 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
   - **Gauntlet**: endless waves of random challengers that get tougher each wave. Your best wave is saved.
 - **AI** with human-like reaction time, imperfect guard reads and per-fighter spacing. Three difficulties.
 - **Juice:** hitstop, slow-motion KO cam, screen shake, controller rumble, arterial blood, persistent blood on the backdrop and floor, bloody bootprints. All audio is synthesised procedurally, with no audio files.
-- Keyboard + mouse, gamepad, and an optional touch overlay. Settings are saved automatically.
+- Keyboard + mouse, gamepad, and a **button-free translucent touch-wheel system** for mobile/Android (screen stays 100% clean until touched; floating low-opacity wheels appear under your thumbs and fade out on release). Settings are saved automatically, and `.github/workflows/android-apk.yml` builds `StringsAndSteel.apk` automatically on push.
 
 ## Controls
 
-| Action | Keyboard / Mouse | Gamepad |
-|---|---|---|
-| Move | A / D (or ← →) | Left stick / D-pad |
-| Aim & cut | Move and fling the mouse | Right stick |
-| Slash | J (or LMB in *Aim: Keys* mode) | X / RB |
-| Thrust | K | Y |
-| Kick | E | A |
-| Half-Sword stance | Q | Right stick click (R3) |
-| Hurl weapon | F / Middle mouse | — |
-| Parry | Space / RMB | B / LB / LT |
-| Low guard | S (or aim low) | Left stick down |
-| Dash | Shift / ↑ | RT / D-pad up |
-| Pause | Esc / P | Start |
-| Restart round | R | Back |
+| Action | Keyboard / Mouse | Gamepad | Touch (Button-Free Wheels) |
+|---|---|---|---|
+| Move | A / D (or ← →) | Left stick / D-pad | Slide left/right on Left Wheel |
+| Aim & cut | Move and fling the mouse | Right stick | Swipe an arc on Right Wheel |
+| Thrust | K (or drive mouse forward) | Y | Push forward on Right Wheel |
+| Kick / Jab | E | A | Quick tap on Right side |
+| Half-Sword stance | Q | Right stick click (R3) | Double-tap Left side |
+| Hurl weapon | F / Middle mouse | — | Two-finger flick on Right side |
+| Parry | Space / RMB | B / LB / LT | Hold center of Left Wheel |
+| Low guard | S (or aim low) | Left stick down | Pull down slightly on Left Wheel |
+| Dash | Shift / ↑ | RT / D-pad up | Quick horizontal flick on Left Wheel |
+| Pause | Esc / P | Start | Top `II MENU` pill |
+| Restart round | R | Back | Pause menu |
 
 Letter keys bind by physical position, so they also work on AZERTY and QWERTZ layouts.
 

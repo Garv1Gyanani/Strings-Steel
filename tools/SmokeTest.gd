@@ -441,6 +441,48 @@ func _run() -> void:
 	arena._resolve_combat()
 	check(p2().hp < hp_pre_crush - 9.5 and p2().current_action == "parry_recoil", "kicking a rival pinned against the stage wall triggers Corner Crush damage & heavy stagger")
 
+	print("== Minimalist translucent touch-wheel & gesture controls")
+	_reset_both()
+	p1().input_enabled = true
+	arena._on_setting_changed("touch", true)
+	var tc: MobileTouchController = arena.ui._touch_ctrl
+	check(tc != null and tc.get_child_count() == 0, "touch controller has zero permanent HUD buttons")
+	check(p1().cursor_aim_enabled and p1().touch_mode_active, "touch mode keeps live 2-bone IK blade aiming active")
+	check(is_equal_approx(tc._left_alpha, 0.0) and is_equal_approx(tc._right_alpha, 0.0), "touch wheels are completely invisible (0 opacity) until touched")
+
+	# Left wheel: stationary hold = Parry, drag = Move, flick = Dash, 2x tap = Half-Sword
+	tc._on_finger_down(0, Vector2(180, 500))
+	tc._process(0.10)
+	check(tc._left_alpha > 0.15 and tc._left_alpha <= MobileTouchController.MAX_OPACITY + 0.01 and p1().touch_parry, "touching left zone fades in translucent wheel and holds Parry")
+	tc._on_finger_drag(0, Vector2(236, 500), Vector2(120, 0))
+	check(p1().touch_move > 0.7 and not p1().touch_parry, "sliding on left wheel walks smoothly and releases stationary parry")
+	tc._on_finger_drag(0, Vector2(265, 500), Vector2(920, 0))
+	check(p1().dash_timer > 0.0, "quick horizontal flick on left wheel triggers Dash")
+	tc._on_finger_up(0, Vector2(265, 500))
+	p1().dash_timer = 0.0
+	p1().dash_cooldown = 0.0
+
+	# Double-tap left toggles Half-Sword
+	tc._last_left_tap_ms = Time.get_ticks_msec()
+	tc._on_finger_down(0, Vector2(180, 500))
+	tc._on_finger_up(0, Vector2(180, 500))
+	check(p1().half_swording, "double-tapping left zone toggles Half-Sword stance without buttons")
+	p1().set_half_sword(false, false)
+
+	# Right wheel: drag aims 2-bone IK blade, quick tap triggers Kick
+	tc._on_finger_down(1, Vector2(980, 460))
+	tc._on_finger_drag(1, Vector2(1045, 410), Vector2(450, -320))
+	tc._process(0.08)
+	check(tc._right_alpha > 0.15 and p1().aim_override_enabled, "dragging right side fades in translucent blade wheel and drives IK aim")
+	tc._on_finger_up(1, Vector2(1045, 410))
+	tc._on_finger_down(2, Vector2(980, 460))
+	tc._process(0.05)
+	tc._on_finger_up(2, Vector2(982, 461))
+	check(p1().current_action == "kick", "quick tap on right side triggers Push Kick without buttons")
+	tc._process(0.5)
+	check(tc._left_alpha < 0.05 and tc._right_alpha < 0.05, "lifting fingers fades both translucent wheels back out to a clean screen")
+	arena._on_setting_changed("touch", false)
+
 	print("== Back to title")
 	arena._go_to_title()
 	await frames(3)

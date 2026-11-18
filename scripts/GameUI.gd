@@ -49,7 +49,7 @@ var _result_primary: Button
 var _banner_lbl: Label
 var _banner_sub: Label
 var _banner_tween: Tween
-var _touch_root: Control
+var _touch_ctrl: MobileTouchController
 
 # Title selection state
 var _sel_p1: int = 0
@@ -111,7 +111,8 @@ func show_title(p1_idx: int, p2_idx: int, mode: String, best_wave: int, p1_loado
 	_refresh_settings()
 	_title_root.visible = true
 	_hud_root.visible = false
-	_touch_root.visible = false
+	if _touch_ctrl != null:
+		_touch_ctrl.set_active(false)
 
 
 func hide_title() -> void:
@@ -155,12 +156,16 @@ func hide_result() -> void:
 
 
 func set_touch_visible(on: bool) -> void:
-	if _touch_root != null:
-		_touch_root.visible = on and not _title_root.visible
+	if _touch_ctrl != null:
+		_touch_ctrl.player = player
+		_touch_ctrl.set_active(on and not _title_root.visible)
 
 
 func refresh_hint(cursor_aim: bool) -> void:
 	if _hint_lbl == null:
+		return
+	if bool(_settings.get("touch", false)):
+		_hint_lbl.text = "TOUCH:  Left hold = Parry · drag = Move · flick = Dash · 2x tap = Half-Sword   |   Right wheel = Aim & Swing · tap = Kick"
 		return
 	var pads := Input.get_connected_joypads()
 	if pads.size() > 0:
@@ -328,7 +333,8 @@ func _build_hud() -> void:
 	mid.add_child(_center_lbl)
 	_timer_lbl = _label("", 24, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	mid.add_child(_timer_lbl)
-	var menu_btn := _button("II  MENU (Esc)", func(_b): pause_toggle_requested.emit(), 11)
+	var menu_btn := _button("II  MENU", func(_b): pause_toggle_requested.emit(), 11)
+	menu_btn.custom_minimum_size = Vector2(98, 28)
 	menu_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	mid.add_child(menu_btn)
 
@@ -648,48 +654,10 @@ func _build_result() -> void:
 	row.add_child(_button("CHANGE FIGHTERS", func(_b): title_requested.emit(), 16))
 
 
-# --- Touch overlay ---
+# --- Clean translucent touch-wheel controller (no permanent buttons) ---
 
 func _build_touch_controls() -> void:
-	_touch_root = Control.new()
-	_full_rect(_touch_root)
-	_touch_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_touch_root.visible = false
-	add_child(_touch_root)
-
-	var add_hold_btn := func(anchor_right: bool, pos: Vector2, lbl: String, on_down: Callable, on_up: Callable):
-		var b := Button.new()
-		b.text = lbl
-		b.focus_mode = Control.FOCUS_NONE
-		b.size = Vector2(82, 58)
-		if anchor_right:
-			b.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-		else:
-			b.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-		b.position = pos
-		b.button_down.connect(on_down)
-		b.button_up.connect(on_up)
-		_touch_root.add_child(b)
-
-	add_hold_btn.call(false, Vector2(28, 610), "< LEFT", func(): if _touch_ok(): player.touch_move = -1.0, func(): if player: player.touch_move = 0.0)
-	add_hold_btn.call(false, Vector2(122, 610), "RIGHT >", func(): if _touch_ok(): player.touch_move = 1.0, func(): if player: player.touch_move = 0.0)
-	add_hold_btn.call(false, Vector2(76, 544), "DASH", func(): if _touch_ok(): player.start_dash(player.touch_move if absf(player.touch_move) > 0.1 else float(player.facing)), func(): pass)
-	add_hold_btn.call(false, Vector2(216, 610), "LOW", func(): if player: player.touch_low = true, func(): if player: player.touch_low = false)
-	add_hold_btn.call(true, Vector2(980, 610), "PARRY", func(): if player: player.touch_parry = true, func(): if player: player.touch_parry = false)
-	add_hold_btn.call(true, Vector2(980, 544), "HALF-SWD", func(): if _touch_ok(): player.toggle_half_sword(), func(): pass)
-	add_hold_btn.call(true, Vector2(1076, 544), "THROW", func(): if _touch_ok(): player.throw_weapon(), func(): pass)
-	add_hold_btn.call(true, Vector2(1076, 610), "SLASH", func(): if _touch_ok():
-		if player.can_wield():
-			player.start_attack("slash_low" if player.touch_low else "slash_high")
-		else:
-			player.start_jab(), func(): pass)
-	add_hold_btn.call(true, Vector2(1170, 610), "THRUST", func(): if _touch_ok():
-		if player.can_wield():
-			player.start_attack("thrust")
-		else:
-			player.start_jab(), func(): pass)
-	add_hold_btn.call(true, Vector2(1170, 544), "KICK", func(): if _touch_ok(): player.start_attack("kick"), func(): pass)
-
-
-func _touch_ok() -> bool:
-	return player != null and is_instance_valid(player) and player.input_enabled and not player.is_dead
+	_touch_ctrl = MobileTouchController.new()
+	_touch_ctrl.name = "MobileTouchController"
+	_touch_ctrl.visible = false
+	add_child(_touch_ctrl)

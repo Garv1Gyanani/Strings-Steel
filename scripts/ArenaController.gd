@@ -175,6 +175,8 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 
 func _load_settings() -> void:
+	if OS.get_name() in ["Android", "iOS"] or DisplayServer.is_touchscreen_available():
+		settings["touch"] = true
 	var cfg := ConfigFile.new()
 	if cfg.load(settings_path) != OK:
 		return
@@ -212,8 +214,9 @@ func _apply_settings() -> void:
 			f.gore_enabled = bool(settings["gore"])
 			f.show_strings = bool(settings["strings"])
 	if p1 != null:
-		# Touch input emulates the mouse, which would yank the cursor-aim IK around.
-		p1.cursor_aim_enabled = bool(settings["cursor_aim"]) and not bool(settings["touch"])
+		var touch_on := bool(settings["touch"])
+		p1.touch_mode_active = touch_on
+		p1.cursor_aim_enabled = true if touch_on else bool(settings["cursor_aim"])
 	if ui != null:
 		ui.player = p1
 		ui.set_touch_visible(bool(settings["touch"]))
@@ -1038,6 +1041,8 @@ func _closest_segments(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> Dictio
 func _rumble(weak: float, strong: float, dur: float) -> void:
 	for jid in Input.get_connected_joypads():
 		Input.start_joy_vibration(jid, weak, strong, dur)
+	if OS.get_name() in ["Android", "iOS"]:
+		Input.vibrate_handheld(clampi(int(dur * 180.0), 18, 90), clampf(maxf(weak, strong), 0.2, 1.0))
 
 
 func _unhandled_input(event: InputEvent) -> void:
