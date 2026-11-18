@@ -69,9 +69,12 @@ func _run() -> void:
 	arena.settings_path = TEST_SETTINGS
 	root.add_child(arena)
 	await frames(5)
+	arena.settings["sound"] = false
+	arena.sfx.muted = true
 
 	print("== Title screen")
 	check(arena.phase == TITLE, "game boots into the title screen")
+	check(arena._stage_tex != null and arena._use_courtyard_stage(), "moonlit courtyard background texture loaded & active by default")
 	check(not p1().input_enabled, "player input is disabled on the title screen")
 	check(InputMap.has_action("slash") and InputMap.has_action("pause"), "InputMap actions registered")
 
@@ -333,6 +336,111 @@ func _run() -> void:
 	check(parries >= 6, "brutal AI parries telegraphed attacks after a reaction delay (%d/%d)" % [parries, trials])
 	arena.ai = NullAI.new()
 
+	print("== Combat expansion: Half-Swording, Helmet Crack, Loadouts, Sword Throw & Corner Crush")
+	arena._on_start_requested({"p1": 0, "p2": 3, "p1_loadout": "signature", "p2_loadout": "signature", "mode": "duel"})
+	await wait(INTRO_S + 0.2)
+	arena.ai = NullAI.new()
+	_reset_both()
+
+	# 1. Half-Swording stance
+	var full_seg := p1().get_blade_segment()
+	var full_len := Vector2(full_seg[0]).distance_to(Vector2(full_seg[1]))
+	check(p1().toggle_half_sword() and p1().half_swording, "two-handed fighter can enter Half-Sword stance")
+	var hs_seg := p1().get_blade_segment()
+	var hs_len := Vector2(hs_seg[0]).distance_to(Vector2(hs_seg[1]))
+	check(hs_len < full_len * 0.72, "Half-Swording shortens active blade segment for close-quarters leverage")
+	check(is_equal_approx(p1().get_guard_cost_mult(), 0.70), "Half-Swording discounts guard stamina cost")
+	check(p1().get_cut_armor_pierce() >= 0.40, "Half-Swording grants armour-piercing leverage on cuts")
+	p1().cut_live_string("arm_l", p1().position + Vector2(0, -260))
+	await frames(2)
+	check(not p1().half_swording, "snapping off-hand string automatically cancels Half-Sword grip")
+
+	# 2. Knock-off helmet -> bare head armour strip -> earned mid-fight decapitation
+	_reset_both()
+	check(p2().is_armored_slot("head") and not p2().headgear_lost, "Black Knight starts with armoured Gothic helmet")
+	p2().limb_hp["head"] = p2().max_limb_hp["head"] * 0.55
+	p2().apply_blade_damage("head", 18.0, p2().position + Vector2(0, -140), Vector2(1, 0), false, true, 0.85, 1.0, 0.75, false, 0.42)
+	check(p2().headgear_lost and not p2().is_armored_slot("head"), "solid headshot cracks off Black Knight's helmet and strips head armour")
+	p2()._combo_hits = 0
+	p2().hp = 95.0 # well above 50% max HP!
+	p2().limb_hp["head"] = 4.0
+	var decap_mid := p2().apply_blade_damage("head", 24.0, p2().position + Vector2(0, -140), Vector2(1, 0), false, true, 0.90, 1.15, 0.78, false, 0.0)
+	check(decap_mid and bool(p2().severed.get("head", false)) and p2().is_dead, "depleting an unhelmeted head earns a mid-fight decapitation")
+
+	# 3. Pollaxe, Sword+Buckler & Katzbalger loadouts + Guard-Break Disarm
+	_reset_both()
+	p1().apply_loadout("pollaxe")
+	check(p1().weapon_part_id == "p2_pollaxe" and p1().get_guard_crush_mult() > 1.4, "Pollaxe loadout equips p2_pollaxe with heavy guard-crush")
+	p2().parrying = true
+	p2().parry_hold_time = 1.0
+	p2().stamina = 15.0 # enough for normal sword (14), NOT enough for Pollaxe (14 * 1.48 = 20.72)!
+	_prime_attack(p1())
+	arena._handle_blade_clash(p1(), p2(), Vector2(580, 360))
+	check(not p2().has_weapon and arena.weapons_layer.get_child_count() >= 1, "Pollaxe guard-break smashes through block and disarms defender's sword")
+
+	_reset_both()
+	p1().apply_loadout("buckler")
+	check(p1().has_buckler and is_equal_approx(p1().get_guard_cost_mult(), 0.62), "Sword+Buckler loadout mounts buckler and reduces block cost")
+	p1().apply_loadout("katzbalger")
+	check(p1().weapon_part_id == "p1_sword_katz" and not p1().weapon_is_two_handed(), "Katzbalger loadout equips nimble one-handed sidearm")
+	p1().apply_loadout("signature")
+
+	# 4. Sword Throw, Parry Deflection, Unarmed Jab & Ground Weapon Swap
+	_reset_both()
+	for w in arena.weapons_layer.get_children():
+		w.queue_free()
+	await frames(2)
+	p1().position.x = 420.0
+	p2().position.x = 660.0
+	p2().parrying = true
+	p2().parry_hold_time = 0.4
+	check(p1().throw_weapon(p2().position + Vector2(0, -110)) and not p1().has_weapon, "throwing weapon launches projectile and leaves thrower unarmed")
+	for i in range(25):
+		await process_frame
+		arena._resolve_combat()
+		if p2().riposte_timer > 0.0:
+			break
+	check(p2().riposte_timer > 0.0, "parrying a hurled sword deflects it and grants Riposte")
+
+	# Unarmed jab while disarmed
+	for w in arena.weapons_layer.get_children():
+		w.queue_free()
+	arena.hitstop_timer = 0.0
+	Engine.time_scale = 1.0
+	p1().position.x = 540.0
+	p2().position.x = 640.0
+	p2().parrying = false
+	var hp_pre_jab := p2().hp
+	check(p1().start_jab(), "unarmed fighter can throw a gauntlet jab")
+	p1()._jab_timer = 0.14
+	arena._resolve_combat()
+	check(p2().hp < hp_pre_jab, "gauntlet jab lands close-range blunt damage")
+
+	# Pick up rival's dropped greatsword off the stage floor!
+	var dropped := p2().drop_weapon(Vector2(-80, -60))
+	check(dropped != null and dropped.weapon_part_id == "p4_sword_flam", "dropped weapon retains its exact part id (p4_sword_flam)")
+	dropped.position = Vector2(p1().position.x + 12.0, 556.0)
+	dropped.grounded = true
+	dropped.pickup_cooldown = 0.0
+	arena._resolve_combat()
+	check(p1().has_weapon and p1().weapon_part_id == "p4_sword_flam", "unarmed Landsknecht recovers Black Knight's dropped greatsword")
+
+	# 5. Stage-Corner Wall Crush
+	_reset_both()
+	arena.hitstop_timer = 0.0
+	Engine.time_scale = 1.0
+	p2().position.x = 1148.0
+	p1().position.x = 1020.0
+	p1().set_facing(1)
+	var hp_pre_crush := p2().hp
+	p1().start_attack("kick")
+	p1().action_elapsed = 0.16
+	p1().anim_player.stop()
+	p1().anim_player.play("kick", 0.0)
+	p1().anim_player.advance(0.16)
+	arena._resolve_combat()
+	check(p2().hp < hp_pre_crush - 9.5 and p2().current_action == "parry_recoil", "kicking a rival pinned against the stage wall triggers Corner Crush damage & heavy stagger")
+
 	print("== Back to title")
 	arena._go_to_title()
 	await frames(3)
@@ -353,6 +461,7 @@ func _run() -> void:
 
 func _reset_both() -> void:
 	for f in [p1(), p2()]:
+		f.loadout_id = "signature"
 		f.reset_fighter()
 		f.cursor_aim_enabled = false
 	p1().position = Vector2(440, 445)

@@ -4,10 +4,12 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
 
 ## Features
 
-- **Physical blade combat.** Blade-vs-blade and blade-vs-body capsule collision. Parries, blocks and clashes depend on the actual position of the blade.
-- **Cursor sword control.** The sword arm follows the mouse (or right stick) through two-bone IK. Fling the blade to cut: faster swings hit harder and cost more stamina.
-- **Perfect parries.** Raise your guard just before the blow lands to stagger the attacker.
-- **Dismemberment that matters.** Losing a leg slows you and stops dashing. Losing the right shin stops kicks. Losing the off-hand weakens your guard. Losing the sword arm disarms you. Severed parts stay hanging from their marionette strings, and you can cut those strings too.
+- **Physical blade combat.** Swept blade-vs-blade and blade-vs-body capsule collision with sweet-spot vs. ricasso scaling, edge cuts vs. armour-piercing thrusts, and physical arm rebound on parry/plate impact.
+- **Cursor sword control.** The sword arm follows the mouse (or right stick) through weighted two-bone IK. Swing through a real arc to build limb-chopping momentum (gold trail), or drive the point forward to thrust.
+- **Perfect parries & ripostes.** Raise your guard just before impact to stagger the attacker, or block cleanly to earn a brief golden **Riposte** window with faster, harder counters.
+- **Half-Swording (`Q` / `R3`).** Grip the centre of a two-handed blade with your off-hand for close-quarters leverage, cheaper blocks, and heavy armour-piercing against full plate.
+- **Weapon Loadouts, Disarms & Sword Throws (`F` / `MMB`).** Choose **Signature**, **Iron Pollaxe** (guard-crushing disarmer), **Sword + Buckler** (wide parry window & buckler bashes), or **Katzbalger** (fast one-handed sidearm). Hurl your weapon across the stage, deflect flying steel, brawl with gauntlet jabs, and scramble to pick up any dropped blade on the floorboards!
+- **Knock-Off Hats, Cracking Helmets & Earned Dismemberment.** Solid headshots knock off feathered hats or crack off Gothic plate helmets, exposing bare heads to mid-fight decapitation. High slashes can snap live overhead marionette strings (`Strings & Steel`), and shoving a rival into the proscenium wall triggers a **Corner Crush**.
 - **5 distinct fighters** (see `scripts/FighterStats.gd`):
 
   | Fighter | Style |
@@ -34,6 +36,8 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
 | Slash | J (or LMB in *Aim: Keys* mode) | X / RB |
 | Thrust | K | Y |
 | Kick | E | A |
+| Half-Sword stance | Q | Right stick click (R3) |
+| Hurl weapon | F / Middle mouse | — |
 | Parry | Space / RMB | B / LB / LT |
 | Low guard | S (or aim low) | Left stick down |
 | Dash | Shift / ↑ | RT / D-pad up |
@@ -57,12 +61,14 @@ scripts/
   GameUI.gd            HUD, title/character select, pause, results, touch overlay
   BloodCanvas.gd       persistent GPU blood layers (non-clearing SubViewports)
   GameInput.gd         InputMap registration
-  PhysicsDebris.gd     severed limbs: ballistic or dangling on a string
+  WeaponProjectile.gd  hurled spinning blades & recoverable dropped ground weapons
+  PhysicsDebris.gd     severed limbs & knocked-off headgear: ballistic or dangling
   SoundFX.gd           procedural sound effects
 tools/
   CharacterRigBuilder.gd  builds fighter .tscn rigs from data/rig_metadata.json
   BuildAllRigs.gd         headless rig + arena builder
-  SmokeTest.gd            headless gameplay test suite
+  SmokeTest.gd            82-check headless gameplay test suite
+  BalanceSim.gd           multi-bot headless AI & combat balance simulator
 data/rig_metadata.json    sprite parts, pivots and sockets for every fighter
 ```
 

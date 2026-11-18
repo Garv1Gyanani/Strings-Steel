@@ -7,6 +7,7 @@ class_name FighterController
 ## multi-limb dismemberment with dangling marionette physics, and arterial stumps.
 
 signal request_spawn_debris(debris: PhysicsDebris)
+signal request_spawn_weapon_proj(proj: WeaponProjectile)
 signal request_blood_spray(world_pos: Vector2, impulse: Vector2, count: int, heavy: bool)
 signal request_sfx(key: String, jitter: float)
 signal request_cut_flash(world_pos: Vector2, label_text: String, color: Color)
@@ -43,6 +44,12 @@ var bleed_rate: float = 0.0
 var bleed_floor: float = 0.0
 var is_dead: bool = false
 var has_weapon: bool = true
+var loadout_id: String = "signature"
+var weapon_part_id: String = ""
+var _native_weapon_id: String = ""
+var has_buckler: bool = false
+var half_swording: bool = false
+var headgear_lost: bool = false
 var rig_scale: float = 0.68
 
 var current_action: String = ""
@@ -53,6 +60,9 @@ var _stamina_regen_delay: float = 0.0
 var _buffered_move: String = ""
 var _buffer_timer: float = 0.0
 var _lmb_prev: bool = false
+var _mmb_prev: bool = false
+var _jab_timer: float = 0.0
+var _jab_cd: float = 0.0
 var _pad_aim_frame: int = -1
 var _pad_aim_cache: Vector2 = Vector2.ZERO
 
@@ -142,6 +152,10 @@ var wounds: Array[Dictionary] = []
 var _meta_parts: Dictionary = {}
 var _fighter_parts: Dictionary = {}
 var _head_textures: Dictionary = {}
+var _head_part_ids: Dictionary = {}
+var _unhelmed_part_id: String = ""
+var _unhelmed_tex: Texture2D
+var _buckler_sprite: Sprite2D
 var _gore_stump_tex: Texture2D
 var _stump_sprites: Array[Sprite2D] = []
 
@@ -213,6 +227,10 @@ func reset_fighter() -> void:
 	combat_frozen = false
 	is_dead = false
 	has_weapon = true
+	half_swording = false
+	headgear_lost = false
+	_jab_timer = 0.0
+	_jab_cd = 0.0
 	current_action = ""
 	action_elapsed = 0.0
 	_action_speed = 1.0
@@ -268,7 +286,7 @@ func reset_fighter() -> void:
 	}
 	severed_strings = {"head": false, "arm_r": false, "arm_l": false, "leg_l": false, "leg_r": false}
 
-	for b in [bone_torso, bone_head, bone_ua_r, bone_fa_r, bone_hand_r, bone_weapon, bone_ua_l, bone_fa_l, bone_hand_l, bone_thigh_l, bone_shin_l, bone_boot_l, bone_thigh_r, bone_shin_r, bone_boot_r]:
+	for b in [bone_torso, bone_head, bone_hat, bone_ua_r, bone_fa_r, bone_hand_r, bone_weapon, bone_ua_l, bone_fa_l, bone_hand_l, bone_thigh_l, bone_shin_l, bone_boot_l, bone_thigh_r, bone_shin_r, bone_boot_r]:
 		if b != null:
 			b.visible = true
 	for st in _stump_sprites:
@@ -276,8 +294,7 @@ func reset_fighter() -> void:
 			st.queue_free()
 	_stump_sprites.clear()
 	_reset_sprite_tints(skeleton)
-	if weapon_sprite != null:
-		weapon_sprite.visible = true
+	apply_loadout(loadout_id)
 	if skeleton != null:
 		skeleton.position = Vector2.ZERO
 	if anim_player != null and anim_player.has_animation("idle"):
@@ -308,16 +325,111 @@ func _load_character_assets() -> void:
 	var fighters: Dictionary = parsed.get("fighters", {})
 	var f_cfg: Dictionary = fighters.get(fighter_id, {})
 	_fighter_parts = f_cfg.get("parts", {})
+	_native_weapon_id = String(_fighter_parts.get("weapon", "p1_sword_long"))
+	weapon_part_id = _native_weapon_id
 
 	var map: Dictionary = stats.get("heads", FighterStats.DEFAULT["heads"])
 	for k in map.keys():
 		var pid: String = map[k]
+		_head_part_ids[k] = pid
 		if _meta_parts.has(pid):
 			var tex_path: String = _meta_parts[pid].get("texture", "")
 			if ResourceLoader.exists(tex_path):
 				_head_textures[k] = ResourceLoader.load(tex_path)
+	_unhelmed_part_id = String(stats.get("unhelmed_head", ""))
+	if _unhelmed_part_id != "" and _meta_parts.has(_unhelmed_part_id):
+		var u_path: String = _meta_parts[_unhelmed_part_id].get("texture", "")
+		if ResourceLoader.exists(u_path):
+			_unhelmed_tex = ResourceLoader.load(u_path)
+	if bone_hand_l != null and _buckler_sprite == null and _meta_parts.has("p2_buckler"):
+		var b_spec: Dictionary = _meta_parts["p2_buckler"]
+		var b_path: String = b_spec.get("texture", "")
+		if ResourceLoader.exists(b_path):
+			_buckler_sprite = Sprite2D.new()
+			_buckler_sprite.name = "BucklerSprite"
+			_buckler_sprite.texture = ResourceLoader.load(b_path)
+			_buckler_sprite.centered = false
+			var b_piv: Array = b_spec.get("pivot", [60, 60])
+			_buckler_sprite.offset = -Vector2(float(b_piv[0]), float(b_piv[1]))
+			var b_sc := float(b_spec.get("scale", 0.72))
+			_buckler_sprite.scale = Vector2(b_sc, b_sc)
+			_buckler_sprite.z_index = 49
+			_buckler_sprite.visible = false
+			bone_hand_l.add_child(_buckler_sprite)
 	if ResourceLoader.exists("res://assets/parts_v2/p1_gore_0.png"):
 		_gore_stump_tex = ResourceLoader.load("res://assets/parts_v2/p1_gore_0.png")
+
+
+func _meta_vec2(arr: Variant, fallback: Vector2 = Vector2.ZERO) -> Vector2:
+	if typeof(arr) == TYPE_ARRAY and arr.size() >= 2:
+		return Vector2(float(arr[0]), float(arr[1]))
+	return fallback
+
+
+func apply_loadout(id: String) -> void:
+	loadout_id = id if id in FighterStats.LOADOUT_ORDER else "signature"
+	half_swording = false
+	match loadout_id:
+		"pollaxe":
+			has_buckler = false
+			equip_weapon_part("p2_pollaxe")
+		"buckler":
+			has_buckler = true
+			var sidearm := "p5_sword_rapier" if _native_weapon_id == "p5_sword_rapier" else "p1_sword_katz"
+			equip_weapon_part(sidearm)
+		"katzbalger":
+			has_buckler = false
+			equip_weapon_part("p1_sword_katz")
+		_:
+			has_buckler = false
+			equip_weapon_part(_native_weapon_id if _native_weapon_id != "" else "p1_sword_long")
+	_sync_buckler_visibility()
+
+
+func equip_weapon_part(part_id: String) -> bool:
+	var target_id := part_id if _meta_parts.has(part_id) else _native_weapon_id
+	if target_id == "" or not _meta_parts.has(target_id) or weapon_sprite == null:
+		has_weapon = true
+		if weapon_sprite != null:
+			weapon_sprite.visible = true
+		return false
+	var sw_spec: Dictionary = _meta_parts[target_id]
+	var tex_path: String = sw_spec.get("texture", "")
+	if not ResourceLoader.exists(tex_path):
+		return false
+	var sw_sockets: Dictionary = sw_spec.get("sockets", {})
+	var sw_scale := float(sw_spec.get("scale", 1.0))
+	var sw_pivot := _meta_vec2(sw_spec.get("pivot", [0, 0]))
+	var sw_grip_front := _meta_vec2(sw_sockets.get("gripFront", sw_spec.get("pivot", [0, 0])), sw_pivot)
+	var sw_grip_back := _meta_vec2(sw_sockets.get("gripBack", sw_sockets.get("pommel", [0, 0])))
+	var sw_guard := _meta_vec2(sw_sockets.get("guard", [110, 52]))
+	var sw_tip := _meta_vec2(sw_sockets.get("tip", [300, 52]))
+
+	weapon_sprite.texture = ResourceLoader.load(tex_path)
+	weapon_sprite.centered = false
+	weapon_sprite.offset = -sw_grip_front
+	weapon_sprite.scale = Vector2(sw_scale, sw_scale)
+	weapon_sprite.visible = true
+	if pommel_target != null:
+		pommel_target.position = (sw_grip_back - sw_grip_front) * sw_scale
+	if blade_guard_marker != null:
+		blade_guard_marker.position = (sw_guard - sw_grip_front) * sw_scale
+	if blade_tip_marker != null:
+		blade_tip_marker.position = (sw_tip - sw_grip_front) * sw_scale
+	weapon_part_id = target_id
+	has_weapon = true
+	blade_blood = 0.0
+	_blade_trail.clear()
+	_prev_blade_seg.clear()
+	if not weapon_is_two_handed():
+		half_swording = false
+	limb_state_changed.emit(self)
+	return true
+
+
+func _sync_buckler_visibility() -> void:
+	if _buckler_sprite != null:
+		_buckler_sprite.visible = has_buckler and not bool(severed.get("arm_l", false)) and not bool(severed.get("forearm_l", false))
 
 
 func _apply_facing() -> void:
@@ -358,8 +470,14 @@ func _windup_mult() -> float:
 
 
 func is_armored_slot(slot: String) -> bool:
+	if slot == "head" and headgear_lost:
+		return false
 	var slots: Array = stats.get("armored_slots", [])
 	return slots.has(slot)
+
+
+func is_winded() -> bool:
+	return stamina < 8.0
 
 
 ## Fraction of normal walking speed left after leg wounds (1.0 = intact).
@@ -374,7 +492,7 @@ func get_mobility() -> float:
 
 
 func get_move_speed() -> float:
-	return move_speed * get_mobility()
+	return move_speed * get_mobility() * (0.82 if is_winded() else 1.0)
 
 
 func can_dash() -> bool:
@@ -387,6 +505,71 @@ func can_kick() -> bool:
 
 func can_wield() -> bool:
 	return has_weapon and not bool(severed.get("arm_r", false)) and not bool(severed.get("forearm_r", false))
+
+
+func _offhand_usable() -> bool:
+	return not bool(severed.get("arm_l", false)) and not bool(severed.get("forearm_l", false)) and not bool(severed.get("torso", false)) and not bool(severed_strings.get("arm_l", false))
+
+
+func can_jab() -> bool:
+	var r_ok := not bool(severed.get("arm_r", false)) and not bool(severed.get("forearm_r", false))
+	var l_ok := not bool(severed.get("arm_l", false)) and not bool(severed.get("forearm_l", false))
+	return not bool(severed.get("torso", false)) and (r_ok or l_ok)
+
+
+func weapon_is_two_handed() -> bool:
+	if has_buckler:
+		return false
+	var ws: Dictionary = FighterStats.WEAPON_SPECS.get(weapon_part_id, {})
+	return bool(ws.get("two_handed", true))
+
+
+func _weapon_spec_val(key: String, default_val: float) -> float:
+	if weapon_part_id == "" or weapon_part_id == _native_weapon_id:
+		return default_val
+	var ws: Dictionary = FighterStats.WEAPON_SPECS.get(weapon_part_id, {})
+	return float(ws.get(key, default_val))
+
+
+func get_weapon_damage_mult() -> float:
+	return _weapon_spec_val("dmg", 1.0)
+
+
+func get_guard_crush_mult() -> float:
+	return _weapon_spec_val("guard_crush", 1.0)
+
+
+func get_cut_armor_pierce() -> float:
+	return clampf(_weapon_spec_val("ap_cut", 0.0) + (0.42 if half_swording else 0.0), 0.0, 0.85)
+
+
+func get_thrust_armor_pierce() -> float:
+	return clampf(stat("armor_pierce_thrust") + _weapon_spec_val("ap_thrust", 0.0) + (0.42 if half_swording else 0.0), 0.0, 0.88)
+
+
+func get_limb_damage_mult() -> float:
+	return stat("limb_damage_mult") * (0.75 if half_swording else 1.0)
+
+
+func can_half_sword() -> bool:
+	return not is_dead and can_wield() and weapon_is_two_handed() and _offhand_usable()
+
+
+func set_half_sword(on: bool, announce: bool = true) -> bool:
+	if on and not can_half_sword():
+		return false
+	if half_swording == on:
+		return false
+	half_swording = on
+	if announce:
+		request_sfx.emit("grip", 0.08)
+		request_cut_flash.emit(global_position + Vector2(0, -145), "HALF-SWORD!" if half_swording else "LONG-POINT!", Color(0.86, 0.92, 1.0))
+	limb_state_changed.emit(self)
+	return true
+
+
+func toggle_half_sword() -> bool:
+	return set_half_sword(not half_swording, true)
 
 
 ## Early in an attack wind-up (before the blade commits at ~0.11-0.13), a fighter can
@@ -404,6 +587,10 @@ func abort_windup() -> void:
 
 ## Losing the off-hand means one-handed blocking: guards cost more stamina.
 func get_guard_cost_mult() -> float:
+	if has_buckler and _offhand_usable():
+		return 0.62
+	if half_swording and _offhand_usable():
+		return 0.70
 	if bool(severed.get("arm_l", false)) or bool(severed.get("forearm_l", false)):
 		return 1.5
 	if bool(severed_strings.get("arm_l", false)):
@@ -412,19 +599,91 @@ func get_guard_cost_mult() -> float:
 
 
 func effective_blade_weight() -> float:
-	var w := maxf(0.45, stat("blade_weight"))
+	var w := maxf(0.42, stat("blade_weight") * _weapon_spec_val("weight", 1.0) * (0.80 if half_swording else 1.0))
 	if bool(severed_strings.get("arm_r", false)):
 		w *= 1.32
-	if bool(severed.get("arm_l", false)) or bool(severed.get("forearm_l", false)) or bool(severed_strings.get("arm_l", false)):
+	if weapon_is_two_handed() and (bool(severed.get("arm_l", false)) or bool(severed.get("forearm_l", false)) or bool(severed_strings.get("arm_l", false))):
 		w *= 1.16
 	return w
 
 
 func effective_attack_speed() -> float:
-	var s := stat("attack_speed")
+	var s := stat("attack_speed") * _weapon_spec_val("speed", 1.0) * (1.15 if half_swording else 1.0)
 	if bool(severed_strings.get("arm_r", false)):
 		s *= 0.82
 	return s
+
+
+func _spawn_weapon_projectile(flying_mode: bool, init_vel: Vector2) -> WeaponProjectile:
+	if not has_weapon or weapon_sprite == null or weapon_sprite.texture == null:
+		return null
+	var proj := WeaponProjectile.new()
+	proj.weapon_part_id = weapon_part_id if weapon_part_id != "" else _native_weapon_id
+	proj.thrower = self
+	var guard_w := blade_guard_marker.global_position if blade_guard_marker != null else global_position + Vector2(float(facing) * 45.0, -110.0)
+	var tip_w := blade_tip_marker.global_position if blade_tip_marker != null else guard_w + Vector2(float(facing) * 120.0, 0.0)
+	proj.position = guard_w.lerp(tip_w, 0.35)
+	proj.rotation = (tip_w - guard_w).angle()
+	var half_l := maxf(48.0, guard_w.distance_to(tip_w) * 0.55)
+	var center_local := (blade_guard_marker.position + blade_tip_marker.position) * 0.35 if (blade_guard_marker != null and blade_tip_marker != null) else Vector2.ZERO
+	var sc_x := maxf(0.1, weapon_sprite.scale.x)
+	proj.setup_visual(weapon_sprite.texture, weapon_sprite.scale * rig_scale, weapon_sprite.offset - center_local / sc_x, half_l)
+	if flying_mode:
+		proj.flying = true
+		proj.vel = init_vel
+		proj.ang_vel = 21.0 * (1.0 if init_vel.x >= 0.0 else -1.0)
+	else:
+		proj.drop_from_impact(init_vel)
+	has_weapon = false
+	half_swording = false
+	parrying = false
+	_blade_trail.clear()
+	weapon_sprite.visible = false
+	request_spawn_weapon_proj.emit(proj)
+	limb_state_changed.emit(self)
+	return proj
+
+
+func throw_weapon(aim_target: Vector2 = Vector2.INF) -> bool:
+	if is_dead or not can_wield() or current_action != "" or stamina < 12.0:
+		return false
+	spend_stamina(12.0)
+	var origin := global_position + Vector2(float(facing) * 55.0, -115.0)
+	var tgt := aim_target
+	if tgt == Vector2.INF:
+		tgt = cursor_aim_world if cursor_aim_enabled else (origin + Vector2(float(facing) * 280.0, -10.0))
+	var dir := tgt - origin
+	if dir.x * float(facing) < 40.0:
+		dir.x = float(facing) * maxf(180.0, absf(dir.x))
+	dir.y = clampf(dir.y, -190.0, 140.0)
+	var proj := _spawn_weapon_projectile(true, dir.normalized() * 940.0 + Vector2(0, -55.0))
+	if proj == null:
+		return false
+	request_sfx.emit("whoosh", 0.12)
+	request_cut_flash.emit(origin, "BLADE HURLED!", Color(1.0, 0.86, 0.44))
+	return true
+
+
+func drop_weapon(impulse: Vector2) -> WeaponProjectile:
+	if is_dead or not can_wield():
+		return null
+	return _spawn_weapon_projectile(false, impulse)
+
+
+func start_jab() -> bool:
+	if is_dead or current_action != "" or _jab_cd > 0.0 or stamina < 8.0 or not can_jab():
+		return false
+	spend_stamina(8.0)
+	parrying = false
+	_jab_timer = 0.22
+	_jab_cd = 0.42
+	attack_serial += 1
+	request_sfx.emit("whoosh", 0.22)
+	return true
+
+
+func is_jab_active() -> bool:
+	return not is_dead and _jab_timer > 0.04 and _jab_timer <= 0.205 and can_jab()
 
 
 func grant_riposte() -> void:
@@ -613,6 +872,11 @@ func _process(delta: float) -> void:
 	_buffer_timer = maxf(0.0, _buffer_timer - delta)
 	_stagger_immunity = maxf(0.0, _stagger_immunity - delta)
 	riposte_timer = maxf(0.0, riposte_timer - delta)
+	_jab_timer = maxf(0.0, _jab_timer - delta)
+	_jab_cd = maxf(0.0, _jab_cd - delta)
+	if half_swording and not can_half_sword():
+		half_swording = false
+	_sync_buckler_visibility()
 	var reb_decay := exp(-9.5 * delta)
 	_rebound_ua *= reb_decay
 	_rebound_wpn *= reb_decay
@@ -652,15 +916,26 @@ func _process(delta: float) -> void:
 		if bool(severed_strings.get("head", false)) and bone_head != null:
 			bone_head.rotation += deg_to_rad(22.0)
 
-	# Maintain Off-hand 2-bone IK unless dead or left arm injured/severed
-	var offhand_intact: bool = has_weapon and not bool(severed.get("arm_r", false)) and not bool(severed.get("arm_l", false)) and not bool(severed.get("forearm_l", false)) and not bool(severed.get("torso", false)) and not bool(severed_strings.get("arm_l", false))
-	if enable_offhand_ik and offhand_intact and not is_dead and current_action != "hurt" and current_action != "parry_recoil":
+	# Maintain Off-hand 2-bone IK unless dead, one-handed without buckler, or left arm injured/severed
+	var use_offhand_ik: bool = _offhand_usable() and (has_buckler or (has_weapon and weapon_is_two_handed() and not bool(severed.get("arm_r", false))))
+	if enable_offhand_ik and use_offhand_ik and not is_dead and current_action != "hurt" and current_action != "parry_recoil":
 		_solve_offhand_two_bone_ik()
-	elif not is_dead and (severed_strings.get("arm_l", false) or not has_weapon or bool(severed.get("arm_r", false))) and not bool(severed.get("arm_l", false)) and bone_ua_l != null:
-		# Natural relaxed far-arm guard behind torso when disarmed
+	elif not is_dead and not bool(severed.get("arm_l", false)) and bone_ua_l != null:
+		# Natural counterbalance guard behind torso when one-handed or disarmed
 		bone_ua_l.rotation = lerp_angle(bone_ua_l.rotation, deg_to_rad(-28.0), 8.0 * delta)
 		if bone_fa_l != null:
-			bone_fa_l.rotation = lerp_angle(bone_fa_l.rotation, deg_to_rad(-32.0), 8.0 * delta)
+			bone_fa_l.rotation = lerp_angle(bone_fa_l.rotation, deg_to_rad(-34.0), 8.0 * delta)
+
+	# Quick gauntlet jab / buckler bash arm extension when disarmed or bashing
+	if _jab_timer > 0.0 and not is_dead:
+		var jab_ext := sin(clampf(1.0 - _jab_timer / 0.22, 0.0, 1.0) * PI)
+		var use_left_jab := (has_buckler and _offhand_usable()) or bool(severed.get("arm_r", false)) or bool(severed.get("forearm_r", false))
+		if use_left_jab and bone_ua_l != null and bone_fa_l != null:
+			bone_ua_l.rotation = lerpf(bone_ua_l.rotation, deg_to_rad(-84.0), jab_ext)
+			bone_fa_l.rotation = lerpf(bone_fa_l.rotation, deg_to_rad(-8.0), jab_ext)
+		elif bone_ua_r != null and bone_fa_r != null:
+			bone_ua_r.rotation = lerpf(bone_ua_r.rotation, deg_to_rad(-86.0), jab_ext)
+			bone_fa_r.rotation = lerpf(bone_fa_r.rotation, deg_to_rad(-6.0), jab_ext)
 
 	# Sword trail tracking during active attacks
 	if is_blade_active() and has_weapon and blade_guard_marker != null and blade_tip_marker != null:
@@ -713,14 +988,23 @@ func _process_player_input(delta: float) -> void:
 	var lmb := mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 	var lmb_edge := lmb and not _lmb_prev
 	_lmb_prev = lmb
+	var mmb := mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE)
+	var mmb_edge := mmb and not _mmb_prev
+	_mmb_prev = mmb
+
+	if Input.is_action_just_pressed("half_sword"):
+		toggle_half_sword()
+	if Input.is_action_just_pressed("throw_weapon") or mmb_edge:
+		if throw_weapon():
+			return
 
 	# Queue one-shot moves on the press edge; the buffer lets a press made slightly
 	# before the current action ends still come out, instead of being swallowed.
-	if Input.is_action_just_pressed("slash") or (not cursor_aim_enabled and lmb_edge):
-		_buffered_move = "slash"
+	if Input.is_action_just_pressed("slash") or (not cursor_aim_enabled and lmb_edge) or (not can_wield() and lmb_edge):
+		_buffered_move = "slash" if can_wield() else "jab"
 		_buffer_timer = INPUT_BUFFER_TIME
 	elif Input.is_action_just_pressed("thrust"):
-		_buffered_move = "thrust"
+		_buffered_move = "thrust" if can_wield() else "jab"
 		_buffer_timer = INPUT_BUFFER_TIME
 	elif Input.is_action_just_pressed("kick"):
 		_buffered_move = "kick"
@@ -747,11 +1031,16 @@ func _process_player_input(delta: float) -> void:
 
 	if _buffer_timer > 0.0 and _buffered_move != "" and current_action == "":
 		var move_name := _buffered_move
-		if move_name == "slash":
-			move_name = "slash_low" if low_held else "slash_high"
-		if start_attack(move_name):
-			_buffered_move = ""
-			_buffer_timer = 0.0
+		if move_name == "jab":
+			if start_jab():
+				_buffered_move = ""
+				_buffer_timer = 0.0
+		else:
+			if move_name == "slash":
+				move_name = "slash_low" if low_held else "slash_high"
+			if start_attack(move_name):
+				_buffered_move = ""
+				_buffer_timer = 0.0
 
 	if current_action == "":
 		bar_tilt = lerpf(bar_tilt, mv * 0.08, 8.0 * delta)
@@ -1012,7 +1301,7 @@ func is_kick_active() -> bool:
 
 
 func is_perfect_parry() -> bool:
-	var win := stat("perfect_parry_window") * (0.65 if bool(severed_strings.get("head", false)) else 1.0)
+	var win := (stat("perfect_parry_window") + (0.06 if has_buckler and _offhand_usable() else 0.0)) * (0.65 if bool(severed_strings.get("head", false)) else 1.0)
 	return parrying and parry_hold_time <= win
 
 
@@ -1024,7 +1313,7 @@ func is_attack_threat() -> bool:
 		return false
 	if current_action in ATTACK_MOVES and action_elapsed <= 0.36:
 		return true
-	if is_blade_active():
+	if is_blade_active() or is_jab_active():
 		return true
 	return is_player and cursor_aim_enabled and current_action == "" and can_wield() and _blade_tip_speed > 320.0 and _swing_arc_px >= 38.0 and stamina >= 5.0 * stat("stamina_cost_mult")
 
@@ -1034,7 +1323,11 @@ func get_blade_segment() -> Array:
 		return []
 	if blade_guard_marker == null or blade_tip_marker == null:
 		return []
-	return [blade_guard_marker.global_position, blade_tip_marker.global_position]
+	var g := blade_guard_marker.global_position
+	var t := blade_tip_marker.global_position
+	if half_swording:
+		g = g.lerp(t, 0.36)
+	return [g, t]
 
 
 ## Current blade segment plus the swept path from the previous frame, so a fast mouse
@@ -1125,14 +1418,14 @@ func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Ve
 	if is_dead:
 		return false
 
-	# Armoured slots mitigate hits unless staggered by a parry; thrusts partially slip into gaps.
+	# Armoured slots mitigate hits unless staggered by a parry; thrusts, pollaxes & half-swording pierce gaps.
 	var armored_slot: bool = is_armored_slot(slot)
 	var is_counter: bool = current_action == "parry_recoil"
 	var armor_mult: float = 1.0
 	if armored_slot and not is_counter:
 		armor_mult = stat("armor_mult")
-		if is_thrust and armor_pierce > 0.0:
-			armor_mult = lerpf(armor_mult, 1.0, clampf(armor_pierce, 0.0, 0.85))
+		if armor_pierce > 0.0:
+			armor_mult = lerpf(armor_mult, 1.0, clampf(armor_pierce, 0.0, 0.88))
 	var counter_mult: float = 1.28 if is_counter else 1.0
 	var pwr: float = clampf(impact_power, 0.15, 1.0)
 	# Blade sweet-spot: outer half of blade cuts cleanly; hilt/ricasso bumps only bruise.
@@ -1183,6 +1476,7 @@ func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Ve
 	# - Thrusts pierce rather than chopping limbs off.
 	# - Hilt bumps & small splashes NEVER pop limbs or slice fighters in half (even in 1-Hit Sever mode).
 	# - Torso bisection ("slice in half") is reserved for true full-momentum sweet-spot killing cleaves!
+	# - Headshot blows can knock off hats / crack off helmets first, leaving the bare neck open to decapitation!
 	var should_sever := false
 	if not is_thrust and not bool(severed.get(slot, false)):
 		if one_hit_sever:
@@ -1192,9 +1486,13 @@ func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Ve
 			if slot == "torso":
 				should_sever = can_chop and lethal_finish and pwr >= 0.92 and blade_pos_frac >= 0.45
 			elif slot == "head":
-				should_sever = can_chop and ((lethal_finish and pwr >= 0.82) or (staggered and hp < 0.20 * max_hp and pwr >= 0.85))
+				var bare_neck_chop := limb_depleted and not is_armored_slot("head") and pwr >= 0.84
+				should_sever = can_chop and ((lethal_finish and pwr >= 0.82) or (staggered and hp < 0.20 * max_hp and pwr >= 0.85) or bare_neck_chop)
 			else:
 				should_sever = can_chop and (limb_depleted or (lethal_finish and pwr >= 0.82) or (wounded_exec and limb_frac < 0.55))
+
+	if not should_sever and slot == "head" and _has_removable_headgear() and pwr >= 0.58 and limb_frac <= 0.62 and hp > 0.0:
+		_pop_headgear(swing_dir)
 
 	if should_sever:
 		if lethal_finish and slot == "torso" and randf() < 0.40 and not bool(severed.get("head", false)):
@@ -1465,14 +1763,69 @@ func _spawn_bisected_upper_torso(hit_pt: Vector2, swing_dir: Vector2) -> void:
 	request_spawn_debris.emit(deb)
 
 
+func _has_removable_headgear() -> bool:
+	if headgear_lost or bool(severed.get("head", false)):
+		return false
+	if bone_hat != null and bone_hat.get_child_count() > 0:
+		return true
+	return _unhelmed_tex != null
+
+
+func _pop_headgear(swing_dir: Vector2) -> void:
+	if not _has_removable_headgear() or bone_head == null:
+		return
+	headgear_lost = true
+	var deb := PhysicsDebris.new()
+	deb.vel = swing_dir * 270.0 + Vector2(-float(facing) * 60.0, -245.0)
+	deb.ang_vel = randf_range(-11.5, 11.5)
+	deb.floor_y = 560.0
+	deb.dangling = false
+	deb.gore_enabled = false
+	deb.scale = Vector2(float(facing) * rig_scale, rig_scale)
+	var label := "HAT KNOCKED OFF!"
+
+	if bone_hat != null and bone_hat.get_child_count() > 0:
+		deb.position = bone_hat.global_position
+		_clone_bone_tree_visuals(bone_hat, deb, true, false)
+		bone_hat.visible = false
+		if fighter_id == "fechtmeister":
+			label = "BURGONET KNOCKED OFF!"
+	elif head_sprite != null and _unhelmed_tex != null:
+		deb.position = bone_head.global_position
+		var helm_sp := head_sprite.duplicate() as Sprite2D
+		deb.add_child(helm_sp)
+		label = "HELMET CRACKED!" if fighter_id == "black_knight" else "MASK TORN OFF!"
+		_update_head_expression()
+
+	request_spawn_debris.emit(deb)
+	request_sfx.emit("clatter", 0.12)
+	request_cut_flash.emit(bone_head.global_position + Vector2(0, -28), label, Color(0.96, 0.84, 0.44))
+	limb_state_changed.emit(self)
+
+
+func _apply_head_part_transform(sp: Sprite2D, part_id: String) -> void:
+	if sp == null or part_id == "" or not _meta_parts.has(part_id):
+		return
+	var spec: Dictionary = _meta_parts[part_id]
+	var piv := _meta_vec2(spec.get("pivot", [0, 0]))
+	var sc := float(spec.get("scale", 1.0))
+	sp.offset = -piv
+	sp.scale = Vector2(sc, sc)
+
+
 func _clone_bone_tree_visuals(src_node: Node2D, dst_parent: Node2D, is_root: bool, force_dead_head: bool) -> void:
 	for c in src_node.get_children():
 		if not c is Node2D or not (c as Node2D).visible:
 			continue
 		if c is Sprite2D:
 			var sp := (c as Sprite2D).duplicate() as Sprite2D
-			if force_dead_head and c == head_sprite and _head_textures.has("dead"):
-				sp.texture = _head_textures["dead"]
+			if force_dead_head and c == head_sprite:
+				if headgear_lost and _unhelmed_tex != null:
+					sp.texture = _unhelmed_tex
+					_apply_head_part_transform(sp, _unhelmed_part_id)
+				elif _head_textures.has("dead"):
+					sp.texture = _head_textures["dead"]
+					_apply_head_part_transform(sp, String(_head_part_ids.get("dead", "")))
 			dst_parent.add_child(sp)
 		elif c is Bone2D:
 			var b := c as Bone2D
@@ -1501,6 +1854,10 @@ func _slot_stump_anchor(slot: String) -> Node2D:
 func _update_head_expression() -> void:
 	if head_sprite == null or _head_textures.is_empty():
 		return
+	if headgear_lost and _unhelmed_tex != null:
+		head_sprite.texture = _unhelmed_tex
+		_apply_head_part_transform(head_sprite, _unhelmed_part_id)
+		return
 	var expr := "calm"
 	if is_dead:
 		expr = "dead"
@@ -1512,14 +1869,25 @@ func _update_head_expression() -> void:
 		expr = "bloody"
 	if _head_textures.has(expr):
 		head_sprite.texture = _head_textures[expr]
+		_apply_head_part_transform(head_sprite, String(_head_part_ids.get(expr, "")))
 
 
 func _solve_offhand_two_bone_ik() -> void:
-	if bone_torso == null or bone_ua_l == null or bone_fa_l == null or bone_hand_l == null or pommel_target == null:
+	if bone_torso == null or bone_ua_l == null or bone_fa_l == null or bone_hand_l == null:
 		return
 
 	var sh_pos := bone_ua_l.position
-	var tgt_pos := bone_torso.to_local(pommel_target.global_position)
+	var tgt_pos := Vector2.ZERO
+	if has_buckler:
+		var buckler_y := -30.0 if guard_zone == "low" else (-88.0 if parrying else -68.0)
+		var buckler_x := 104.0 if parrying else 90.0
+		tgt_pos = Vector2(buckler_x, buckler_y)
+	elif half_swording and blade_guard_marker != null and blade_tip_marker != null:
+		tgt_pos = bone_torso.to_local(blade_guard_marker.global_position.lerp(blade_tip_marker.global_position, 0.42))
+	elif pommel_target != null:
+		tgt_pos = bone_torso.to_local(pommel_target.global_position)
+	else:
+		return
 	var l1 := bone_fa_l.position.length()
 	var l2 := bone_hand_l.position.length()
 	var grip_marker := bone_hand_l.get_node_or_null("GripCenter") as Marker2D
@@ -1585,6 +1953,10 @@ func _draw() -> void:
 		var rt := to_local(blade_tip_marker.global_position)
 		var r_alpha := clampf(riposte_timer / RIPOSTE_WINDOW, 0.0, 1.0) * 0.7
 		draw_line(rg, rt, Color(1.0, 0.88, 0.42, r_alpha), 3.2, true)
+	elif half_swording and has_weapon and blade_guard_marker != null and blade_tip_marker != null:
+		var hg := to_local(blade_guard_marker.global_position.lerp(blade_tip_marker.global_position, 0.36))
+		var ht := to_local(blade_tip_marker.global_position)
+		draw_line(hg, ht, Color(0.72, 0.88, 1.0, 0.45), 2.6, true)
 
 	# 1b. Wet Blood Coating Along Sword Blade
 	if gore_enabled and blade_blood > 0.04 and has_weapon and blade_guard_marker != null and blade_tip_marker != null:

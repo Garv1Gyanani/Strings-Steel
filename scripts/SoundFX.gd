@@ -28,7 +28,17 @@ func _ready() -> void:
 	_streams["sever"] = _gen_flesh(0.38, true)
 	_streams["snap"] = _gen_string_snap(0.26)
 	_streams["thud"] = _gen_thud(0.22)
+	_streams["clatter"] = _gen_clatter(0.36)
+	_streams["grip"] = _gen_grip(0.11)
 	_streams["ko_boom"] = _gen_ko_boom(0.85)
+
+
+func _exit_tree() -> void:
+	for p in _players:
+		if p != null and is_instance_valid(p):
+			p.stop()
+			p.stream = null
+	_streams.clear()
 
 
 func play_sfx(key: String, pitch_jitter: float = 0.08, db_offset: float = 0.0) -> void:
@@ -140,4 +150,35 @@ func _gen_ko_boom(dur: float) -> AudioStreamWAV:
 		var sub := sin(TAU * lerpf(92.0, 28.0, minf(1.0, u * 1.4)) * t) * exp(-u * 3.8)
 		var brass := sin(TAU * 138.0 * t) * exp(-u * 5.2) * 0.25
 		out[i] = clampf((sub * 0.8 + brass) * 0.8, -0.95, 0.95)
+	return _make_wav(out)
+
+
+func _gen_clatter(dur: float) -> AudioStreamWAV:
+	var n := int(dur * SAMPLE_RATE)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var freqs := [1120.0, 1840.0, 2760.0]
+	for i in range(n):
+		var t := float(i) / float(SAMPLE_RATE)
+		var u := float(i) / float(n)
+		var hit1 := exp(-u * 20.0)
+		var hit2 := exp(-maxf(0.0, u - 0.34) * 26.0) * (1.0 if u >= 0.34 else 0.0) * 0.55
+		var wood := sin(TAU * 145.0 * t) * (hit1 + hit2) * 0.45
+		var ring := 0.0
+		for f in freqs:
+			ring += sin(TAU * f * t) * (hit1 * 0.22 + hit2 * 0.16)
+		out[i] = clampf((wood + ring) * 0.65, -0.95, 0.95)
+	return _make_wav(out)
+
+
+func _gen_grip(dur: float) -> AudioStreamWAV:
+	var n := int(dur * SAMPLE_RATE)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	for i in range(n):
+		var t := float(i) / float(SAMPLE_RATE)
+		var u := float(i) / float(n)
+		var click := sin(TAU * lerpf(880.0, 320.0, u) * t) * exp(-u * 18.0) * 0.45
+		var leather := randf_range(-1.0, 1.0) * exp(-u * 14.0) * 0.22
+		out[i] = clampf(click + leather, -0.9, 0.9)
 	return _make_wav(out)

@@ -35,6 +35,8 @@ const SETTINGS_PATH := "user://settings.cfg"
 
 var p1_roster_idx: int = 0
 var p2_roster_idx: int = 1
+var p1_loadout: String = "signature"
+var p2_loadout: String = "signature"
 ## Where settings & records are persisted (tests point this elsewhere).
 var settings_path: String = SETTINGS_PATH
 
@@ -47,6 +49,7 @@ var ai := AIController.new()
 # Theatre & FX layers
 var stage_layer: Node2D
 var candle_layer: Node2D
+var weapons_layer: Node2D
 var debris_layer: Node2D
 var fx_layer: Node2D
 var particles_blood: Array[Dictionary] = []
@@ -57,8 +60,11 @@ var arterial_jets: Array[Dictionary] = []
 var slash_flashes: Array[Dictionary] = []
 var callouts: Array[Dictionary] = []
 var candles: Array[Dictionary] = []
+var _leaves: Array[Dictionary] = []
+var _stage_tex: Texture2D
 var blood_flash_alpha: float = 0.0
 
+const COURTYARD_RECT := Rect2(-112.0, -24.0, 1504.0, 846.0)
 const MAX_BLOOD_PARTICLES := 340
 const MAX_SPARKS := 260
 const MAX_CHUNKS := 120
@@ -67,6 +73,7 @@ const MAX_MIST := 60
 # Settings (persisted to user://settings.cfg)
 var settings := {
 	"difficulty": "hard",
+	"stage": "courtyard",
 	"gore": true,
 	"one_hit_sever": false,
 	"cursor_aim": true,
@@ -106,6 +113,9 @@ func _ready() -> void:
 	sfx = SoundFX.new()
 	add_child(sfx)
 
+	if ResourceLoader.exists("res://assets/stage_courtyard.jpg"):
+		_stage_tex = ResourceLoader.load("res://assets/stage_courtyard.jpg")
+
 	stage_layer = Node2D.new()
 	stage_layer.name = "StageLayer"
 	stage_layer.z_index = -35
@@ -121,6 +131,11 @@ func _ready() -> void:
 	candle_layer.z_index = -10
 	candle_layer.draw.connect(_draw_candles)
 	add_child(candle_layer)
+
+	weapons_layer = Node2D.new()
+	weapons_layer.name = "WeaponsLayer"
+	weapons_layer.z_index = 58
+	add_child(weapons_layer)
 
 	debris_layer = Node2D.new()
 	debris_layer.name = "DebrisLayer"
@@ -167,6 +182,8 @@ func _load_settings() -> void:
 		settings[k] = cfg.get_value("game", k, settings[k])
 	best_wave = int(cfg.get_value("records", "best_wave", 0))
 	p1_roster_idx = clampi(int(cfg.get_value("game", "p1_idx", 0)), 0, FIGHTER_ROSTER.size() - 1)
+	var saved_lo := String(cfg.get_value("game", "p1_loadout", "signature"))
+	p1_loadout = saved_lo if saved_lo in FighterStats.LOADOUT_ORDER else "signature"
 
 
 func _save_settings() -> void:
@@ -174,6 +191,7 @@ func _save_settings() -> void:
 	for k in settings.keys():
 		cfg.set_value("game", k, settings[k])
 	cfg.set_value("game", "p1_idx", p1_roster_idx)
+	cfg.set_value("game", "p1_loadout", p1_loadout)
 	cfg.set_value("records", "best_wave", best_wave)
 	cfg.save(settings_path)
 
@@ -187,6 +205,8 @@ func _on_setting_changed(key: String, value: Variant) -> void:
 func _apply_settings() -> void:
 	sfx.muted = not bool(settings["sound"])
 	ai.set_difficulty(_effective_difficulty())
+	if stage_layer != null:
+		stage_layer.queue_redraw()
 	for f in [p1, p2]:
 		if f != null:
 			f.gore_enabled = bool(settings["gore"])
@@ -229,6 +249,7 @@ func _wire_fighter(f: FighterController, is_p1: bool) -> void:
 		return
 	f.is_player = is_p1
 	f.request_spawn_debris.connect(_on_spawn_debris)
+	f.request_spawn_weapon_proj.connect(_on_spawn_weapon_proj)
 	f.request_blood_spray.connect(_on_blood_spray)
 	f.request_sfx.connect(func(k: String, j: float): sfx.play_sfx(k, j))
 	f.request_cut_flash.connect(_on_cut_flash)
@@ -274,7 +295,7 @@ func _go_to_title() -> void:
 	_reset_stage()
 	_freeze_fighters(true)
 	ui.hide_result()
-	ui.show_title(p1_roster_idx, p2_roster_idx, match_mode, best_wave)
+	ui.show_title(p1_roster_idx, p2_roster_idx, match_mode, best_wave, p1_loadout, p2_loadout)
 
 
 func _on_start_requested(cfg: Dictionary) -> void:
@@ -283,6 +304,10 @@ func _on_start_requested(cfg: Dictionary) -> void:
 	var p2_idx := int(cfg.get("p2", -1))
 	if p2_idx < 0:
 		p2_idx = randi() % FIGHTER_ROSTER.size()
+	var lo1 := String(cfg.get("p1_loadout", "signature"))
+	var lo2 := String(cfg.get("p2_loadout", "signature"))
+	p1_loadout = lo1 if lo1 in FighterStats.LOADOUT_ORDER else "signature"
+	p2_loadout = lo2 if lo2 in FighterStats.LOADOUT_ORDER else "signature"
 	_set_fighter(true, p1_idx)
 	_set_fighter(false, p2_idx)
 	_save_settings()
@@ -295,6 +320,8 @@ func _start_match() -> void:
 	wins_p2 = 0
 	round_num = 1
 	gauntlet_wave = 1
+	if match_mode == "gauntlet":
+		p2_loadout = "signature"
 	ai.set_difficulty(_effective_difficulty())
 	ui.hide_result()
 	_begin_round()
@@ -337,6 +364,9 @@ func _reset_stage() -> void:
 	callouts.clear()
 	blood_flash_alpha = 0.0
 	blood.clear()
+	if weapons_layer != null:
+		for w in weapons_layer.get_children():
+			w.queue_free()
 	for c in debris_layer.get_children():
 		c.queue_free()
 	ai.reset()
@@ -345,6 +375,7 @@ func _reset_stage() -> void:
 		p1.position = Vector2(440, 445)
 		p1.hp_scale = 1.0
 		p1.limb_hp_scale = 1.0
+		p1.loadout_id = p1_loadout
 		p1.reset_fighter()
 		p1.set_facing(1)
 	if p2 != null:
@@ -352,6 +383,7 @@ func _reset_stage() -> void:
 		var wave_bonus := float(gauntlet_wave - 1) if match_mode == "gauntlet" else 0.0
 		p2.hp_scale = 1.0 + 0.12 * wave_bonus
 		p2.limb_hp_scale = 1.0 + 0.08 * wave_bonus
+		p2.loadout_id = p2_loadout
 		p2.reset_fighter()
 		p2.set_facing(-1)
 	_apply_settings()
@@ -401,6 +433,8 @@ func _advance_after_round() -> void:
 			if FIGHTER_ROSTER.size() > 1:
 				while next_idx == p2_roster_idx:
 					next_idx = randi() % FIGHTER_ROSTER.size()
+			if gauntlet_wave >= 2:
+				p2_loadout = FighterStats.LOADOUT_ORDER[randi() % FighterStats.LOADOUT_ORDER.size()] if randf() < 0.55 else "signature"
 			_set_fighter(false, next_idx)
 			ai.set_difficulty(_effective_difficulty())
 			_begin_round()
@@ -520,7 +554,17 @@ func _update_camera(unscaled_dt: float) -> void:
 	if cam != null:
 		cam.zoom = cam.zoom.lerp(Vector2(cam_zoom_target, cam_zoom_target), minf(1.0, 5.5 * unscaled_dt))
 		var jitter := Vector2(randf_range(-shake_mag, shake_mag), randf_range(-shake_mag, shake_mag))
-		cam.position = cam_focus + jitter
+		var cpos := cam_focus + jitter
+		if _use_courtyard_stage():
+			var hw := 640.0 / maxf(0.5, cam.zoom.x)
+			var hh := 360.0 / maxf(0.5, cam.zoom.y)
+			var min_x := COURTYARD_RECT.position.x + hw
+			var max_x := COURTYARD_RECT.end.x - hw
+			var min_y := COURTYARD_RECT.position.y + hh
+			var max_y := COURTYARD_RECT.end.y - hh
+			cpos.x = clampf(cpos.x, minf(min_x, max_x), maxf(min_x, max_x))
+			cpos.y = clampf(cpos.y, minf(min_y, max_y), maxf(min_y, max_y))
+		cam.position = cpos
 	shake_mag = maxf(0.0, shake_mag - 42.0 * unscaled_dt)
 
 
@@ -560,6 +604,9 @@ func _separate_fighters() -> void:
 # ---------------------------------------------------------------------------
 
 func _resolve_combat() -> void:
+	# 0. Hurled blades in flight & dropped weapons on the floorboards.
+	_step_weapon_projectiles()
+
 	# 1. Blade vs blade (clash / parry / block), using swept paths so fast flicks never tunnel.
 	var s1 := p1.get_swept_blade_segments()
 	var s2 := p2.get_swept_blade_segments()
@@ -576,9 +623,11 @@ func _resolve_combat() -> void:
 			_handle_blade_clash(p1, p2, best_pt)
 			_handle_blade_clash(p2, p1, best_pt)
 
-	# 2. Kicks
+	# 2. Kicks & Unarmed / Buckler Bashes
 	_check_kick(p1, p2)
 	_check_kick(p2, p1)
+	_check_jab(p1, p2)
+	_check_jab(p2, p1)
 
 	# 3. Blade vs live overhead marionette strings ("Strings & Steel"!)
 	_check_live_string_cut(p1, p2)
@@ -591,6 +640,86 @@ func _resolve_combat() -> void:
 	# 5. Blade vs dangling marionette ropes
 	_check_debris_rope_cut(p1)
 	_check_debris_rope_cut(p2)
+
+
+func get_ground_weapons() -> Array[WeaponProjectile]:
+	var out: Array[WeaponProjectile] = []
+	if weapons_layer == null:
+		return out
+	for c in weapons_layer.get_children():
+		if c is WeaponProjectile:
+			var wp := c as WeaponProjectile
+			if wp.can_be_picked_up():
+				out.append(wp)
+	return out
+
+
+func _step_weapon_projectiles() -> void:
+	if weapons_layer == null:
+		return
+	for c in weapons_layer.get_children():
+		if not (c is WeaponProjectile) or not is_instance_valid(c):
+			continue
+		var proj := c as WeaponProjectile
+		if proj.flying:
+			var p_seg := proj.get_segment()
+			for raw_def in [p1, p2]:
+				var def := raw_def as FighterController
+				if def == null or def.is_dead or def == proj.thrower:
+					continue
+				# Deflection against defender's active parry or held sword
+				var def_blade: Array = def.get_blade_segment()
+				if def_blade.size() == 2 and (def.parrying or def.is_blade_active()):
+					var cl := _closest_segments(p_seg[0], p_seg[1], def_blade[0], def_blade[1])
+					if float(cl["dist"]) < 34.0 or (def.parrying and proj.global_position.distance_to(def.position + Vector2(0, -105)) < 85.0):
+						var hit_pt: Vector2 = cl["pt"]
+						_spawn_sparks(hit_pt, 28)
+						sfx.play_sfx("clang", 0.08, 1.5)
+						hitstop_timer = 0.055
+						shake_mag = maxf(shake_mag, 11.0)
+						def.grant_riposte()
+						proj.drop_from_impact(Vector2(-signf(proj.vel.x) * 210.0, -240.0))
+						_on_cut_flash(hit_pt, "DEFLECTED!", Color(1.0, 0.90, 0.45))
+						break
+				if not proj.flying:
+					break
+				# Flying blade vs body capsules
+				var best_slot := ""
+				var best_d := 9999.0
+				var best_pt := Vector2.ZERO
+				for s in def.get_body_segments():
+					var info := _closest_segments(p_seg[0], p_seg[1], s[1], s[2])
+					var d := float(info["dist"]) - float(s[3])
+					if d < 0.0 and d < best_d:
+						best_d = d
+						best_slot = String(s[0])
+						best_pt = info["pt"]
+				if best_slot != "":
+					var pdir := proj.vel.normalized() if proj.vel.length() > 1.0 else Vector2(1, 0)
+					def.apply_blade_damage(best_slot, 28.0, best_pt, pdir, bool(settings["one_hit_sever"]), false, 0.88, 1.0, 0.85, true, 0.35)
+					if def.is_armored_slot(best_slot):
+						_spawn_sparks(best_pt, 14)
+						sfx.play_sfx("clang", 0.14, -3.0)
+					hitstop_timer = 0.075
+					shake_mag = maxf(shake_mag, 15.0)
+					_on_cut_flash(best_pt, "SKEWERED!", Color(1.0, 0.36, 0.30))
+					proj.drop_from_impact(Vector2(-pdir.x * 150.0, -180.0))
+					break
+		elif proj.can_be_picked_up():
+			for raw_f in [p1, p2]:
+				var f := raw_f as FighterController
+				if f == null or f.is_dead or f.has_weapon:
+					continue
+				if bool(f.severed.get("arm_r", false)) or bool(f.severed.get("forearm_r", false)):
+					continue
+				if absf(f.position.x - proj.position.x) < 62.0 and proj.position.y >= 460.0:
+					if f.equip_weapon_part(proj.weapon_part_id):
+						sfx.play_sfx("grip", 0.06)
+						var ws: Dictionary = FighterStats.WEAPON_SPECS.get(f.weapon_part_id, {})
+						var wlbl := String(ws.get("label", "BLADE"))
+						_on_cut_flash(f.position + Vector2(0, -135), wlbl + " RECOVERED!", Color(0.96, 0.88, 0.46))
+						proj.queue_free()
+						break
 
 
 func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vector2) -> void:
@@ -630,7 +759,7 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 		return
 
 	var cost := 14.0 if explicit_guard else (8.0 if blades_meet else 20.0)
-	cost *= def.get_guard_cost_mult()
+	cost *= def.get_guard_cost_mult() * atk.get_guard_crush_mult()
 	if def.stamina < cost:
 		# Guard broken: the defender is staggered and the cut carries through.
 		def.spend_stamina(def.stamina)
@@ -638,6 +767,10 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 		shake_mag = maxf(shake_mag, 10.0)
 		sfx.play_sfx("clang", 0.12, -4.0)
 		_on_cut_flash(pt, "GUARD BROKEN!", Color(1.0, 0.55, 0.3))
+		if atk.get_guard_crush_mult() >= 1.25 or float(def.limb_hp.get("forearm_r", 64.0)) < 28.0:
+			if def.drop_weapon(Vector2(-float(def.facing) * 190.0, -235.0)) != null:
+				_on_cut_flash(pt + Vector2(0, -24), "DISARMED!", Color(1.0, 0.38, 0.26))
+		_check_corner_crush(def, pt)
 		return
 
 	atk.hit_registered_serial = atk.attack_serial
@@ -668,15 +801,67 @@ func _check_kick(atk: FighterController, def: FighterController) -> void:
 	if atk.bone_boot_r == null:
 		return
 	var foot_pt := atk.bone_boot_r.global_position
-	if foot_pt.distance_to(def.position + Vector2(0, -100)) < 110.0:
+	var thigh_pt := atk.bone_thigh_r.global_position if atk.bone_thigh_r != null else atk.position
+	var facing_def := (def.position.x - atk.position.x) * float(atk.facing) >= -15.0
+	var hip_seg := _closest_segments(thigh_pt, foot_pt, def.position + Vector2(0, -75.0), def.position + Vector2(0, 75.0))
+	if facing_def and float(hip_seg["dist"]) < 38.0:
 		_last_clash_serial[key] = true
 		sfx.play_sfx("thud", 0.15)
 		def.knockback_vx = float(atk.facing) * 420.0
-		def.spend_stamina(22.0)
+		var stam_dmg := 28.0 if (atk.has_buckler and atk._offhand_usable()) else 22.0
+		def.spend_stamina(stam_dmg)
 		def.parrying = false
 		def.trigger_hurt(false)
 		shake_mag = maxf(shake_mag, 10.0)
 		_on_cut_flash(foot_pt, "PUSH KICK!", Color(0.92, 0.76, 0.38))
+		_check_corner_crush(def, foot_pt)
+
+
+func _check_jab(atk: FighterController, def: FighterController) -> void:
+	if not atk.is_jab_active() or def.is_dead:
+		return
+	var key := "jab:%d:%d" % [atk.get_instance_id(), atk.attack_serial]
+	if _last_clash_serial.has(key):
+		return
+	if absf(atk.position.x - def.position.x) > 146.0:
+		return
+	_last_clash_serial[key] = true
+	var hit_pt := def.position + Vector2(-float(def.facing) * 28.0, -118.0)
+	var with_buckler := atk.has_buckler and atk._offhand_usable()
+	var dmg := 12.0 if with_buckler else 8.0
+	sfx.play_sfx("clang" if with_buckler else "thud", 0.14, -2.0)
+	if with_buckler:
+		_spawn_sparks(hit_pt, 12)
+	def.hp = maxf(0.0, def.hp - dmg * (def.stat("armor_mult") if def.is_armored_slot("head") else 1.0))
+	def.spend_stamina(20.0 if with_buckler else 14.0)
+	def.parrying = false
+	def.knockback_vx = float(atk.facing) * (310.0 if with_buckler else 230.0)
+	if def.hp <= 0.0:
+		def.kill_fighter()
+	else:
+		def.trigger_hurt(false)
+		_check_corner_crush(def, hit_pt)
+	hitstop_timer = 0.045
+	shake_mag = maxf(shake_mag, 9.0)
+	_on_cut_flash(hit_pt, "BUCKLER BASH!" if with_buckler else "GAUNTLET JAB!", Color(0.96, 0.82, 0.44))
+
+
+func _check_corner_crush(def: FighterController, impact_pt: Vector2) -> bool:
+	if def == null or def.is_dead:
+		return false
+	if def.position.x > 145.0 and def.position.x < 1135.0:
+		return false
+	def.hp = maxf(0.0, def.hp - 10.0)
+	_spawn_sparks(def.position + Vector2(0, -110.0), 18)
+	sfx.play_sfx("thud", 0.08, 2.0)
+	shake_mag = maxf(shake_mag, 16.0)
+	hitstop_timer = maxf(hitstop_timer, 0.06)
+	_on_cut_flash(impact_pt + Vector2(0, -22), "CORNER CRUSH!", Color(1.0, 0.44, 0.24))
+	if def.hp <= 0.0:
+		def.kill_fighter()
+	else:
+		def.trigger_hurt(true)
+	return true
 
 
 func _check_blade_vs_body(atk: FighterController, def: FighterController) -> void:
@@ -740,14 +925,15 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 	var attacker_heavy := pwr >= FighterController.HEAVY_POWER_THRESHOLD and blade_pos_frac >= 0.38 and not is_thrust
 	var is_rip := atk._riposte_active_attack
 	atk._riposte_active_attack = false
-	var dmg := (24.0 if is_thrust else 20.0) * atk.stat("damage_mult") * (atk.stat("thrust_mult") if is_thrust else 1.0)
+	var dmg := (24.0 if is_thrust else 20.0) * atk.stat("damage_mult") * atk.get_weapon_damage_mult() * (atk.stat("thrust_mult") if is_thrust else 1.0)
 	if atk.current_action == "":
 		# Free-form cursor cuts have less body-weight behind them than full animated lunges.
 		dmg *= 0.85 if is_thrust else 0.78
 	if is_rip:
 		dmg *= 1.18
 		_on_cut_flash(best_pt, "RIPOSTE!", Color(1.0, 0.88, 0.42))
-	var did_sever := def.apply_blade_damage(best_slot, dmg, best_pt, swing_dir, bool(settings["one_hit_sever"]), attacker_heavy, pwr, atk.stat("limb_damage_mult"), blade_pos_frac, is_thrust, atk.stat("armor_pierce_thrust"))
+	var ap := atk.get_thrust_armor_pierce() if is_thrust else atk.get_cut_armor_pierce()
+	var did_sever := def.apply_blade_damage(best_slot, dmg, best_pt, swing_dir, bool(settings["one_hit_sever"]), attacker_heavy, pwr, atk.get_limb_damage_mult(), blade_pos_frac, is_thrust, ap)
 	atk.blade_blood = minf(1.0, atk.blade_blood + (0.65 if did_sever else 0.24 * pwr))
 
 	if def.is_armored_slot(best_slot):
@@ -875,6 +1061,15 @@ func _unhandled_input(event: InputEvent) -> void:
 # ---------------------------------------------------------------------------
 # FX: debris, blood, sparks, callouts
 # ---------------------------------------------------------------------------
+
+func _on_spawn_weapon_proj(proj: WeaponProjectile) -> void:
+	if proj == null or weapons_layer == null:
+		return
+	proj.floor_clattered.connect(func(pos: Vector2):
+		sfx.play_sfx("clatter", 0.14)
+		_spawn_sparks(pos, 6))
+	weapons_layer.add_child(proj)
+
 
 func _on_spawn_debris(deb: PhysicsDebris) -> void:
 	deb.floor_bounced.connect(func(pos: Vector2, spd: float):
@@ -1092,6 +1287,18 @@ func _step_particles(delta: float) -> void:
 		s["vel"] = sv
 		s["pos"] = Vector2(s["pos"]) + sv * delta
 
+	if _use_courtyard_stage():
+		for lf in _leaves:
+			var lpos: Vector2 = lf["pos"]
+			var ph := float(lf["phase"]) + delta * 1.9
+			lf["phase"] = ph
+			lpos.x += (float(lf["vx"]) + sin(ph) * 18.0) * delta
+			lpos.y += (float(lf["vy"]) + cos(ph * 1.3) * 8.0) * delta
+			lf["rot"] = float(lf["rot"]) + float(lf["spin"]) * delta
+			if lpos.y > 610.0 or lpos.x > 1340.0:
+				lpos = Vector2(randf_range(-40.0, 520.0), randf_range(-20.0, 140.0))
+			lf["pos"] = lpos
+
 
 func _step_bootprints(delta: float) -> void:
 	if not bool(settings["gore"]):
@@ -1125,14 +1332,35 @@ func _step_callouts(dt: float) -> void:
 # Drawing
 # ---------------------------------------------------------------------------
 
+func _use_courtyard_stage() -> bool:
+	return _stage_tex != null and String(settings.get("stage", "courtyard")) != "theatre"
+
+
 func _init_candles() -> void:
 	candles.clear()
 	for cx in [160.0, 400.0, 640.0, 880.0, 1120.0]:
 		candles.append({"x": cx, "y": 546.0, "phase": randf_range(0.0, TAU)})
+	_leaves.clear()
+	for i in range(14):
+		_leaves.append({
+			"pos": Vector2(randf_range(20.0, 1180.0), randf_range(20.0, 560.0)),
+			"vx": randf_range(22.0, 48.0),
+			"vy": randf_range(24.0, 46.0),
+			"rot": randf_range(0.0, TAU),
+			"spin": randf_range(-2.4, 2.4),
+			"phase": randf_range(0.0, TAU),
+			"size": randf_range(4.2, 7.2),
+		})
 
 
-## Static: drawn once (no per-frame queue_redraw).
+## Static: drawn once (or when switching stage setting).
 func _draw_stage() -> void:
+	if _use_courtyard_stage():
+		stage_layer.draw_rect(Rect2(-600, -400, 2480, 960), Color(0.10, 0.14, 0.20, 1.0))
+		stage_layer.draw_rect(Rect2(-600, 540, 2480, 520), Color(0.14, 0.11, 0.11, 1.0))
+		stage_layer.draw_texture_rect(_stage_tex, COURTYARD_RECT, false)
+		return
+
 	# Full bleed dark velvet backdrop (covers camera shake / zoom-out margins)
 	stage_layer.draw_rect(Rect2(-500, -300, 2280, 1300), Color(0.07, 0.03, 0.04, 1.0))
 
@@ -1160,6 +1388,45 @@ func _draw_stage() -> void:
 
 func _draw_candles() -> void:
 	var now := Time.get_ticks_msec() * 0.008
+	# Grounded contact shadows beneath both fighters so boots sit firmly on flagstones / timber
+	for raw_f in [p1, p2]:
+		var f := raw_f as FighterController
+		if f != null:
+			var sh_w := 54.0 if not f.is_dead else 74.0
+			var sh_y := (FLOOR_Y - 1.0) if not f.is_dead else (FLOOR_Y + 8.0)
+			candle_layer.draw_set_transform(Vector2(f.position.x, sh_y), 0.0, Vector2(1.0, 0.22))
+			candle_layer.draw_circle(Vector2.ZERO, sh_w, Color(0.02, 0.015, 0.025, 0.38))
+			candle_layer.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+	if _use_courtyard_stage():
+		var flick_l := 0.88 + 0.14 * sin(now * 1.3) + 0.08 * cos(now * 2.9)
+		var flick_r := 0.90 + 0.11 * sin(now * 1.1 + 1.7) + 0.06 * cos(now * 2.4 + 0.8)
+		# Soft full-moon atmospheric halo
+		candle_layer.draw_circle(Vector2(787.0, 117.0), 96.0, Color(0.96, 0.94, 0.82, 0.045))
+		# Left iron brazier warm firelight + wet flagstone puddle shimmer
+		candle_layer.draw_circle(Vector2(-23.0, 378.0), 125.0 * flick_l, Color(1.0, 0.56, 0.18, 0.085))
+		candle_layer.draw_circle(Vector2(-23.0, 378.0), 46.0 * flick_l, Color(1.0, 0.78, 0.32, 0.14))
+		candle_layer.draw_set_transform(Vector2(121.0, 682.0), 0.0, Vector2(1.0, 0.28))
+		candle_layer.draw_circle(Vector2.ZERO, 82.0 * flick_l, Color(1.0, 0.62, 0.22, 0.09))
+		candle_layer.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		# Right colonnade hanging lantern glow
+		candle_layer.draw_circle(Vector2(1058.0, 287.0), 98.0 * flick_r, Color(1.0, 0.62, 0.22, 0.075))
+		candle_layer.draw_circle(Vector2(1058.0, 287.0), 36.0 * flick_r, Color(1.0, 0.82, 0.38, 0.14))
+		# Drifting crimson autumn leaves in the night breeze
+		for lf in _leaves:
+			var lp: Vector2 = lf["pos"]
+			var sz := float(lf["size"])
+			candle_layer.draw_set_transform(lp, float(lf["rot"]))
+			var pts := PackedVector2Array([
+				Vector2(-sz, 0.0),
+				Vector2(-sz * 0.2, -sz * 0.52),
+				Vector2(sz, 0.0),
+				Vector2(-sz * 0.2, sz * 0.52),
+			])
+			candle_layer.draw_colored_polygon(pts, Color(0.68, 0.16, 0.14, 0.78))
+			candle_layer.draw_set_transform(Vector2.ZERO, 0.0)
+		return
+
 	for c in candles:
 		var cx := float(c["x"])
 		var cy := float(c["y"])
@@ -1254,8 +1521,22 @@ func _pips(wins: int) -> String:
 
 func _format_limbs(f: FighterController) -> String:
 	var tags: Array[String] = []
+	if not f.has_weapon:
+		tags.append("[UNARMED]")
+	elif f.half_swording:
+		tags.append("[HALF-SWD]")
+	elif f.has_buckler:
+		tags.append("[BUCKLER]")
+	elif f.weapon_part_id != f._native_weapon_id:
+		var ws: Dictionary = FighterStats.WEAPON_SPECS.get(f.weapon_part_id, {})
+		tags.append("[%s]" % String(ws.get("label", "ARMED")))
 	for item in [["head", "HEAD"], ["arm_r", "SWD-ARM"], ["forearm_r", "FORE"], ["arm_l", "OFF-ARM"], ["thigh_l", "L-LEG"], ["thigh_r", "R-LEG"]]:
 		var s: String = item[0]
 		var lbl: String = item[1]
-		tags.append("[X %s]" % lbl if f.severed.get(s, false) else lbl)
+		if f.severed.get(s, false):
+			tags.append("[X %s]" % lbl)
+		elif s == "head" and f.headgear_lost:
+			tags.append("[BARE HEAD]")
+		else:
+			tags.append(lbl)
 	return "  ".join(tags)

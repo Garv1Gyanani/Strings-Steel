@@ -29,8 +29,28 @@ const DEFAULT := {
 	"ai_aggression": 0.55, # 0..1, shortens AI attack cooldowns
 	"ai_thrust_bias": 0.0, # -1..1, shifts AI attack choice toward slashes / thrusts
 	"ai_style": "balanced", # "pressure" | "master" | "executioner" | "bully" | "duelist"
+	"unhelmed_head": "", # optional bare head sprite id revealed when helmet is smashed off
 	# Head sprite part ids (from rig_metadata.json) per facial expression.
 	"heads": {"calm": "p1_head_calm", "yell": "p1_head_yell", "pain": "p1_head_grimace", "bloody": "p1_head_bloody", "dead": "p1_head_dead"},
+}
+
+const LOADOUT_ORDER := ["signature", "pollaxe", "buckler", "katzbalger"]
+const LOADOUT_LABELS := {
+	"signature": "SIGNATURE",
+	"pollaxe": "POLLAXE",
+	"buckler": "SWORD + BUCKLER",
+	"katzbalger": "KATZBALGER",
+}
+
+## Per-weapon-part combat modifiers (applied when equipping a loadout or picking up a dropped blade).
+const WEAPON_SPECS := {
+	"p1_sword_long": {"label": "LONGSWORD", "weight": 1.0, "speed": 1.0, "dmg": 1.0, "guard_crush": 1.0, "ap_cut": 0.0, "ap_thrust": 0.0, "two_handed": true},
+	"p2_sword_flam": {"label": "FLAMBERGE", "weight": 1.02, "speed": 1.0, "dmg": 1.04, "guard_crush": 1.08, "ap_cut": 0.0, "ap_thrust": 0.0, "two_handed": true},
+	"p3_sword_exec": {"label": "EXECUTIONER BLADE", "weight": 1.15, "speed": 0.94, "dmg": 1.12, "guard_crush": 1.22, "ap_cut": 0.08, "ap_thrust": -0.05, "two_handed": true},
+	"p4_sword_flam": {"label": "GREATSWORD", "weight": 1.10, "speed": 0.96, "dmg": 1.08, "guard_crush": 1.18, "ap_cut": 0.05, "ap_thrust": 0.0, "two_handed": true},
+	"p5_sword_rapier": {"label": "RAPIER", "weight": 0.82, "speed": 1.12, "dmg": 0.92, "guard_crush": 0.82, "ap_cut": 0.0, "ap_thrust": 0.25, "two_handed": false},
+	"p2_pollaxe": {"label": "IRON POLLAXE", "weight": 1.24, "speed": 0.88, "dmg": 1.20, "guard_crush": 1.48, "ap_cut": 0.30, "ap_thrust": 0.22, "two_handed": true},
+	"p1_sword_katz": {"label": "KATZBALGER", "weight": 0.76, "speed": 1.20, "dmg": 0.94, "guard_crush": 0.90, "ap_cut": 0.0, "ap_thrust": 0.08, "two_handed": false},
 }
 
 const TABLE := {
@@ -81,6 +101,7 @@ const TABLE := {
 		"ai_aggression": 0.58,
 		"ai_thrust_bias": -0.65,
 		"ai_style": "executioner",
+		"unhelmed_head": "p3_head_yell",
 		"heads": {"calm": "p3_head_mask", "yell": "p3_head_mask", "pain": "p3_head_bloody", "bloody": "p3_head_bloody", "dead": "p3_head_dead"},
 	},
 	"black_knight": {
@@ -102,6 +123,7 @@ const TABLE := {
 		"ai_spacing": 182.0,
 		"ai_aggression": 0.62,
 		"ai_style": "bully",
+		"unhelmed_head": "p4_head_calm",
 		"heads": {"calm": "p4_head_helm", "yell": "p4_head_helm", "pain": "p4_head_bloody", "bloody": "p4_head_bloody", "dead": "p4_head_dead"},
 	},
 	"venetian_bravo": {

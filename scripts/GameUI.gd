@@ -54,6 +54,8 @@ var _touch_root: Control
 # Title selection state
 var _sel_p1: int = 0
 var _sel_p2: int = -1 # -1 = random
+var _sel_p1_loadout: String = "signature"
+var _sel_p2_loadout: String = "signature"
 var _sel_mode: String = "duel"
 var _best_wave: int = 0
 var _p1_card: Dictionary = {}
@@ -98,9 +100,11 @@ func update_hud(p1: FighterController, p2: FighterController, limbs1: String, li
 	_timer_lbl.text = timer_text
 
 
-func show_title(p1_idx: int, p2_idx: int, mode: String, best_wave: int) -> void:
+func show_title(p1_idx: int, p2_idx: int, mode: String, best_wave: int, p1_loadout: String = "signature", p2_loadout: String = "signature") -> void:
 	_sel_p1 = p1_idx
 	_sel_p2 = -1 if mode == "gauntlet" else p2_idx
+	_sel_p1_loadout = p1_loadout if p1_loadout in FighterStats.LOADOUT_ORDER else "signature"
+	_sel_p2_loadout = p2_loadout if p2_loadout in FighterStats.LOADOUT_ORDER else "signature"
 	_sel_mode = mode
 	_best_wave = best_wave
 	_refresh_title()
@@ -160,11 +164,11 @@ func refresh_hint(cursor_aim: bool) -> void:
 		return
 	var pads := Input.get_connected_joypads()
 	if pads.size() > 0:
-		_hint_lbl.text = "CONTROLLER [%s]:  L-Stick Move  |  R-Stick Aim  |  X/RB Slash  |  Y Thrust  |  A Kick  |  B/LB/LT Parry  |  RT Dash  |  Start Pause" % Input.get_joy_name(pads[0]).left(20)
+		_hint_lbl.text = "CONTROLLER [%s]:  L-Stick Move  |  R-Stick Aim  |  X/RB Slash  |  Y Thrust  |  A Kick  |  R3 Half-Sword  |  B/LB/LT Parry  |  RT Dash" % Input.get_joy_name(pads[0]).left(20)
 	elif cursor_aim:
-		_hint_lbl.text = "A/D Move  |  Mouse: aim & fling the blade to cut  |  RMB/Space Parry  |  J Slash  K Thrust  E Kick  |  Shift Dash  |  S Low guard  |  Esc Pause"
+		_hint_lbl.text = "A/D Move  |  Mouse: aim & swing  |  RMB/Space Parry  |  Q Half-Sword  |  F/MMB Throw  |  J Slash  K Thrust  E Kick  |  Shift Dash  |  S Low  |  Esc"
 	else:
-		_hint_lbl.text = "A/D Move  |  LMB/J Slash  |  K Thrust  |  E Kick  |  RMB/Space Parry  |  S Low  |  Shift Dash  |  R Restart round  |  Esc Pause"
+		_hint_lbl.text = "A/D Move  |  LMB/J Slash  |  K Thrust  |  E Kick  |  Q Half-Sword  |  F Throw  |  RMB/Space Parry  |  S Low  |  Shift Dash  |  Esc Pause"
 
 
 # ---------------------------------------------------------------------------
@@ -379,7 +383,7 @@ func _build_settings_grid() -> GridContainer:
 	grid.add_theme_constant_override("h_separation", 6)
 	grid.add_theme_constant_override("v_separation", 6)
 
-	for key in ["difficulty", "gore", "one_hit_sever", "cursor_aim", "touch", "strings", "sound"]:
+	for key in ["difficulty", "stage", "gore", "one_hit_sever", "cursor_aim", "touch", "strings", "sound"]:
 		var b := _button(_setting_label(key), func(_b): _toggle_setting(key), 11)
 		b.custom_minimum_size = Vector2(150, 0)
 		grid.add_child(b)
@@ -395,6 +399,8 @@ func _setting_label(key: String) -> String:
 	match key:
 		"difficulty":
 			return "AI: " + String(_settings["difficulty"]).capitalize()
+		"stage":
+			return "Stage: " + ("COURTYARD" if String(_settings.get("stage", "courtyard")) != "theatre" else "THEATRE")
 		"gore":
 			return "Gore: " + ("BLOOD" if bool(_settings["gore"]) else "SPARKS")
 		"one_hit_sever":
@@ -415,6 +421,9 @@ func _toggle_setting(key: String) -> void:
 		var order := ["normal", "hard", "brutal"]
 		var i := (order.find(String(_settings["difficulty"])) + 1) % order.size()
 		_change_setting(key, order[i])
+	elif key == "stage":
+		var nxt := "theatre" if String(_settings.get("stage", "courtyard")) != "theatre" else "courtyard"
+		_change_setting(key, nxt)
 	else:
 		_change_setting(key, not bool(_settings.get(key, false)))
 
@@ -461,10 +470,10 @@ func _build_title() -> void:
 	cards.add_theme_constant_override("separation", 24)
 	cards.alignment = BoxContainer.ALIGNMENT_CENTER
 	vb.add_child(cards)
-	_p1_card = _build_fighter_card("YOU", Color(0.6, 0.78, 1.0), func(d): _cycle_p1(d))
+	_p1_card = _build_fighter_card("YOU", Color(0.6, 0.78, 1.0), func(d): _cycle_p1(d), func(): _cycle_loadout(true))
 	cards.add_child(_p1_card["root"])
 	cards.add_child(_label("VS", 30, GOLD, HORIZONTAL_ALIGNMENT_CENTER))
-	_p2_card = _build_fighter_card("RIVAL", Color(1.0, 0.6, 0.6), func(d): _cycle_p2(d))
+	_p2_card = _build_fighter_card("RIVAL", Color(1.0, 0.6, 0.6), func(d): _cycle_p2(d), func(): _cycle_loadout(false))
 	cards.add_child(_p2_card["root"])
 
 	var modes := HBoxContainer.new()
@@ -490,7 +499,7 @@ func _build_title() -> void:
 	vb.add_child(_label("←/→ pick fighter   ↑/↓ pick rival   Enter / A to fight", 11, Color(0.7, 0.65, 0.55), HORIZONTAL_ALIGNMENT_CENTER))
 
 
-func _build_fighter_card(header: String, col: Color, on_cycle: Callable) -> Dictionary:
+func _build_fighter_card(header: String, col: Color, on_cycle: Callable, on_loadout: Callable) -> Dictionary:
 	var root := VBoxContainer.new()
 	root.custom_minimum_size = Vector2(330, 0)
 	root.add_theme_constant_override("separation", 6)
@@ -507,6 +516,10 @@ func _build_fighter_card(header: String, col: Color, on_cycle: Callable) -> Dict
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	blurb.custom_minimum_size = Vector2(320, 34)
 	root.add_child(blurb)
+	var lo_btn := _button("Weapon: SIGNATURE", func(_b): on_loadout.call(), 11)
+	lo_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	lo_btn.custom_minimum_size = Vector2(230, 0)
+	root.add_child(lo_btn)
 	var bars := {}
 	for stat_name in ["HEALTH", "SPEED", "POWER", "ARMOUR"]:
 		var line := HBoxContainer.new()
@@ -519,35 +532,55 @@ func _build_fighter_card(header: String, col: Color, on_cycle: Callable) -> Dict
 		line.add_child(bar)
 		root.add_child(line)
 		bars[stat_name] = bar
-	return {"root": root, "name": name_lbl, "blurb": blurb, "bars": bars}
+	return {"root": root, "name": name_lbl, "blurb": blurb, "loadout": lo_btn, "bars": bars}
 
 
-func _fill_card(card: Dictionary, idx: int) -> void:
+func _fill_card(card: Dictionary, idx: int, loadout_id: String) -> void:
 	var bars: Dictionary = card["bars"]
+	var lo_btn: Button = card["loadout"]
+	var lo_lbl: String = String(FighterStats.LOADOUT_LABELS.get(loadout_id, "SIGNATURE"))
 	if idx < 0 or idx >= _roster.size():
 		card["name"].text = "RANDOM"
-		card["blurb"].text = "A random challenger steps onto the stage." if _sel_mode == "duel" else "Gauntlet rivals are drawn at random each wave."
+		card["blurb"].text = "A random challenger steps onto the stage." if _sel_mode == "duel" else "Gauntlet rivals & loadouts scale each wave."
+		lo_btn.text = "Weapon: MIXED" if _sel_mode == "gauntlet" else ("Weapon: " + lo_lbl)
 		for k in bars.keys():
 			bars[k].value = 0.0
 		return
 	var s: Dictionary = _roster[idx]
 	card["name"].text = String(s["display_name"])
 	card["blurb"].text = String(s["blurb"])
+	lo_btn.text = "Weapon: " + lo_lbl
+	var pwr_bonus := 0.14 if loadout_id == "pollaxe" else (-0.04 if loadout_id in ["buckler", "katzbalger"] else 0.0)
+	var spd_bonus := 0.14 if loadout_id == "katzbalger" else (-0.10 if loadout_id == "pollaxe" else 0.0)
+	var arm_bonus := 0.18 if loadout_id == "buckler" else 0.0
 	bars["HEALTH"].value = clampf((float(s["max_hp"]) - 70.0) / 60.0, 0.05, 1.0)
-	bars["SPEED"].value = clampf((float(s["move_speed"]) - 220.0) / 140.0, 0.05, 1.0)
-	bars["POWER"].value = clampf((float(s["damage_mult"]) * float(s["attack_speed"]) - 0.8) / 0.5, 0.05, 1.0)
+	bars["SPEED"].value = clampf((float(s["move_speed"]) - 220.0) / 140.0 + spd_bonus, 0.05, 1.0)
+	bars["POWER"].value = clampf((float(s["damage_mult"]) * float(s["attack_speed"]) - 0.8) / 0.5 + pwr_bonus, 0.05, 1.0)
 	var slots: Array = s["armored_slots"]
-	bars["ARMOUR"].value = clampf((1.0 - float(s["armor_mult"])) * float(slots.size()) / 2.5, 0.0, 1.0)
+	bars["ARMOUR"].value = clampf((1.0 - float(s["armor_mult"])) * float(slots.size()) / 2.5 + arm_bonus, 0.0, 1.0)
 
 
 func _refresh_title() -> void:
-	_fill_card(_p1_card, _sel_p1)
-	_fill_card(_p2_card, _sel_p2)
+	_fill_card(_p1_card, _sel_p1, _sel_p1_loadout)
+	_fill_card(_p2_card, _sel_p2, _sel_p2_loadout)
 	for k in _mode_btns.keys():
 		var b: Button = _mode_btns[k]
 		var base := "DUEL · BEST OF 3" if k == "duel" else "GAUNTLET · ENDLESS"
 		b.text = ("▶ " + base + " ◀") if k == _sel_mode else base
 	_title_best_lbl.text = "Gauntlet best: wave %d cleared" % _best_wave if _best_wave > 0 else ""
+
+
+func _cycle_loadout(is_p1: bool) -> void:
+	if not is_p1 and _sel_mode == "gauntlet":
+		return
+	var order := FighterStats.LOADOUT_ORDER
+	var cur := _sel_p1_loadout if is_p1 else _sel_p2_loadout
+	var nxt: String = order[(order.find(cur) + 1) % order.size()]
+	if is_p1:
+		_sel_p1_loadout = nxt
+	else:
+		_sel_p2_loadout = nxt
+	_refresh_title()
 
 
 func _cycle_p1(d: int) -> void:
@@ -572,7 +605,7 @@ func _set_mode(m: String) -> void:
 
 
 func _emit_start() -> void:
-	start_requested.emit({"p1": _sel_p1, "p2": _sel_p2, "mode": _sel_mode})
+	start_requested.emit({"p1": _sel_p1, "p2": _sel_p2, "p1_loadout": _sel_p1_loadout, "p2_loadout": _sel_p2_loadout, "mode": _sel_mode})
 
 
 # --- Pause ---
@@ -592,7 +625,7 @@ func _build_pause() -> void:
 	var settings_center := CenterContainer.new()
 	settings_center.add_child(_build_settings_grid())
 	vb.add_child(settings_center)
-	var help := _label("Swing through a wide arc for heavy limb-chopping cuts (gold trail); drive the point forward to thrust.\nParry just before impact for a PERFECT PARRY, then strike in the gold RIPOSTE window!\nHigh slashes above an unguarded rival can snap their marionette strings. Kicks break turtling guards.", 12, Color(0.8, 0.74, 0.62), HORIZONTAL_ALIGNMENT_CENTER)
+	var help := _label("Swing through a wide arc for heavy limb-chopping cuts (gold trail); drive the point forward to thrust.\nPress Q to HALF-SWORD against plate armour; press F / Middle-Click to HURL your blade & scramble for dropped steel!\nHigh slashes snap marionette strings; kicks & guard-breaks against stage walls trigger CORNER CRUSH.", 12, Color(0.8, 0.74, 0.62), HORIZONTAL_ALIGNMENT_CENTER)
 	vb.add_child(help)
 
 
@@ -643,8 +676,18 @@ func _build_touch_controls() -> void:
 	add_hold_btn.call(false, Vector2(76, 544), "DASH", func(): if _touch_ok(): player.start_dash(player.touch_move if absf(player.touch_move) > 0.1 else float(player.facing)), func(): pass)
 	add_hold_btn.call(false, Vector2(216, 610), "LOW", func(): if player: player.touch_low = true, func(): if player: player.touch_low = false)
 	add_hold_btn.call(true, Vector2(980, 610), "PARRY", func(): if player: player.touch_parry = true, func(): if player: player.touch_parry = false)
-	add_hold_btn.call(true, Vector2(1076, 610), "SLASH", func(): if _touch_ok(): player.start_attack("slash_low" if player.touch_low else "slash_high"), func(): pass)
-	add_hold_btn.call(true, Vector2(1170, 610), "THRUST", func(): if _touch_ok(): player.start_attack("thrust"), func(): pass)
+	add_hold_btn.call(true, Vector2(980, 544), "HALF-SWD", func(): if _touch_ok(): player.toggle_half_sword(), func(): pass)
+	add_hold_btn.call(true, Vector2(1076, 544), "THROW", func(): if _touch_ok(): player.throw_weapon(), func(): pass)
+	add_hold_btn.call(true, Vector2(1076, 610), "SLASH", func(): if _touch_ok():
+		if player.can_wield():
+			player.start_attack("slash_low" if player.touch_low else "slash_high")
+		else:
+			player.start_jab(), func(): pass)
+	add_hold_btn.call(true, Vector2(1170, 610), "THRUST", func(): if _touch_ok():
+		if player.can_wield():
+			player.start_attack("thrust")
+		else:
+			player.start_jab(), func(): pass)
 	add_hold_btn.call(true, Vector2(1170, 544), "KICK", func(): if _touch_ok(): player.start_attack("kick"), func(): pass)
 
 

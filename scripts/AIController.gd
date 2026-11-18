@@ -69,6 +69,7 @@ var _turtle_decided: bool = false
 var _pending_attack: String = ""
 var _pending_delay: float = 0.0
 var _last_chosen_move: String = ""
+var _stance_cd: float = 0.0
 
 
 func set_difficulty(d: String) -> void:
@@ -96,6 +97,7 @@ func reset() -> void:
 	_pending_attack = ""
 	_pending_delay = 0.0
 	_last_chosen_move = ""
+	_stance_cd = 0.0
 	_roll_reaction()
 
 
@@ -127,12 +129,41 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 	_think -= delta
 	_state_timer = maxf(0.0, _state_timer - delta)
 	_redecide_timer = maxf(0.0, _redecide_timer - delta)
+	_stance_cd = maxf(0.0, _stance_cd - delta)
 
 	# Drive smooth 2-bone IK guard posture whenever the AI isn't in a committed animation.
 	_update_guard_ik(delta, me, foe, dist, dir_to_foe)
 
+	# --- 0. Deflect incoming hurled weapon & manage Half-Sword stance / weapon scramble ---
+	var wlayer := me.get_parent().get_node_or_null("WeaponsLayer") if me.get_parent() != null else null
+	var flying_threat := false
+	var nearest_drop: WeaponProjectile = null
+	var nearest_drop_d := 99999.0
+	if wlayer != null:
+		for c in wlayer.get_children():
+			if c is WeaponProjectile:
+				var wp := c as WeaponProjectile
+				if wp.flying and wp.thrower != me:
+					var to_me := me.position.x - wp.position.x
+					if absf(to_me) < 270.0 and to_me * wp.vel.x > 0.0:
+						flying_threat = true
+				elif wp.can_be_picked_up():
+					var wd := absf(wp.position.x - me.position.x)
+					if wd < nearest_drop_d:
+						nearest_drop_d = wd
+						nearest_drop = wp
+
+	if difficulty != "normal" and _stance_cd <= 0.0 and me.current_action == "" and me.can_wield():
+		var foe_heavily_armored := foe.stat("armor_mult") <= 0.74
+		if not me.half_swording and me.can_half_sword() and ((foe_heavily_armored and dist < 192.0) or dist < 146.0):
+			if me.set_half_sword(true, true):
+				_stance_cd = 1.35
+		elif me.half_swording and dist > 224.0:
+			if me.set_half_sword(false, true):
+				_stance_cd = 1.10
+
 	# --- Perception: threat episodes with a reaction delay ---
-	var threat := not foe.is_dead and foe.is_attack_threat() and dist < THREAT_RANGE
+	var threat := flying_threat or (not foe.is_dead and foe.is_attack_threat() and dist < THREAT_RANGE)
 	if threat:
 		_threat_time += delta
 		_calm_time = 0.0
@@ -258,11 +289,27 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 	else:
 		_turtle_decided = false
 
-	# --- 6. Crowded clinch: shove them off with a boot or create space ---
+	# --- 6. Crowded clinch or corner-trap: shove them into the timber or create space ---
+	var foe_cornered := foe.position.x <= 155.0 or foe.position.x >= 1125.0
+	if foe_cornered and dist < 182.0 and _attack_cd <= 0.14 and me.can_kick() and randf() < 0.78:
+		if _try_attack(me, "kick"):
+			return
 	if dist < 138.0 and _attack_cd <= 0.12:
 		if me.can_kick() and randf() < 0.72:
 			if _try_attack(me, "kick"):
 				return
+		elif not me.can_wield() and me.can_jab():
+			if _try_attack(me, "jab"):
+				return
+
+	# --- 6b. Disarmed scramble: sprint to recover a dropped blade on the floorboards! ---
+	if not me.has_weapon and nearest_drop != null and not bool(me.severed.get("arm_r", false)) and not bool(me.severed.get("forearm_r", false)):
+		var drop_dir := 1.0 if nearest_drop.position.x > me.position.x else -1.0
+		if nearest_drop_d > 140.0 and me.dash_cooldown <= 0.0 and randf() < 0.65:
+			me.start_dash(drop_dir)
+			return
+		_walk(me, drop_dir, delta)
+		return
 
 	# --- 7. Self-preservation: back off briefly when badly hurt and low on stamina ---
 	var hp_frac := me.hp / maxf(1.0, me.max_hp)
@@ -390,6 +437,8 @@ func _foe_blade_line(foe: FighterController) -> String:
 
 func _choose_attack(me: FighterController, foe: FighterController, dist: float) -> String:
 	if not me.can_wield():
+		if me.can_jab() and dist < 145.0 and (not me.can_kick() or randf() < 0.58):
+			return "jab"
 		return "kick" if me.can_kick() and dist < 190.0 else ""
 	var read := float(_cfg["zone_read"])
 	var style := String(me.stats.get("ai_style", "balanced"))
@@ -425,6 +474,12 @@ func _choose_attack(me: FighterController, foe: FighterController, dist: float) 
 
 func _try_attack(me: FighterController, move_name: String) -> bool:
 	if move_name == "":
+		return false
+	if move_name == "jab":
+		if me.start_jab():
+			_last_chosen_move = "jab"
+			_attack_cd = _next_attack_cd(me) * 0.72
+			return true
 		return false
 	if me.start_attack(move_name):
 		_last_chosen_move = move_name
