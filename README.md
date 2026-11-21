@@ -8,7 +8,7 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
 - **Cursor sword control.** The sword arm follows the mouse (or right stick) through weighted two-bone IK. Swing through a real arc to build limb-chopping momentum (gold trail), or drive the point forward to thrust.
 - **Perfect parries & ripostes.** Raise your guard just before impact to stagger the attacker, or block cleanly to earn a brief golden **Riposte** window with faster, harder counters.
 - **Half-Swording (`Q` / `R3`) & Mordhau Thunderblow (`Q` -> `K`/`L`).** Grip the centre of a two-handed blade with your off-hand for close-quarters leverage, cheaper blocks, and an overhead crossguard hammer blow (`Mordhau`) that crushes 70%+ of plate armour.
-- **Fast-Action Special Moves & Chain/Dash Cancels.** Vault over low sweeps with **Leap Cleave (`W`)**, crack visors at point-blank with **Pommel Bash (`L`/`C` or `Guard + Slash`)**, duck clean under high slashes with **Ankle Sweep (`S + E`)**, shred strings with **Whirlwind Double-Cut (`U`)**, chain-cancel landed hits into follow-ups, or **Dash-Cancel (`Shift`)** recovery with speed afterimages!
+- **Fast-Action 17-Animation Rig, Secondary Spring Physics & Chain/Dash Cancels.** Vault over low sweeps with **Leap Cleave (`W`)**, unleash lightning **Zornhau Riposte Cleaves** out of block, lean out of range with **Fadeaway Backstep Cuts (`Back-Dash + Slash`)**, crack visors with **Pommel Bash (`C`/`L` or `RMB + LMB`)**, duck under high slashes with **Ankle Sweep (`S + E`)**, chain-cancel landed hits into 3-hit combos, or **Dash-Cancel (`Shift` / `2x A/D`)** recovery with speed afterimages, flagstone dust plumes, catenary marionette strings, and damped scabbard/plume/pauldron physics!
 - **6 Weapon Loadouts, Disarms & Sword Throws (`F` / `MMB`).** Choose **Signature**, **Crimson Halberd**, **Bec de Corbin Warhammer**, **Iron Pollaxe**, **Sword + Buckler**, or **Katzbalger**. Hurl your weapon across the stage, deflect flying steel, brawl with gauntlet jabs, and scramble to pick up any dropped blade on the floorboards!
 - **Knock-Off Hats, Cracking Helmets & Earned Dismemberment.** Solid headshots knock off feathered hats or crack off Gothic plate helmets, exposing bare heads to mid-fight decapitation. High slashes can snap live overhead marionette strings (`Strings & Steel`), and shoving a rival into the proscenium wall triggers a **Corner Crush**.
 - **5 distinct fighters** (see `scripts/FighterStats.gd`):
@@ -71,7 +71,7 @@ scripts/
 tools/
   CharacterRigBuilder.gd  builds fighter .tscn rigs from data/rig_metadata.json
   BuildAllRigs.gd         headless rig + arena builder
-  SmokeTest.gd            117-check headless gameplay test suite
+  SmokeTest.gd            133-check headless gameplay test suite
   BalanceSim.gd           multi-bot headless AI & combat balance simulator
 data/rig_metadata.json    sprite parts, pivots and sockets for every fighter
 ```

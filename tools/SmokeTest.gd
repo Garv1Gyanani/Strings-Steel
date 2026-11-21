@@ -767,6 +767,38 @@ func _run() -> void:
 	arena._resolve_combat()
 	check(is_equal_approx(p2().hp, p2_hp_spin_block) and p1().current_action == "parry_recoil" and p1()._spin_second_armed, "High Parry cleanly catches raw spin_slash (even low arc), stuffs Hit #2, and staggers spammer")
 
+	print("== 17-Anim Motion Upgrade: Zornhau Riposte, Fadeaway Backstep Cut, Inertial Springs & Stage Dust")
+	_reset_both()
+	check(p1().anim_player.has_animation("riposte_cleave") and p1().anim_player.has_animation("backstep_cut"), "all 17 multi-keyframe animations (including riposte_cleave & backstep_cut) baked into rigs")
+	p1().input_enabled = true
+	p1().grant_riposte()
+	Input.action_press("slash")
+	p1()._process(0.016)
+	Input.action_release("slash")
+	check(p1().current_action == "riposte_cleave", "slashing with active Riposte unleashes dedicated Zornhau riposte_cleave")
+	_reset_both()
+	p1().input_enabled = true
+	p1().set_facing(1)
+	arena.particles_dust.clear()
+	p1().start_dash(-1.0)
+	check(arena.particles_dust.size() >= 4, "dashing kicks up directional flagstone dust puffs")
+	Input.action_press("slash")
+	p1()._process(0.016)
+	Input.action_release("slash")
+	check(p1().current_action == "backstep_cut" and p1().lunge_vx < -80.0, "slashing out of a back-dash unleashes evasive fadeaway backstep_cut")
+	_reset_both()
+	arena.particles_dust.clear()
+	p1().start_attack("jump_slash")
+	p1().action_elapsed = 0.20
+	p1()._process(0.016)
+	p1().action_elapsed = 0.30
+	p1()._process(0.016)
+	var saw_land_ring := false
+	for du in arena.particles_dust:
+		if bool(du.get("ring", false)):
+			saw_land_ring = true
+	check(saw_land_ring and p1()._rig_squash > 0.01, "landing from Jump_Slash triggers flagstone shockwave ring and tactile landing compression")
+
 	print("== Back to title")
 	arena._go_to_title()
 	await frames(3)

@@ -59,6 +59,7 @@ var particles_mist: Array[Dictionary] = []
 var arterial_jets: Array[Dictionary] = []
 var slash_flashes: Array[Dictionary] = []
 var vfx_sprites: Array[Dictionary] = []
+var particles_dust: Array[Dictionary] = []
 var callouts: Array[Dictionary] = []
 var candles: Array[Dictionary] = []
 var _leaves: Array[Dictionary] = []
@@ -264,6 +265,7 @@ func _wire_fighter(f: FighterController, is_p1: bool) -> void:
 	f.request_sfx.connect(func(k: String, j: float): sfx.play_sfx(k, j))
 	f.request_cut_flash.connect(_on_cut_flash)
 	f.request_sever_fx.connect(_on_sever_fx)
+	f.request_stage_dust.connect(_on_stage_dust)
 
 
 func _set_fighter(is_p1: bool, new_idx: int) -> void:
@@ -372,6 +374,7 @@ func _reset_stage() -> void:
 	arterial_jets.clear()
 	slash_flashes.clear()
 	vfx_sprites.clear()
+	particles_dust.clear()
 	callouts.clear()
 	blood_flash_alpha = 0.0
 	blood.clear()
@@ -1060,6 +1063,14 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 			dmg *= 1.28
 			blade_pos_frac = maxf(blade_pos_frac, 0.80)
 			_on_cut_flash(best_pt + Vector2(0, -22), "MORDHAU!", Color(1.0, 0.84, 0.38))
+		"riposte_cleave":
+			dmg *= 1.24
+			blade_pos_frac = maxf(blade_pos_frac, 0.78)
+			_spawn_vfx_burst(best_pt, 0.72, Color(1.0, 0.92, 0.50))
+			_on_cut_flash(best_pt + Vector2(0, -22), "ZORNHAU!", Color(1.0, 0.90, 0.42))
+		"backstep_cut":
+			dmg *= 1.08
+			_on_cut_flash(best_pt + Vector2(0, -20), "FADEAWAY CUT!", Color(0.84, 0.94, 1.0))
 		"spin_slash":
 			dmg *= 0.72
 		"":
@@ -1102,7 +1113,7 @@ func _is_covered_by_parry(atk: FighterController, def: FighterController, slot: 
 	if not facing_atk:
 		return false
 	var is_low_leg := slot in ["thigh_r", "shin_r", "thigh_l", "shin_l"]
-	var high_move := atk.current_action in ["slash_high", "thrust", "jump_slash", "mordhau_smash", "spin_slash"]
+	var high_move := atk.current_action in ["slash_high", "thrust", "jump_slash", "mordhau_smash", "spin_slash", "riposte_cleave", "backstep_cut"]
 	var is_low_strike := atk.current_action in ["slash_low", "leg_sweep"] or (not high_move and (is_low_leg or (atk.current_action == "" and hit_pt.y > def.position.y - 36.0)))
 	if def.guard_zone == "low":
 		return is_low_strike or (slot == "torso" and hit_pt.y > def.position.y - 68.0)
@@ -1337,6 +1348,54 @@ func _on_sever_fx(world_pos: Vector2, cut_dir: Vector2) -> void:
 		})
 
 
+func _on_stage_dust(world_pos: Vector2, dir_sign: float, kind: String) -> void:
+	if particles_dust.size() > 90:
+		return
+	var base := Vector2(world_pos.x, FLOOR_Y - 2.0)
+	match kind:
+		"land":
+			shake_mag = maxf(shake_mag, 3.4)
+			particles_dust.append({
+				"pos": base, "vel": Vector2.ZERO, "r": 18.0, "grow": 145.0,
+				"life": 0.24, "max_life": 0.24, "ring": true,
+			})
+			for s in [-1.0, 1.0]:
+				for _i in range(4):
+					particles_dust.append({
+						"pos": base + Vector2(s * randf_range(6.0, 22.0), randf_range(-4.0, 2.0)),
+						"vel": Vector2(s * randf_range(65.0, 165.0), randf_range(-48.0, -12.0)),
+						"r": randf_range(7.0, 14.0), "grow": 26.0,
+						"life": randf_range(0.24, 0.42), "max_life": 0.42, "ring": false,
+					})
+		"dash":
+			var ds := 1.0 if dir_sign >= 0.0 else -1.0
+			for _i in range(6):
+				particles_dust.append({
+					"pos": base + Vector2(randf_range(-10.0, 10.0), randf_range(-5.0, 2.0)),
+					"vel": Vector2(ds * randf_range(75.0, 195.0), randf_range(-62.0, -14.0)),
+					"r": randf_range(6.5, 13.5), "grow": 28.0,
+					"life": randf_range(0.22, 0.38), "max_life": 0.38, "ring": false,
+				})
+		"sweep":
+			var ds2 := 1.0 if dir_sign >= 0.0 else -1.0
+			for _i in range(5):
+				particles_dust.append({
+					"pos": base + Vector2(randf_range(-8.0, 18.0) * ds2, randf_range(-3.0, 2.0)),
+					"vel": Vector2(ds2 * randf_range(95.0, 210.0), randf_range(-38.0, -8.0)),
+					"r": randf_range(5.5, 11.0), "grow": 24.0,
+					"life": randf_range(0.20, 0.34), "max_life": 0.34, "ring": false,
+				})
+		_:
+			var dp := 1.0 if dir_sign >= 0.0 else -1.0
+			for _i in range(3):
+				particles_dust.append({
+					"pos": base + Vector2(randf_range(-6.0, 6.0), randf_range(-3.0, 1.0)),
+					"vel": Vector2(dp * randf_range(35.0, 95.0), randf_range(-34.0, -8.0)),
+					"r": randf_range(4.5, 9.0), "grow": 18.0,
+					"life": randf_range(0.18, 0.30), "max_life": 0.30, "ring": false,
+				})
+
+
 func _step_particles(delta: float) -> void:
 	blood_flash_alpha = maxf(0.0, blood_flash_alpha - 1.15 * delta)
 
@@ -1417,6 +1476,18 @@ func _step_particles(delta: float) -> void:
 		m["pos"] = Vector2(m["pos"]) + Vector2(m["vel"]) * delta
 		m["r"] = float(m["r"]) + 24.0 * delta
 
+	for i in range(particles_dust.size() - 1, -1, -1):
+		var du: Dictionary = particles_dust[i]
+		du["life"] = float(du["life"]) - delta
+		if float(du["life"]) <= 0.0:
+			particles_dust.remove_at(i)
+			continue
+		var dv: Vector2 = du["vel"]
+		dv *= exp(-4.8 * delta)
+		du["vel"] = dv
+		du["pos"] = Vector2(du["pos"]) + dv * delta
+		du["r"] = float(du["r"]) + float(du.get("grow", 20.0)) * delta
+
 	for i in range(slash_flashes.size() - 1, -1, -1):
 		var sf: Dictionary = slash_flashes[i]
 		sf["life"] = float(sf["life"]) - delta
@@ -1465,7 +1536,7 @@ func _step_bootprints(delta: float) -> void:
 			f.bloody_boots = 2.4
 		if f.bloody_boots > 0.0:
 			f.bloody_boots = maxf(0.0, f.bloody_boots - delta)
-			var is_moving: bool = f.anim_player != null and f.anim_player.current_animation == "walk"
+			var is_moving: bool = f.anim_player != null and String(f.anim_player.current_animation) in ["walk", "walk_back"]
 			if is_moving:
 				f.bootprint_timer -= delta
 				if f.bootprint_timer <= 0.0:
@@ -1595,6 +1666,17 @@ func _draw_candles() -> void:
 func _draw_fx() -> void:
 	if blood_flash_alpha > 0.01:
 		fx_layer.draw_rect(Rect2(-500, -300, 2280, 1300), Color(0.65, 0.02, 0.04, blood_flash_alpha))
+
+	for du in particles_dust:
+		var da := clampf(float(du["life"]) / float(du["max_life"]), 0.0, 1.0)
+		var dpos: Vector2 = du["pos"]
+		var dr := float(du["r"])
+		if bool(du.get("ring", false)):
+			fx_layer.draw_set_transform(dpos, 0.0, Vector2(1.0, 0.24))
+			fx_layer.draw_arc(Vector2.ZERO, dr, 0.0, TAU, 28, Color(0.84, 0.78, 0.68, 0.42 * da * da), 2.6, true)
+			fx_layer.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		else:
+			fx_layer.draw_circle(dpos, dr, Color(0.68, 0.62, 0.54, 0.26 * da * da))
 
 	for m in particles_mist:
 		var a := clampf(float(m["life"]) / float(m["max_life"]), 0.0, 1.0)

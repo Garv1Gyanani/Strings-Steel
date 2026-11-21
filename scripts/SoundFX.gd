@@ -6,7 +6,7 @@ class_name SoundFX
 ## and timber stage thuds in memory with zero external audio assets needed.
 
 const SAMPLE_RATE := 22050
-const POLYPHONY := 10
+const POLYPHONY := 14
 
 var _streams: Dictionary = {}
 var _players: Array[AudioStreamPlayer] = []
@@ -30,6 +30,8 @@ func _ready() -> void:
 	_streams["thud"] = _gen_thud(0.22)
 	_streams["clatter"] = _gen_clatter(0.36)
 	_streams["grip"] = _gen_grip(0.11)
+	_streams["step"] = _gen_step(0.075)
+	_streams["scuff"] = _gen_scuff(0.13)
 	_streams["ko_boom"] = _gen_ko_boom(0.85)
 
 
@@ -181,4 +183,29 @@ func _gen_grip(dur: float) -> AudioStreamWAV:
 		var click := sin(TAU * lerpf(880.0, 320.0, u) * t) * exp(-u * 18.0) * 0.45
 		var leather := randf_range(-1.0, 1.0) * exp(-u * 14.0) * 0.22
 		out[i] = clampf(click + leather, -0.9, 0.9)
+	return _make_wav(out)
+
+
+func _gen_step(dur: float) -> AudioStreamWAV:
+	var n := int(dur * SAMPLE_RATE)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	for i in range(n):
+		var t := float(i) / float(SAMPLE_RATE)
+		var u := float(i) / float(n)
+		var heel := sin(TAU * lerpf(210.0, 68.0, u) * t) * exp(-u * 19.0) * 0.34
+		var grit := randf_range(-1.0, 1.0) * exp(-u * 26.0) * 0.16
+		out[i] = clampf(heel + grit, -0.8, 0.8)
+	return _make_wav(out)
+
+
+func _gen_scuff(dur: float) -> AudioStreamWAV:
+	var n := int(dur * SAMPLE_RATE)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var lp := 0.0
+	for i in range(n):
+		var u := float(i) / float(n)
+		lp = lp + 0.28 * (randf_range(-1.0, 1.0) - lp)
+		out[i] = clampf(lp * sin(u * PI) * exp(-u * 3.2) * 0.36, -0.8, 0.8)
 	return _make_wav(out)

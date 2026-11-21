@@ -203,7 +203,7 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 		_redecide_timer = 0.24
 		_roll_reaction()
 		# Back-dash to make a committed spin/swing whiff, then skewer recovery with Lunge Thrust!
-		var bait_chance := bait_p * (0.72 if reading_spin_spam else 0.45)
+		var bait_chance := bait_p * (0.72 if reading_spin_spam else 0.24)
 		if me.current_action == "" and dist > 158.0 and dist < 248.0 and me.dash_cooldown <= 0.0 and foe.current_action in FighterController.ATTACK_MOVES and randf() < bait_chance:
 			me.start_dash(-dir_to_foe)
 			_pending_attack = "thrust"
@@ -445,7 +445,7 @@ func _set_guard_zone(me: FighterController, foe: FighterController) -> void:
 func _foe_attack_zone(foe: FighterController) -> String:
 	if foe.current_action in ["slash_low", "leg_sweep"]:
 		return "low"
-	if foe.current_action in ["slash_high", "thrust", "jump_slash", "mordhau_smash", "spin_slash"]:
+	if foe.current_action in ["slash_high", "thrust", "jump_slash", "mordhau_smash", "spin_slash", "riposte_cleave", "backstep_cut"]:
 		return "high"
 	return _foe_blade_line(foe)
 

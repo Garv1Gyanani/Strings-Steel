@@ -12,6 +12,7 @@ signal request_blood_spray(world_pos: Vector2, impulse: Vector2, count: int, hea
 signal request_sfx(key: String, jitter: float)
 signal request_cut_flash(world_pos: Vector2, label_text: String, color: Color)
 signal request_sever_fx(world_pos: Vector2, cut_dir: Vector2)
+signal request_stage_dust(world_pos: Vector2, dir_sign: float, kind: String)
 signal limb_state_changed(fighter: FighterController)
 
 @export var fighter_id: String = "landsknecht"
@@ -73,10 +74,10 @@ var _pad_aim_cache: Vector2 = Vector2.ZERO
 
 const INPUT_BUFFER_TIME := 0.24
 const STAMINA_REGEN_DELAY := 0.28
-const ATTACK_MOVES := ["slash_high", "slash_low", "thrust", "jump_slash", "pommel_strike", "spin_slash", "mordhau_smash"]
+const ATTACK_MOVES := ["slash_high", "slash_low", "thrust", "jump_slash", "pommel_strike", "spin_slash", "mordhau_smash", "riposte_cleave", "backstep_cut"]
 const COMBO_WINDOW := 1.1
 const WINDUP_SPEED := 0.58
-const TIMED_ACTIONS := ["slash_high", "slash_low", "thrust", "kick", "jump_slash", "pommel_strike", "leg_sweep", "spin_slash", "mordhau_smash", "dash_fwd", "dash_back", "hurt", "parry_recoil"]
+const TIMED_ACTIONS := ["slash_high", "slash_low", "thrust", "kick", "jump_slash", "pommel_strike", "leg_sweep", "spin_slash", "mordhau_smash", "riposte_cleave", "backstep_cut", "dash_fwd", "dash_back", "hurt", "parry_recoil"]
 const VITAL_SLOTS := ["head", "torso"]
 const STAGGER_IMMUNITY := 0.48
 ## Minimum blade-tip speed (px/s), swing arc (px), and recovery between cursor cuts.
@@ -125,6 +126,18 @@ var dash_cooldown: float = 0.0
 var dash_timer: float = 0.0
 var dash_dir: float = 0.0
 var bar_tilt: float = 0.0
+var _bar_lift_y: float = 0.0
+var loco_vx: float = 0.0
+var _prev_world_x: float = -9999.0
+var _frame_vx: float = 0.0
+var _prev_frame_vx: float = 0.0
+var _step_sound_cd: float = 0.0
+var _was_airborne: bool = false
+var _rig_squash: float = 0.0
+var _scabbard_ang: float = 0.0
+var _scabbard_vel: float = 0.0
+var _hat_spring: float = 0.0
+var _hat_vel: float = 0.0
 var knockback_vx: float = 0.0
 var bleed_emit_timer: float = 0.0
 var blade_blood: float = 0.0
@@ -208,6 +221,9 @@ var _prev_blade_seg: Array = []
 @onready var bone_thigh_r: Bone2D = $Skeleton2D/Pelvis/Thigh_R
 @onready var bone_shin_r: Bone2D = $Skeleton2D/Pelvis/Thigh_R/Shin_R
 @onready var bone_boot_r: Bone2D = $Skeleton2D/Pelvis/Thigh_R/Shin_R/Boot_R
+@onready var scabbard_sprite: Sprite2D = get_node_or_null("Skeleton2D/Pelvis/ScabbardSprite")
+@onready var pauldron_r_sprite: Sprite2D = get_node_or_null("Skeleton2D/Pelvis/Torso/PauldronSprite_R")
+@onready var pauldron_l_sprite: Sprite2D = get_node_or_null("Skeleton2D/Pelvis/Torso/PauldronSprite_L")
 
 @onready var head_sprite: Sprite2D = $Skeleton2D/Pelvis/Torso/Head/HeadSprite
 @onready var weapon_sprite: Sprite2D = $Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone/WeaponSprite
@@ -281,6 +297,24 @@ func reset_fighter() -> void:
 	parry_hold_time = 99.0
 	dash_cooldown = 0.0
 	dash_timer = 0.0
+	loco_vx = 0.0
+	_prev_world_x = -9999.0
+	_frame_vx = 0.0
+	_prev_frame_vx = 0.0
+	_step_sound_cd = 0.0
+	_was_airborne = false
+	_rig_squash = 0.0
+	_bar_lift_y = 0.0
+	_scabbard_ang = 0.0
+	_scabbard_vel = 0.0
+	_hat_spring = 0.0
+	_hat_vel = 0.0
+	if scabbard_sprite != null:
+		scabbard_sprite.rotation = deg_to_rad(18.0)
+	if pauldron_r_sprite != null:
+		pauldron_r_sprite.rotation = 0.0
+	if pauldron_l_sprite != null:
+		pauldron_l_sprite.rotation = 0.0
 	knockback_vx = 0.0
 	lunge_vx = 0.0
 	chain_cancel_timer = 0.0
@@ -478,7 +512,9 @@ func _sync_buckler_visibility() -> void:
 
 func _apply_facing() -> void:
 	if skeleton != null:
-		skeleton.scale = Vector2(rig_scale * float(facing), rig_scale)
+		var sx := rig_scale * (1.0 + _rig_squash * 0.65)
+		var sy := rig_scale * (1.0 - _rig_squash)
+		skeleton.scale = Vector2(sx * float(facing), sy)
 
 
 func set_facing(new_facing: int) -> void:
@@ -528,6 +564,10 @@ func _windup_mult() -> float:
 	match current_action:
 		"slash_high", "slash_low", "mordhau_smash":
 			return w if action_elapsed < 0.125 else 1.0
+		"riposte_cleave":
+			return 1.0
+		"backstep_cut":
+			return (0.96 if is_player else 0.72) if action_elapsed < 0.10 else 1.0
 		"jump_slash":
 			return (0.94 if is_player else 0.65) if action_elapsed < 0.15 else 1.0
 		"spin_slash":
@@ -799,7 +839,7 @@ func can_chain_cancel_into(next_move: String) -> bool:
 	match current_action:
 		"pommel_strike":
 			return action_elapsed >= 0.14
-		"slash_high", "slash_low", "thrust", "leg_sweep":
+		"slash_high", "slash_low", "thrust", "leg_sweep", "riposte_cleave", "backstep_cut":
 			return action_elapsed >= 0.21
 		"kick":
 			return action_elapsed >= 0.19
@@ -873,6 +913,8 @@ func start_attack(move_name: String) -> bool:
 	match move_name:
 		"kick", "leg_sweep": base_cost = 10.0
 		"pommel_strike": base_cost = 8.0
+		"riposte_cleave": base_cost = 11.0
+		"backstep_cut": base_cost = 12.0
 		"jump_slash": base_cost = 16.0
 		"spin_slash": base_cost = 15.0 if from_chain_or_dash else (21.0 + 6.0 * minf(2.0, _spin_spam_heat))
 		"mordhau_smash": base_cost = 14.0
@@ -883,6 +925,7 @@ func start_attack(move_name: String) -> bool:
 	spend_stamina(cost)
 	parrying = false
 	dash_timer = 0.0
+	loco_vx = 0.0
 	_riposte_active_attack = is_rip
 	if is_rip:
 		riposte_timer = 0.0
@@ -899,17 +942,28 @@ func start_attack(move_name: String) -> bool:
 	_action_speed = effective_attack_speed() * (1.25 if is_rip else 1.0)
 	attack_serial += 1
 
-	# Forward root-step momentum so attacks explosively drive body weight into the blow!
+	# Forward / Evasive root-step momentum so attacks explosively drive body weight!
 	var step_spd := 0.0
 	match move_name:
 		"slash_high", "slash_low": step_spd = 195.0
+		"riposte_cleave": step_spd = 265.0
+		"backstep_cut": step_spd = -185.0
 		"thrust": step_spd = 295.0
-		"jump_slash": step_spd = 450.0
+		"jump_slash":
+			step_spd = 450.0
+			_rig_squash = -0.035
+			request_stage_dust.emit(Vector2(global_position.x, 560.0), -float(facing), "dash")
 		"pommel_strike": step_spd = 245.0
 		"spin_slash": step_spd = 265.0 if _spin_was_chained else 175.0
 		"mordhau_smash": step_spd = 235.0
-		"leg_sweep": step_spd = 255.0
+		"leg_sweep":
+			step_spd = 255.0
+			request_stage_dust.emit(Vector2(global_position.x + float(facing) * 28.0, 560.0), float(facing), "sweep")
 		"kick": step_spd = 135.0
+	if move_name in ["thrust", "riposte_cleave"]:
+		request_stage_dust.emit(Vector2(global_position.x - float(facing) * 22.0, 560.0), -float(facing), "pivot")
+	elif move_name == "backstep_cut":
+		request_stage_dust.emit(Vector2(global_position.x + float(facing) * 18.0, 560.0), float(facing), "pivot")
 	lunge_vx = float(facing) * step_spd * get_mobility()
 
 	if anim_player != null and anim_player.current_animation == move_name:
@@ -934,6 +988,7 @@ func start_dash(dir_sign: float) -> void:
 			return
 	spend_stamina(13.0)
 	parrying = false
+	loco_vx = 0.0
 	dash_dir = 1.0 if dir_sign >= 0.0 else -1.0
 	dash_timer = 0.15
 	dash_cooldown = stat("dash_cooldown")
@@ -941,9 +996,12 @@ func start_dash(dir_sign: float) -> void:
 	current_action = "dash_fwd" if fwd_dash else "dash_back"
 	action_elapsed = 0.0
 	_action_speed = 1.0
+	_rig_squash = 0.028
 	play_anim(current_action, 0.03)
 	_capture_dash_ghost()
 	_ghost_emit_cd = 0.032
+	request_stage_dust.emit(Vector2(global_position.x - dash_dir * 20.0, 560.0), -dash_dir, "dash")
+	request_sfx.emit("scuff", 0.18)
 	request_sfx.emit("whoosh", 0.24)
 
 
@@ -951,9 +1009,12 @@ func trigger_hurt(heavy: bool = false) -> void:
 	if is_dead:
 		return
 	parrying = false
+	loco_vx = 0.0
 	riposte_timer = 0.0
 	_riposte_active_attack = false
 	_swing_arc_px = 0.0
+	_rig_squash = 0.038 if heavy else 0.024
+	_hat_vel -= 8.5 if heavy else 5.0
 	current_action = "parry_recoil" if heavy else "hurt"
 	action_elapsed = 0.0
 	_action_speed = 1.0
@@ -1084,8 +1145,24 @@ func _process(delta: float) -> void:
 			_spin_second_armed = true
 			attack_serial += 1
 			request_sfx.emit("whoosh", 0.22)
+	var now_air := is_airborne()
+	if _was_airborne and not now_air and not is_dead:
+		# Heavy flagstone touchdown from vaulting Jump_Slash!
+		_rig_squash = 0.046
+		_hat_vel += 9.5
+		_scabbard_vel += 11.0
+		request_stage_dust.emit(Vector2(global_position.x, 560.0), 0.0, "land")
+		request_sfx.emit("thud", 0.14)
+	_was_airborne = now_air
+
 	if anim_player != null:
-		anim_player.speed_scale = _windup_mult()
+		var cur_an := String(anim_player.current_animation)
+		if current_action == "" and cur_an in ["walk", "walk_back"]:
+			anim_player.speed_scale = clampf(absf(_frame_vx) / maxf(120.0, get_move_speed()), 0.72, 1.32)
+		else:
+			anim_player.speed_scale = _windup_mult()
+
+	_step_sound_cd = maxf(0.0, _step_sound_cd - delta)
 
 	_cursor_sweep_timer = maxf(0.0, _cursor_sweep_timer - delta)
 	_cursor_whoosh_cd = maxf(0.0, _cursor_whoosh_cd - delta)
@@ -1149,6 +1226,49 @@ func _process(delta: float) -> void:
 			_ik_wpn_r = bone_weapon.rotation
 		if bool(severed_strings.get("head", false)) and bone_head != null:
 			_add_procedural_offset(bone_head, deg_to_rad(22.0))
+
+		# Real-time Secondary Motion Physics (Scabbard pendulum, Plume lag, Sliding Pauldrons, Squash/Stretch & Marionette Bar)!
+		var dt_sec := maxf(0.004, delta)
+		if _prev_world_x < -9000.0:
+			_prev_world_x = position.x
+		_prev_frame_vx = _frame_vx
+		_frame_vx = lerpf(_frame_vx, (position.x - _prev_world_x) / dt_sec, minf(1.0, 24.0 * delta))
+		_prev_world_x = position.x
+		var accel_local := ((_frame_vx - _prev_frame_vx) / dt_sec) * float(facing)
+
+		# Subtle athletic spine lean into sudden acceleration / braking
+		if current_action == "" and bone_torso != null:
+			var stride_lean := clampf((_frame_vx * float(facing)) * 0.00028 + accel_local * 0.000018, -0.09, 0.11)
+			_add_procedural_offset(bone_torso, stride_lean)
+
+		# Damped pendulum spring on ScabbardSprite
+		_scabbard_vel += (-accel_local * 0.0032 - _scabbard_ang * 64.0 - _scabbard_vel * 8.5) * delta
+		_scabbard_ang = clampf(_scabbard_ang + _scabbard_vel * delta, -0.46, 0.46)
+		if scabbard_sprite != null:
+			scabbard_sprite.rotation = deg_to_rad(18.0) + _scabbard_ang
+
+		# Damped feather/plume lag spring on Hat bone
+		_hat_vel += (-accel_local * 0.0024 - _hat_spring * 72.0 - _hat_vel * 9.2) * delta
+		_hat_spring = clampf(_hat_spring + _hat_vel * delta, -0.28, 0.28)
+		if bone_hat != null and not headgear_lost:
+			_add_procedural_offset(bone_hat, _hat_spring)
+
+		# Articulated 15th-century sliding rivets on shoulder Pauldrons
+		if pauldron_r_sprite != null and bone_ua_r != null:
+			pauldron_r_sprite.rotation = lerpf(pauldron_r_sprite.rotation, clampf((bone_ua_r.rotation + 0.75) * 0.30, -0.52, 0.24), minf(1.0, 18.0 * delta))
+		if pauldron_l_sprite != null and bone_ua_l != null:
+			pauldron_l_sprite.rotation = lerpf(pauldron_l_sprite.rotation, clampf((bone_ua_l.rotation + 0.65) * 0.24, -0.40, 0.20), minf(1.0, 16.0 * delta))
+
+		# Tactile squash/stretch spring & overhead marionette bar vertical lift
+		_rig_squash = lerpf(_rig_squash, 0.0, minf(1.0, 18.0 * delta))
+		_apply_facing()
+		var tgt_bar_lift := -36.0 if is_airborne() else (12.0 if current_action == "leg_sweep" else 0.0)
+		_bar_lift_y = lerpf(_bar_lift_y, tgt_bar_lift, minf(1.0, 14.0 * delta))
+		var tgt_tilt := clampf((_frame_vx / 320.0) * 0.14 + (0.10 * float(facing) if is_blade_active() else 0.0), -0.24, 0.24)
+		bar_tilt = lerpf(bar_tilt, tgt_tilt, minf(1.0, 12.0 * delta))
+		if current_action == "" and absf(_frame_vx) > 125.0 and _step_sound_cd <= 0.0:
+			_step_sound_cd = 0.24
+			request_sfx.emit("step", 0.18)
 
 		# Hard anatomical neck & hat limits so no blend/IK combination can ever flip a head upside-down!
 		if bone_head != null:
@@ -1315,7 +1435,7 @@ func _process_player_input(delta: float) -> void:
 			_buffered_move = "mordhau_smash" if half_swording else "pommel_strike"
 			_buffer_timer = INPUT_BUFFER_TIME
 		elif in_dash:
-			_buffered_move = "jump_slash" if dash_dir * float(facing) > 0.0 else "thrust"
+			_buffered_move = "jump_slash" if dash_dir * float(facing) > 0.0 else "backstep_cut"
 			_buffer_timer = INPUT_BUFFER_TIME
 		elif lmb_edge and cursor_aim_enabled and _mouse_vp_vel.length() > 380.0 and current_action == "":
 			# Already mid-mouse-swing: supercharge live IK cut instead of locking into canned anim!
@@ -1378,14 +1498,16 @@ func _process_player_input(delta: float) -> void:
 		var move_name := _buffered_move
 		if move_name == "slash":
 			if chain_cancel_timer > 0.0 and current_action != "":
-				if _combo_slash_step >= 1 and current_action in ["slash_high", "slash_low"]:
+				if _combo_slash_step >= 1 and current_action in ["slash_high", "slash_low", "riposte_cleave"]:
 					move_name = "spin_slash"
-				elif current_action == "slash_high":
+				elif current_action in ["slash_high", "riposte_cleave"]:
 					move_name = "slash_low"
 				elif current_action == "slash_low":
 					move_name = "slash_high"
 				else:
 					move_name = "slash_low" if low_held else "slash_high"
+			elif riposte_timer > 0.0 and not low_held and anim_player != null and anim_player.has_animation("riposte_cleave"):
+				move_name = "riposte_cleave"
 			else:
 				move_name = "slash_low" if low_held else "slash_high"
 		if current_action == "" or current_action in ["dash_fwd", "dash_back"] or can_chain_cancel_into(move_name):
@@ -1402,14 +1524,24 @@ func _process_player_input(delta: float) -> void:
 	if current_action == "":
 		if chain_cancel_timer <= 0.0:
 			_combo_slash_step = 0
-		bar_tilt = lerpf(bar_tilt, mv * 0.09, 10.0 * delta)
+		var max_spd := get_move_speed()
+		var tgt_vx := mv * max_spd if absf(mv) > 0.12 else 0.0
+		if absf(loco_vx) > 165.0 and mv * loco_vx < -35.0 and _step_sound_cd <= 0.05:
+			# Crisp boot plant + stone dust puff on sudden sprint direction reversal!
+			request_stage_dust.emit(Vector2(global_position.x, 560.0), -signf(mv), "pivot")
+			request_sfx.emit("scuff", 0.20)
+			_step_sound_cd = 0.18
+		var rate := 5400.0 if absf(tgt_vx) > 1.0 else 3600.0
+		loco_vx = move_toward(loco_vx, tgt_vx, rate * delta)
+		if absf(loco_vx) > 2.0:
+			position.x = clampf(position.x + loco_vx * delta, 120.0, 1160.0)
 		if absf(mv) > 0.12:
-			position.x = clampf(position.x + mv * get_move_speed() * delta, 120.0, 1160.0)
 			var retreating := mv * float(facing) < -0.05
 			play_anim("walk_back" if retreating and anim_player.has_animation("walk_back") else "walk", 0.07)
 		else:
 			play_anim("idle", 0.09)
 	elif current_action in ATTACK_MOVES or current_action in ["kick", "leg_sweep"]:
+		loco_vx = 0.0
 		# Micro-spacing footwork during attacks & jumps so feet never feel glued to the floor!
 		if absf(mv) > 0.12:
 			var drift_scale := 0.56 if current_action == "jump_slash" else 0.42
@@ -1424,6 +1556,10 @@ func is_blade_active() -> bool:
 	match current_action:
 		"slash_high", "slash_low":
 			return action_elapsed >= 0.125 and action_elapsed <= 0.33
+		"riposte_cleave":
+			return action_elapsed >= 0.075 and action_elapsed <= 0.28
+		"backstep_cut":
+			return action_elapsed >= 0.105 and action_elapsed <= 0.29
 		"thrust":
 			return action_elapsed >= 0.105 and action_elapsed <= 0.29
 		"jump_slash":
@@ -1448,9 +1584,9 @@ func is_thrust_strike() -> bool:
 func get_strike_power() -> float:
 	var pwr := 1.0
 	match current_action:
-		"jump_slash", "mordhau_smash":
+		"jump_slash", "mordhau_smash", "riposte_cleave":
 			pwr = 1.0
-		"slash_high", "slash_low", "thrust", "spin_slash":
+		"slash_high", "slash_low", "thrust", "spin_slash", "backstep_cut":
 			pwr = 1.0
 		_:
 			pwr = _cursor_power_now()
@@ -2311,7 +2447,7 @@ func _update_head_expression() -> void:
 		expr = "dead"
 	elif current_action == "hurt" or current_action == "parry_recoil":
 		expr = "pain"
-	elif current_action in ["slash_high", "slash_low", "thrust", "kick", "jump_slash", "pommel_strike", "leg_sweep", "spin_slash", "mordhau_smash"]:
+	elif current_action in ATTACK_MOVES or current_action in ["kick", "leg_sweep"]:
 		expr = "yell"
 	elif hp < 0.55 * max_hp:
 		expr = "bloody"
@@ -2473,31 +2609,49 @@ func _draw() -> void:
 				draw_circle(p, r * 0.65, Color(0.64, 0.04, 0.07, 0.96))
 				draw_circle(p + Vector2(1.0, 0.0), maxf(2.0, r * 0.25), Color(0.90, 0.84, 0.72, 1.0))
 
-	# 3. Overhead Marionette Control Bar & Strings
+	# 3. Living Overhead Marionette Control Bar & Catenary Curved Strings
 	if not show_strings:
 		return
-	var string_col := Color(0.86, 0.78, 0.62, 0.44)
-	var bar_col := Color(0.34, 0.22, 0.13, 0.96)
-	var bar_y := -345.0
-	var bar_l := Vector2(-78.0, bar_y - sin(bar_tilt) * 14.0)
-	var bar_r := Vector2(78.0, bar_y + sin(bar_tilt) * 14.0)
-	draw_line(bar_l, bar_r, bar_col, 7.0, true)
+	var string_col := Color(0.88, 0.80, 0.64, 0.48)
+	var bar_col := Color(0.36, 0.23, 0.13, 0.96)
+	var brass_col := Color(0.86, 0.68, 0.32, 0.94)
+	var bar_y := -345.0 + _bar_lift_y + (22.0 if is_dead else 0.0)
+	var tilt_sin := sin(bar_tilt)
+	var bar_l := Vector2(-82.0, bar_y - tilt_sin * 22.0)
+	var bar_r := Vector2(82.0, bar_y + tilt_sin * 22.0)
+	# Overhead suspension cord + carved oak crossbar + brass peg finials
+	draw_line(Vector2(0.0, bar_y - 160.0), Vector2(0.0, bar_y), Color(0.76, 0.68, 0.52, 0.38), 2.0, true)
+	draw_line(bar_l, bar_r, bar_col, 7.5, true)
+	draw_line(bar_l + Vector2(0, -1.5), bar_r + Vector2(0, -1.5), Color(0.56, 0.38, 0.22, 0.55), 2.0, true)
+	draw_circle(bar_l, 3.8, brass_col)
+	draw_circle(bar_r, 3.8, brass_col)
+	draw_circle(Vector2(0.0, bar_y), 4.2, brass_col)
 
+	var slack_base := 11.0 if current_action in ["hurt", "parry_recoil"] else (0.5 if is_airborne() else 4.5)
+	var bow_x := clampf(-_frame_vx * 0.032, -16.0, 16.0)
 	var attachments := [
-		["head", str_head, Vector2(0.0, bar_y)],
-		["torso", bone_torso, Vector2(0.0, bar_y)],
-		["arm_l", str_hand_l, Vector2(-58.0, bar_y)],
-		["arm_r", str_hand_r, Vector2(58.0, bar_y)],
-		["elbow_l", bone_fa_l, Vector2(-36.0, bar_y)],
-		["elbow_r", bone_fa_r, Vector2(36.0, bar_y)],
-		["leg_l", bone_boot_l, Vector2(-24.0, bar_y)],
-		["leg_r", bone_boot_r, Vector2(24.0, bar_y)],
+		["head", str_head, 0.0],
+		["torso", bone_torso, 0.0],
+		["arm_l", str_hand_l, -0.72],
+		["arm_r", str_hand_r, 0.72],
+		["elbow_l", bone_fa_l, -0.45],
+		["elbow_r", bone_fa_r, 0.45],
+		["leg_l", bone_boot_l, -0.30],
+		["leg_r", bone_boot_r, 0.30],
 	]
 	for item in attachments:
 		var skey: String = item[0]
 		var marker: Node2D = item[1]
-		var bar_pt: Vector2 = item[2]
+		var bar_frac: float = float(item[2])
 		if severed_strings.get(skey, false) or marker == null or not marker.is_visible_in_tree():
 			continue
+		var bar_pt := bar_l.lerp(bar_r, (bar_frac + 1.0) * 0.5)
 		var attach_local := to_local(marker.global_position)
-		draw_line(bar_pt, attach_local, string_col, 1.35, true)
+		var ctrl_mid := bar_pt.lerp(attach_local, 0.52) + Vector2(bow_x, slack_base)
+		var prev_p := bar_pt
+		for si in range(1, 6):
+			var u := float(si) / 5.0
+			var mu := 1.0 - u
+			var cur_p := mu * mu * bar_pt + 2.0 * mu * u * ctrl_mid + u * u * attach_local
+			draw_line(prev_p, cur_p, string_col, 1.35, true)
+			prev_p = cur_p

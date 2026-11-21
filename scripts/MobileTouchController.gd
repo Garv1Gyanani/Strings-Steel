@@ -369,7 +369,8 @@ func _sync_right_aim() -> void:
 		norm = norm.normalized() * 1.55
 	var guard_center := player.global_position + Vector2(facing_f * 132.0, -122.0)
 	var vert_commit := minf(1.0, absf(norm.y) * 0.95)
-	var reach_x := norm.x * (168.0 if forward_x >= 0.0 else 92.0) + (facing_f * 92.0 * vert_commit if forward_x >= -18.0 else 0.0)
+	var eff_nx := maxf(-0.20 * facing_f, norm.x) if (facing_f > 0.0 and not _right_parrying and absf(norm.y) > 0.45 and forward_x < 0.0) else (minf(0.20, norm.x) if (facing_f < 0.0 and not _right_parrying and absf(norm.y) > 0.45 and forward_x < 0.0) else norm.x)
+	var reach_x := eff_nx * (168.0 if forward_x >= 0.0 else 92.0) + (facing_f * 96.0 * vert_commit if not _right_parrying else 0.0)
 	var target_w := guard_center + Vector2(reach_x, norm.y * 228.0)
 	target_w.x = clampf(target_w.x, 40.0, 1240.0)
 	target_w.y = clampf(target_w.y, 75.0, 585.0)
