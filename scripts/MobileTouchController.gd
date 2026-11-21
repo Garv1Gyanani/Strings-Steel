@@ -294,10 +294,7 @@ func _on_finger_up(idx: int, pos: Vector2) -> void:
 			var vp_h := maxf(480.0, get_viewport_rect().size.y)
 			if player.can_wield():
 				if player.dash_timer > 0.0:
-					player.start_attack("jump_slash" if player.dash_dir * float(player.facing) > 0.0 else "spin_slash")
-				elif player.chain_cancel_timer > 0.0 and player.current_action != "":
-					var next_tap := "slash_low" if player.current_action == "slash_high" else ("spin_slash" if player.current_action == "slash_low" else "slash_high")
-					player.start_attack(next_tap)
+					player.start_attack("jump_slash" if player.dash_dir * float(player.facing) > 0.0 else "backstep_cut")
 				else:
 					player.start_attack("slash_low" if pos.y > vp_h * 0.65 else "slash_high")
 			else:

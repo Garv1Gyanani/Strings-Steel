@@ -801,8 +801,20 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 	atk.apply_blade_rebound(0.95)
 	def.spend_stamina(cost)
 	var stuffed_spin := false
+	var stuffed_spam := false
 	if explicit_guard:
 		def.grant_riposte()
+		if atk.current_action in FighterController.ATTACK_MOVES:
+			# Blocked button attacks are minus-on-block: clear pre-mashed input buffer & lunge!
+			atk._buffered_move = ""
+			atk._buffer_timer = 0.0
+			atk.chain_cancel_timer = 0.0
+			atk.lunge_vx = 0.0
+			atk._action_speed = minf(atk._action_speed, 0.72)
+			if atk._repeat_move_streak >= 2:
+				stuffed_spam = true
+				atk.spend_stamina(8.0)
+				atk.trigger_hurt(true)
 		if atk.current_action == "spin_slash":
 			# Blocking Hit #1 of a Whirlwind Spin arrests rotational momentum so Hit #2 never phases through!
 			atk._spin_second_armed = true
@@ -810,21 +822,24 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 				stuffed_spin = true
 				atk.spend_stamina(10.0)
 				atk.trigger_hurt(true)
+	var heavy_stuff := stuffed_spin or stuffed_spam
 	if blades_meet:
 		atk.spend_stamina(8.0)
 		def.apply_blade_rebound(0.80)
-	hitstop_timer = 0.075 if stuffed_spin else 0.065
-	shake_mag = maxf(shake_mag, 14.0 if stuffed_spin else 12.0)
+	hitstop_timer = 0.075 if heavy_stuff else 0.065
+	shake_mag = maxf(shake_mag, 14.0 if heavy_stuff else 12.0)
 	sfx.play_sfx("clang", 0.12)
-	_rumble(0.55 if stuffed_spin else 0.45, 0.45 if stuffed_spin else 0.35, 0.14 if stuffed_spin else 0.12)
-	atk.knockback_vx = -float(atk.facing) * (250.0 if stuffed_spin else 140.0)
-	def.knockback_vx = -float(def.facing) * 110.0
+	_rumble(0.55 if heavy_stuff else 0.45, 0.45 if heavy_stuff else 0.35, 0.14 if heavy_stuff else 0.12)
+	atk.knockback_vx = -float(atk.facing) * (240.0 if heavy_stuff else 115.0)
+	def.knockback_vx = -float(def.facing) * 85.0
 	if stuffed_spin:
 		_on_cut_flash(pt, "SPIN STUFFED!", Color(1.0, 0.80, 0.32))
+	elif stuffed_spam:
+		_on_cut_flash(pt, "PREDICTABLE!", Color(1.0, 0.78, 0.34))
 	else:
 		_on_cut_flash(pt, "CLANG!" if not passive_guard or explicit_guard else "BLOCKED", Color(0.95, 0.92, 0.72))
 	if def == p2 and explicit_guard:
-		ai.notify_blocked(stuffed_spin)
+		ai.notify_blocked(heavy_stuff)
 
 
 func _check_kick(atk: FighterController, def: FighterController) -> void:

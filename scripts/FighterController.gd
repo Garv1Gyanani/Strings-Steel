@@ -138,6 +138,10 @@ var _scabbard_ang: float = 0.0
 var _scabbard_vel: float = 0.0
 var _hat_spring: float = 0.0
 var _hat_vel: float = 0.0
+var _last_committed_move: String = ""
+var _repeat_move_streak: int = 0
+var _repeat_move_timer: float = 0.0
+var _sever_grace_timer: float = 0.0
 var knockback_vx: float = 0.0
 var bleed_emit_timer: float = 0.0
 var blade_blood: float = 0.0
@@ -309,6 +313,10 @@ func reset_fighter() -> void:
 	_scabbard_vel = 0.0
 	_hat_spring = 0.0
 	_hat_vel = 0.0
+	_last_committed_move = ""
+	_repeat_move_streak = 0
+	_repeat_move_timer = 0.0
+	_sever_grace_timer = 0.0
 	if scabbard_sprite != null:
 		scabbard_sprite.rotation = deg_to_rad(18.0)
 	if pauldron_r_sprite != null:
@@ -560,24 +568,26 @@ func stat(key: String) -> float:
 ## AI attack wind-ups play slower so players can read and parry them; player strikes
 ## snap out crisply (~0.95x) so buttons & mobile swipes feel blazingly fast and responsive.
 func _windup_mult() -> float:
-	var w := 0.95 if is_player else WINDUP_SPEED
+	var ai_w := 0.94 if _riposte_active_attack else WINDUP_SPEED
 	match current_action:
 		"slash_high", "slash_low", "mordhau_smash":
-			return w if action_elapsed < 0.125 else 1.0
+			var pw := (0.66 if _repeat_move_streak >= 2 else 0.76) if is_player else ai_w
+			return pw if action_elapsed < 0.125 else 1.0
 		"riposte_cleave":
 			return 1.0
 		"backstep_cut":
-			return (0.96 if is_player else 0.72) if action_elapsed < 0.10 else 1.0
+			return (0.94 if is_player else 0.72) if action_elapsed < 0.10 else 1.0
 		"jump_slash":
-			return (0.94 if is_player else 0.65) if action_elapsed < 0.15 else 1.0
+			return (0.86 if is_player else 0.65) if action_elapsed < 0.15 else 1.0
 		"spin_slash":
-			return ((0.96 if _spin_was_chained else 0.80) if is_player else 0.66) if action_elapsed < 0.11 else 1.0
+			return ((0.96 if _spin_was_chained else 0.88) if is_player else 0.66) if action_elapsed < 0.11 else 1.0
 		"pommel_strike":
-			return 1.0 if is_player else 0.76
+			return (0.92 if _repeat_move_streak < 2 else 0.74) if is_player else 0.78
 		"thrust":
-			return w if action_elapsed < 0.105 else 1.0
+			var tw := (0.68 if _repeat_move_streak >= 2 else 0.80) if is_player else ai_w
+			return tw if action_elapsed < 0.105 else 1.0
 		"kick", "leg_sweep":
-			return (0.96 if is_player else 0.76) if action_elapsed < 0.095 else 1.0
+			return (0.88 if _repeat_move_streak < 2 else 0.70) if is_player else 0.78
 	return 1.0
 
 
@@ -918,10 +928,16 @@ func start_attack(move_name: String) -> bool:
 		"jump_slash": base_cost = 16.0
 		"spin_slash": base_cost = 15.0 if from_chain_or_dash else (21.0 + 6.0 * minf(2.0, _spin_spam_heat))
 		"mordhau_smash": base_cost = 14.0
+	var next_rep := mini(5, _repeat_move_streak + 1) if (move_name == _last_committed_move and _repeat_move_timer > 0.0) else 0
+	if next_rep >= 2 and not is_rip:
+		base_cost += 4.5 * float(next_rep - 1)
 	var cost := base_cost * stat("stamina_cost_mult") * (0.68 if is_rip else 1.0)
 	if stamina < cost:
 		return false
 
+	_repeat_move_streak = next_rep
+	_last_committed_move = move_name
+	_repeat_move_timer = 1.65
 	spend_stamina(cost)
 	parrying = false
 	dash_timer = 0.0
@@ -1163,6 +1179,10 @@ func _process(delta: float) -> void:
 			anim_player.speed_scale = _windup_mult()
 
 	_step_sound_cd = maxf(0.0, _step_sound_cd - delta)
+	_sever_grace_timer = maxf(0.0, _sever_grace_timer - delta)
+	_repeat_move_timer = maxf(0.0, _repeat_move_timer - delta)
+	if _repeat_move_timer <= 0.0:
+		_repeat_move_streak = 0
 
 	_cursor_sweep_timer = maxf(0.0, _cursor_sweep_timer - delta)
 	_cursor_whoosh_cd = maxf(0.0, _cursor_whoosh_cd - delta)
@@ -1497,16 +1517,7 @@ func _process_player_input(delta: float) -> void:
 	if _buffer_timer > 0.0 and _buffered_move != "":
 		var move_name := _buffered_move
 		if move_name == "slash":
-			if chain_cancel_timer > 0.0 and current_action != "":
-				if _combo_slash_step >= 1 and current_action in ["slash_high", "slash_low", "riposte_cleave"]:
-					move_name = "spin_slash"
-				elif current_action in ["slash_high", "riposte_cleave"]:
-					move_name = "slash_low"
-				elif current_action == "slash_low":
-					move_name = "slash_high"
-				else:
-					move_name = "slash_low" if low_held else "slash_high"
-			elif riposte_timer > 0.0 and not low_held and anim_player != null and anim_player.has_animation("riposte_cleave"):
+			if riposte_timer > 0.0 and not low_held and anim_player != null and anim_player.has_animation("riposte_cleave"):
 				move_name = "riposte_cleave"
 			else:
 				move_name = "slash_low" if low_held else "slash_high"
@@ -2072,6 +2083,9 @@ func apply_blade_damage(slot: String, dmg: float, hit_pt: Vector2, swing_dir: Ve
 			else:
 				should_sever = can_chop and (limb_depleted or (wounded_exec and limb_frac < 0.58))
 
+	if not lethal_finish and _sever_grace_timer > 0.0:
+		should_sever = false
+
 	if not should_sever and slot == "head" and _has_removable_headgear() and pwr >= 0.52 and (limb_frac <= 0.78 or one_hit_sever) and hp > 0.0:
 		_pop_headgear(swing_dir)
 
@@ -2227,6 +2241,10 @@ func sever_limb(slot: String, hit_pt: Vector2, swing_dir: Vector2) -> void:
 			request_cut_flash.emit(hit_pt, "SHIN SEVERED!", Color(1.0, 0.42, 0.28))
 			trigger_hurt(false)
 
+	if not is_dead:
+		_sever_grace_timer = 1.45
+		_stagger_immunity = maxf(_stagger_immunity, 0.85)
+		knockback_vx = swing_dir.x * 320.0
 	limb_state_changed.emit(self)
 
 

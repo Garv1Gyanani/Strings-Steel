@@ -705,6 +705,7 @@ func _run() -> void:
 	arena._on_setting_changed("touch", false)
 
 	# 4. 3-Hit single-button Slash combo (slash_high -> slash_low -> spin_slash) + Recovery-to-Parry + Attack Steering!
+	# 4. Earned High->Low->Spin mixup chains cleanly, while mindless same-line J-spam is refused chain-cancels & punished on block!
 	_reset_both()
 	p1().input_enabled = true
 	Input.action_press("slash")
@@ -713,17 +714,50 @@ func _run() -> void:
 	var c1 := p1().current_action
 	p1().grant_chain_cancel()
 	p1().action_elapsed = 0.23
+	# Mashing J again WITHOUT changing line stays on slash_high (refused free chain-cancel!)
+	var serial_pre_j_mash := p1().attack_serial
 	Input.action_press("slash")
 	p1()._process(0.016)
 	Input.action_release("slash")
+	check(p1().attack_serial == serial_pre_j_mash, "mindless single-button J-spam does NOT get free auto-mixup chain cancels")
+	p1()._buffered_move = ""
+	# Changing line (S + J -> slash_low, then U -> spin_slash) earns the 3-hit HEMA combo!
+	Input.action_press("guard_low")
+	Input.action_press("slash")
+	p1()._process(0.016)
+	Input.action_release("slash")
+	Input.action_release("guard_low")
 	var c2 := p1().current_action
 	p1().grant_chain_cancel()
 	p1().action_elapsed = 0.23
-	Input.action_press("slash")
+	Input.action_press("spin_slash")
 	p1()._process(0.016)
-	Input.action_release("slash")
+	Input.action_release("spin_slash")
 	var c3 := p1().current_action
-	check(c1 == "slash_high" and c2 == "slash_low" and c3 == "spin_slash", "pressing Slash/LMB 3x on hit chains slash_high -> slash_low -> spin_slash (%s->%s->%s)" % [c1, c2, c3])
+	check(c1 == "slash_high" and c2 == "slash_low" and c3 == "spin_slash", "intentional High -> Low -> Spin mixup chains cleanly (%s->%s->%s)" % [c1, c2, c3])
+	await frames(2)
+
+	# Repeated same-move J-spam into a normal block triggers "PREDICTABLE!" recoil & wipes mash buffer!
+	_reset_both()
+	p1().start_attack("slash_high")
+	p1().current_action = ""
+	p1().start_attack("slash_high")
+	p1().current_action = ""
+	p1().start_attack("slash_high")
+	p1().action_elapsed = 0.18
+	p1()._buffered_move = "slash"
+	p1()._buffer_timer = 0.20
+	p2().parrying = true
+	p2().parry_hold_time = 0.8
+	arena._handle_blade_clash(p1(), p2(), Vector2(580, 360))
+	check(p1().current_action == "parry_recoil" and p1()._buffered_move == "", "blocking repeated J-spam staggers spammer into parry_recoil and wipes mash buffer")
+
+	# Sever grace window prevents 1-second multi-limb chain-sever stunlock even in BRUTAL SEVER mode!
+	_reset_both()
+	var br_sev1 := p2().apply_blade_damage("arm_l", 22.0, p2().position + Vector2(0, -100), Vector2(1, 0), true, true, 0.90, 1.25, 0.78, false, 0.0)
+	p2()._combo_hits = 0
+	var br_sev2_instant := p2().apply_blade_damage("thigh_l", 22.0, p2().position + Vector2(0, 20), Vector2(1, 0), true, true, 0.90, 1.25, 0.78, false, 0.0)
+	check(br_sev1 and not br_sev2_instant and not p2().is_dead, "sever grace window prevents chopping off 2-3 limbs inside 1 second in BRUTAL SEVER mode")
 
 	_reset_both()
 	p1().input_enabled = true
@@ -776,6 +810,7 @@ func _run() -> void:
 	p1()._process(0.016)
 	Input.action_release("slash")
 	check(p1().current_action == "riposte_cleave", "slashing with active Riposte unleashes dedicated Zornhau riposte_cleave")
+	await frames(2)
 	_reset_both()
 	p1().input_enabled = true
 	p1().set_facing(1)

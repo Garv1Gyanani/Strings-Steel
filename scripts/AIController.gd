@@ -15,25 +15,25 @@ enum State { NEUTRAL, DEFEND, RETREAT }
 
 const DIFFICULTY := {
 	"normal": {
-		"reaction": 0.24, "reaction_jitter": 0.09,
-		"parry_skill": 0.48, "perfect_chance": 0.12, "zone_read": 0.62,
-		"attack_cd": Vector2(0.62, 1.05), "think": Vector2(0.18, 0.34),
-		"speed": 0.92, "punish": 0.44, "anti_turtle": 0.38, "dash_use": 0.14,
-		"retreat_hp": 0.0, "riposte": 0.46, "whiff_bait": 0.16,
+		"reaction": 0.145, "reaction_jitter": 0.050,
+		"parry_skill": 0.66, "perfect_chance": 0.22, "zone_read": 0.70,
+		"attack_cd": Vector2(0.50, 0.88), "think": Vector2(0.15, 0.28),
+		"speed": 0.95, "punish": 0.60, "anti_turtle": 0.45, "dash_use": 0.20,
+		"retreat_hp": 0.0, "riposte": 0.74, "whiff_bait": 0.18,
 	},
 	"hard": {
-		"reaction": 0.135, "reaction_jitter": 0.045,
-		"parry_skill": 0.80, "perfect_chance": 0.32, "zone_read": 0.84,
-		"attack_cd": Vector2(0.32, 0.62), "think": Vector2(0.10, 0.20),
-		"speed": 1.02, "punish": 0.82, "anti_turtle": 0.75, "dash_use": 0.46,
-		"retreat_hp": 0.26, "riposte": 0.82, "whiff_bait": 0.40,
+		"reaction": 0.112, "reaction_jitter": 0.032,
+		"parry_skill": 0.86, "perfect_chance": 0.40, "zone_read": 0.86,
+		"attack_cd": Vector2(0.28, 0.56), "think": Vector2(0.09, 0.18),
+		"speed": 1.02, "punish": 0.86, "anti_turtle": 0.78, "dash_use": 0.46,
+		"retreat_hp": 0.26, "riposte": 0.88, "whiff_bait": 0.40,
 	},
 	"brutal": {
-		"reaction": 0.095, "reaction_jitter": 0.035,
-		"parry_skill": 0.90, "perfect_chance": 0.50, "zone_read": 0.93,
-		"attack_cd": Vector2(0.22, 0.44), "think": Vector2(0.07, 0.15),
-		"speed": 1.08, "punish": 0.95, "anti_turtle": 0.92, "dash_use": 0.64,
-		"retreat_hp": 0.30, "riposte": 0.94, "whiff_bait": 0.58,
+		"reaction": 0.092, "reaction_jitter": 0.025,
+		"parry_skill": 0.94, "perfect_chance": 0.56, "zone_read": 0.94,
+		"attack_cd": Vector2(0.20, 0.40), "think": Vector2(0.07, 0.14),
+		"speed": 1.08, "punish": 0.96, "anti_turtle": 0.92, "dash_use": 0.64,
+		"retreat_hp": 0.30, "riposte": 0.96, "whiff_bait": 0.58,
 	},
 }
 
@@ -116,7 +116,7 @@ func notify_blocked(perfect: bool) -> void:
 		_state_timer = 0.0
 		# Riposte immediately; _pending_attack=="auto" picks the open line at launch time.
 		_pending_attack = "auto"
-		_pending_delay = randf_range(0.03, 0.09) if perfect else randf_range(0.06, 0.15)
+		_pending_delay = randf_range(0.02, 0.06) if perfect else randf_range(0.03, 0.08)
 
 
 func _roll_reaction() -> void:
@@ -189,14 +189,15 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 		if foe.current_action == "spin_slash" and not foe._spin_second_armed:
 			_foe_spin_habit = minf(4.0, _foe_spin_habit + 1.0)
 
-	# --- 1. React to a perceived threat (and adapt fast against predictable U/spin spammers!) ---
+	# --- 1. React to a perceived threat (and adapt fast against predictable J-slash or U-spin spammers!) ---
 	var style := String(me.stats.get("ai_style", "balanced"))
 	var reading_spin_spam := foe.current_action == "spin_slash" and _foe_spin_habit >= 1.1
+	var reading_move_spam := foe._repeat_move_streak >= 1
 	var foe_waggling := foe.is_player and foe._waggle_streak >= 2
-	var parry_p := clampf(float(_cfg["parry_skill"]) + (0.08 if style == "master" else 0.0) + (0.26 if reading_spin_spam else 0.0), 0.0, 0.98)
+	var parry_p := clampf(float(_cfg["parry_skill"]) + (0.08 if style == "master" else 0.0) + (0.26 if (reading_spin_spam or reading_move_spam) else 0.0), 0.0, 0.98)
 	var bait_p := float(_cfg["whiff_bait"]) * (1.45 if style == "duelist" else 1.0) + (0.42 if reading_spin_spam else 0.0) + (0.35 if foe_waggling else 0.0)
-	var can_act := me.current_action == "" or (difficulty != "normal" and me.can_feint_to_parry())
-	var eff_reaction := _reaction_needed * (0.62 if reading_spin_spam else 1.0)
+	var can_act := me.current_action == "" or ((difficulty != "normal" or reading_move_spam) and me.can_feint_to_parry())
+	var eff_reaction := maxf(0.086, _reaction_needed * (0.62 if reading_spin_spam else (0.72 if reading_move_spam else 1.0)))
 	var under_fire := threat and _threat_time >= eff_reaction
 	if under_fire and can_act and (not _episode_decided or _redecide_timer <= 0.0) and state != State.DEFEND:
 		_episode_decided = true
@@ -430,13 +431,14 @@ func _begin_defend(me: FighterController, foe: FighterController) -> void:
 	_zone_retrack = _reaction_needed
 	_set_guard_zone(me, foe)
 	me.parrying = true
-	var perf_p := float(_cfg["perfect_chance"]) + (0.12 if String(me.stats.get("ai_style", "")) == "master" else 0.0)
+	var spam_perf := 0.38 if foe._repeat_move_streak >= 1 else 0.0
+	var perf_p := float(_cfg["perfect_chance"]) + (0.12 if String(me.stats.get("ai_style", "")) == "master" else 0.0) + spam_perf
 	me.parry_hold_time = 0.0 if randf() < perf_p else me.stat("perfect_parry_window") + 0.01
 
 
 func _set_guard_zone(me: FighterController, foe: FighterController) -> void:
 	var true_zone := _foe_attack_zone(foe)
-	if randf() < float(_cfg["zone_read"]):
+	if foe._repeat_move_streak >= 1 or randf() < float(_cfg["zone_read"]):
 		me.guard_zone = true_zone
 	else:
 		me.guard_zone = "high" if true_zone == "low" else "low"
@@ -465,6 +467,9 @@ func _choose_attack(me: FighterController, foe: FighterController, dist: float) 
 		return "kick" if me.can_kick() and dist < 190.0 else ""
 	var read := float(_cfg["zone_read"])
 	var style := String(me.stats.get("ai_style", "balanced"))
+	# Instant Zornhau Master-Cut when AI has an active Riposte window!
+	if me.riposte_timer > 0.0 and dist < 210.0 and me.anim_player != null and me.anim_player.has_animation("riposte_cleave") and (not foe.parrying or foe.guard_zone == "low"):
+		return "riposte_cleave"
 	# Close clinch: bash visor with Pommel Strike or Mordhau!
 	if dist < 150.0 and randf() < (0.34 if style in ["bully", "master"] else 0.22):
 		return "mordhau_smash" if me.half_swording else "pommel_strike"
