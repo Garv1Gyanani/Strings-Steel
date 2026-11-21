@@ -90,6 +90,7 @@ var chain_cancel_timer: float = 0.0
 var lunge_vx: float = 0.0
 var _spin_second_armed: bool = false
 var _ik_stance_crouch: float = 0.0
+var _proc_offsets: Dictionary = {}
 var _dash_ghosts: Array[Dictionary] = []
 var _ghost_emit_cd: float = 0.0
 var _swing_arc_px: float = 0.0
@@ -265,6 +266,7 @@ func reset_fighter() -> void:
 	chain_cancel_timer = 0.0
 	_spin_second_armed = false
 	_ik_stance_crouch = 0.0
+	_proc_offsets.clear()
 	_dash_ghosts.clear()
 	_ghost_emit_cd = 0.0
 	blade_blood = 0.0
@@ -463,10 +465,32 @@ func set_facing(new_facing: int) -> void:
 	_apply_facing()
 
 
+func _unwrap_skeleton_angles() -> void:
+	for b in [bone_pelvis, bone_torso, bone_head, bone_hat, bone_ua_r, bone_fa_r, bone_hand_r, bone_weapon, bone_ua_l, bone_fa_l, bone_hand_l, bone_thigh_l, bone_shin_l, bone_boot_l, bone_thigh_r, bone_shin_r, bone_boot_r]:
+		if b != null:
+			b.rotation = wrapf(b.rotation, -PI, PI)
+
+
+func _clear_procedural_offsets() -> void:
+	for b in _proc_offsets.keys():
+		if b != null and is_instance_valid(b):
+			(b as Node2D).rotation = wrapf((b as Node2D).rotation - float(_proc_offsets[b]), -PI, PI)
+	_proc_offsets.clear()
+
+
+func _add_procedural_offset(b: Node2D, delta_rad: float) -> void:
+	if b == null:
+		return
+	b.rotation += delta_rad
+	_proc_offsets[b] = float(_proc_offsets.get(b, 0.0)) + delta_rad
+
+
 func play_anim(anim_name: String, blend: float = 0.08, speed: float = 1.0) -> void:
 	if anim_player == null or not anim_player.has_animation(anim_name):
 		return
 	if anim_player.current_animation != anim_name:
+		_clear_procedural_offsets()
+		_unwrap_skeleton_angles()
 		anim_player.play(anim_name, blend, speed)
 
 
@@ -1032,6 +1056,11 @@ func _process(delta: float) -> void:
 		parrying = false
 		play_anim("idle", 0.1)
 
+	# Remove last frame's additive procedural offsets BEFORE advancing AnimationPlayer so
+	# non-looping or trackless animations NEVER accumulate infinite 360-degree clockwise spins!
+	_clear_procedural_offsets()
+	_unwrap_skeleton_angles()
+
 	# Advance AnimationPlayer BEFORE procedural IK so animations never overwrite cursor/pommel IK!
 	if anim_player != null:
 		anim_player.advance(delta)
@@ -1055,7 +1084,23 @@ func _process(delta: float) -> void:
 			_ik_fa_r = bone_fa_r.rotation
 			_ik_wpn_r = bone_weapon.rotation
 		if bool(severed_strings.get("head", false)) and bone_head != null:
-			bone_head.rotation += deg_to_rad(22.0)
+			_add_procedural_offset(bone_head, deg_to_rad(22.0))
+
+		# Hard anatomical neck & hat limits so no blend/IK combination can ever flip a head upside-down!
+		if bone_head != null:
+			var raw_h := wrapf(bone_head.rotation, -PI, PI)
+			var clamped_h := clampf(raw_h, deg_to_rad(-36.0), deg_to_rad(38.0))
+			if absf(clamped_h - raw_h) > 0.0001:
+				_proc_offsets[bone_head] = float(_proc_offsets.get(bone_head, 0.0)) + (clamped_h - raw_h)
+			bone_head.rotation = clamped_h
+		if bone_hat != null:
+			bone_hat.rotation = clampf(wrapf(bone_hat.rotation, -PI, PI), deg_to_rad(-30.0), deg_to_rad(30.0))
+		if bone_torso != null:
+			var raw_t := wrapf(bone_torso.rotation, -PI, PI)
+			var clamped_t := clampf(raw_t, deg_to_rad(-34.0), deg_to_rad(36.0))
+			if absf(clamped_t - raw_t) > 0.0001:
+				_proc_offsets[bone_torso] = float(_proc_offsets.get(bone_torso, 0.0)) + (clamped_t - raw_t)
+			bone_torso.rotation = clamped_t
 
 	# Maintain Off-hand 2-bone IK unless dead, one-handed without buckler, or left arm injured/severed
 	var use_offhand_ik: bool = _offhand_usable() and (has_buckler or (has_weapon and weapon_is_two_handed() and not bool(severed.get("arm_r", false))))
@@ -1343,17 +1388,17 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 	var raw_aim_ang := clampf(raw_aim_vec.angle(), deg_to_rad(-80.0), deg_to_rad(65.0))
 	var target_lean := clampf((raw_aim_ang + 0.25) * 0.24, deg_to_rad(-14.0), deg_to_rad(18.0))
 	_ik_torso_lean = lerpf(_ik_torso_lean, target_lean, minf(1.0, 16.0 * delta))
-	bone_torso.rotation += _ik_torso_lean
+	_add_procedural_offset(bone_torso, _ik_torso_lean)
 	if bone_head != null:
-		bone_head.rotation += clampf(raw_aim_ang * 0.18, deg_to_rad(-14.0), deg_to_rad(14.0))
+		_add_procedural_offset(bone_head, clampf(raw_aim_ang * 0.18, deg_to_rad(-14.0), deg_to_rad(14.0)))
 	var reach_ext := clampf((raw_aim_vec.length() - 145.0) / 130.0, 0.0, 1.0)
 	var low_crouch := clampf(sin(raw_aim_ang), -0.35, 1.0) * 11.0 + reach_ext * 9.0
 	_ik_stance_crouch = lerpf(_ik_stance_crouch, low_crouch, minf(1.0, 12.0 * delta))
 	if current_action == "" and bone_thigh_r != null and bone_shin_r != null and bone_thigh_l != null:
 		var knee_flex := clampf(_ik_stance_crouch * 0.012, -0.08, 0.26)
-		bone_thigh_r.rotation -= knee_flex
-		bone_shin_r.rotation += knee_flex * 1.15
-		bone_thigh_l.rotation += knee_flex * 0.75
+		_add_procedural_offset(bone_thigh_r, -knee_flex)
+		_add_procedural_offset(bone_shin_r, knee_flex * 1.15)
+		_add_procedural_offset(bone_thigh_l, knee_flex * 0.75)
 
 	# Re-evaluate cursor in Torso local space after torso lean
 	var cursor_local := bone_torso.to_local(cursor_aim_world)

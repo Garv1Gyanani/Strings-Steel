@@ -640,6 +640,20 @@ func _run() -> void:
 	p1().set_half_sword(true, false)
 	check(p1().start_attack("mordhau_smash") and p1().get_cut_armor_pierce() >= 0.70, "Half-Sword Mordhau Thunderblow grants 70%+ armor pierce against plate")
 
+	# 6. Regression: severed head string + trackless/stopped animations NEVER spins head 360° clockwise!
+	_reset_both()
+	p2().severed_strings["head"] = true
+	p2().severed["arm_l"] = true
+	p2().severed["arm_r"] = true
+	p2().start_attack("kick")
+	var max_abs_head_deg := 0.0
+	for _fi in range(90):
+		p2()._process(0.016)
+		if _fi == 35:
+			p2().anim_player.stop() # simulate finished non-looping anim while head string is severed
+		max_abs_head_deg = maxf(max_abs_head_deg, absf(rad_to_deg(p2().bone_head.rotation)))
+	check(max_abs_head_deg <= 40.0, "severed head string droops naturally and never spins 360° clockwise (max %.1f°)" % max_abs_head_deg)
+
 	print("== Back to title")
 	arena._go_to_title()
 	await frames(3)

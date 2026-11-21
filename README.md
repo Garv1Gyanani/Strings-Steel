@@ -71,7 +71,7 @@ scripts/
 tools/
   CharacterRigBuilder.gd  builds fighter .tscn rigs from data/rig_metadata.json
   BuildAllRigs.gd         headless rig + arena builder
-  SmokeTest.gd            116-check headless gameplay test suite
+  SmokeTest.gd            117-check headless gameplay test suite
   BalanceSim.gd           multi-bot headless AI & combat balance simulator
 data/rig_metadata.json    sprite parts, pivots and sockets for every fighter
 ```

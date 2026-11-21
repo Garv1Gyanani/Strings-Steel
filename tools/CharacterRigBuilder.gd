@@ -698,16 +698,19 @@ static func _build_animation_library(anim_player: AnimationPlayer) -> void:
 	lib.add_animation("kick", _make_pose_anim(0.38, Animation.LOOP_NONE, [
 		[0.0, {
 			"Pelvis:position:y": 2.0, "Pelvis:rotation": deg_to_rad(3.0), "Torso:rotation": deg_to_rad(-5.0),
+			"Head:rotation": deg_to_rad(2.0), "Hat:rotation": deg_to_rad(0.0),
 			"Thigh_R:rotation": deg_to_rad(-24.0), "Shin_R:rotation": deg_to_rad(22.0),
 		}],
 		[0.13, {
 			"Pelvis:position:y": -4.0, "Pelvis:rotation": deg_to_rad(-14.0), "Torso:rotation": deg_to_rad(-18.0),
+			"Head:rotation": deg_to_rad(14.0), "Hat:rotation": deg_to_rad(-10.0),
 			"Thigh_L:rotation": deg_to_rad(14.0), "Shin_L:rotation": deg_to_rad(-12.0),
 			"Thigh_R:rotation": deg_to_rad(-90.0), "Shin_R:rotation": deg_to_rad(10.0), "Boot_R:rotation": deg_to_rad(-14.0),
 			"UpperArm_R:rotation": deg_to_rad(-88.0), "Forearm_R:rotation": deg_to_rad(-62.0), "WeaponBone:rotation": deg_to_rad(-42.0),
 		}],
 		[0.38, {
 			"Pelvis:position:y": 2.0, "Pelvis:rotation": deg_to_rad(3.0), "Torso:rotation": deg_to_rad(-5.0),
+			"Head:rotation": deg_to_rad(2.0), "Hat:rotation": deg_to_rad(0.0),
 			"Thigh_L:rotation": deg_to_rad(24.0), "Shin_L:rotation": deg_to_rad(-18.0),
 			"Thigh_R:rotation": deg_to_rad(-24.0), "Shin_R:rotation": deg_to_rad(22.0), "Boot_R:rotation": deg_to_rad(2.0),
 			"UpperArm_R:rotation": deg_to_rad(-52.0), "Forearm_R:rotation": deg_to_rad(-55.0), "WeaponBone:rotation": deg_to_rad(-28.0),
@@ -880,7 +883,8 @@ static func _make_pose_anim(length_sec: float, loop_mode: Animation.LoopMode, ke
 			if not track_map.has(prop_key):
 				var tr := anim.add_track(Animation.TYPE_VALUE)
 				anim.track_set_path(tr, node_path)
-				anim.track_set_interpolation_type(tr, Animation.INTERPOLATION_CUBIC)
+				var interp := Animation.INTERPOLATION_CUBIC_ANGLE if String(prop_key).ends_with(":rotation") else Animation.INTERPOLATION_CUBIC
+				anim.track_set_interpolation_type(tr, interp)
 				track_map[prop_key] = tr
 			anim.track_insert_key(int(track_map[prop_key]), t, pose[prop_key])
 
