@@ -11,8 +11,11 @@ const KEYS := {
 	"move_right": [KEY_D, KEY_RIGHT],
 	"guard_low": [KEY_S, KEY_DOWN],
 	"dash": [KEY_SHIFT, KEY_UP],
+	"jump_attack": [KEY_W],
 	"slash": [KEY_J],
 	"thrust": [KEY_K],
+	"pommel": [KEY_L, KEY_C],
+	"spin_slash": [KEY_U],
 	"kick": [KEY_E],
 	"parry": [KEY_SPACE],
 	"half_sword": [KEY_Q],
@@ -28,6 +31,7 @@ const PAD_BUTTONS := {
 	"dash": [JOY_BUTTON_DPAD_UP, JOY_BUTTON_LEFT_STICK],
 	"slash": [JOY_BUTTON_X, JOY_BUTTON_RIGHT_SHOULDER],
 	"thrust": [JOY_BUTTON_Y],
+	"pommel": [JOY_BUTTON_LEFT_STICK],
 	"kick": [JOY_BUTTON_A],
 	"parry": [JOY_BUTTON_B, JOY_BUTTON_LEFT_SHOULDER],
 	"half_sword": [JOY_BUTTON_RIGHT_STICK],
@@ -53,7 +57,7 @@ const DEADZONES := {
 }
 
 # Keys that should match by layout-independent physical position.
-const PHYSICAL := [KEY_A, KEY_D, KEY_S, KEY_J, KEY_K, KEY_E, KEY_Q, KEY_F, KEY_R, KEY_P]
+const PHYSICAL := [KEY_W, KEY_A, KEY_D, KEY_S, KEY_J, KEY_K, KEY_L, KEY_U, KEY_C, KEY_E, KEY_Q, KEY_F, KEY_R, KEY_P]
 
 
 static func register() -> void:

@@ -66,26 +66,32 @@ var _jab_cd: float = 0.0
 var _pad_aim_frame: int = -1
 var _pad_aim_cache: Vector2 = Vector2.ZERO
 
-const INPUT_BUFFER_TIME := 0.18
-const STAMINA_REGEN_DELAY := 0.35
-const ATTACK_MOVES := ["slash_high", "slash_low", "thrust"]
+const INPUT_BUFFER_TIME := 0.22
+const STAMINA_REGEN_DELAY := 0.28
+const ATTACK_MOVES := ["slash_high", "slash_low", "thrust", "jump_slash", "pommel_strike", "spin_slash", "mordhau_smash"]
 const COMBO_WINDOW := 1.1
-const WINDUP_SPEED := 0.55
-const TIMED_ACTIONS := ["slash_high", "slash_low", "thrust", "kick", "hurt", "parry_recoil"]
+const WINDUP_SPEED := 0.58
+const TIMED_ACTIONS := ["slash_high", "slash_low", "thrust", "kick", "jump_slash", "pommel_strike", "leg_sweep", "spin_slash", "mordhau_smash", "dash_fwd", "dash_back", "hurt", "parry_recoil"]
 const VITAL_SLOTS := ["head", "torso"]
-const STAGGER_IMMUNITY := 0.6
+const STAGGER_IMMUNITY := 0.48
 ## Minimum blade-tip speed (px/s), swing arc (px), and recovery between cursor cuts.
-const CURSOR_CUT_SPEED := 520.0
-const CURSOR_CUT_MIN_ARC := 52.0
-const CURSOR_CUT_RECOVERY := 0.38
+const CURSOR_CUT_SPEED := 500.0
+const CURSOR_CUT_MIN_ARC := 50.0
+const CURSOR_CUT_RECOVERY := 0.34
 const HEAVY_POWER_THRESHOLD := 0.58
-const RIPOSTE_WINDOW := 0.42
+const RIPOSTE_WINDOW := 0.48
 
 var _combo_hits: int = 0
 var _combo_timer: float = 0.0
 var _stagger_immunity: float = 0.0
 var riposte_timer: float = 0.0
 var _riposte_active_attack: bool = false
+var chain_cancel_timer: float = 0.0
+var lunge_vx: float = 0.0
+var _spin_second_armed: bool = false
+var _ik_stance_crouch: float = 0.0
+var _dash_ghosts: Array[Dictionary] = []
+var _ghost_emit_cd: float = 0.0
 var _swing_arc_px: float = 0.0
 var _swing_arc_dir: Vector2 = Vector2.ZERO
 var _cursor_strike_mode: String = "cut" # "cut" | "thrust"
@@ -255,6 +261,12 @@ func reset_fighter() -> void:
 	dash_cooldown = 0.0
 	dash_timer = 0.0
 	knockback_vx = 0.0
+	lunge_vx = 0.0
+	chain_cancel_timer = 0.0
+	_spin_second_armed = false
+	_ik_stance_crouch = 0.0
+	_dash_ghosts.clear()
+	_ghost_emit_cd = 0.0
 	blade_blood = 0.0
 	blade_drip_timer = 0.0
 	bloody_boots = 0.0
@@ -371,6 +383,12 @@ func apply_loadout(id: String) -> void:
 	loadout_id = id if id in FighterStats.LOADOUT_ORDER else "signature"
 	half_swording = false
 	match loadout_id:
+		"halberd":
+			has_buckler = false
+			equip_weapon_part("p_weapon_halberd")
+		"warhammer":
+			has_buckler = false
+			equip_weapon_part("p_weapon_warhammer")
 		"pollaxe":
 			has_buckler = false
 			equip_weapon_part("p2_pollaxe")
@@ -457,16 +475,22 @@ func stat(key: String) -> float:
 
 
 ## AI attack wind-ups play slower so players can read and parry them; player strikes
-## snap out crisply (~0.92x) so buttons & mobile swipes feel immediate and responsive.
+## snap out crisply (~0.95x) so buttons & mobile swipes feel blazingly fast and responsive.
 func _windup_mult() -> float:
-	var w := 0.92 if is_player else WINDUP_SPEED
+	var w := 0.95 if is_player else WINDUP_SPEED
 	match current_action:
-		"slash_high", "slash_low":
-			return w if action_elapsed < 0.13 else 1.0
+		"slash_high", "slash_low", "mordhau_smash":
+			return w if action_elapsed < 0.125 else 1.0
+		"jump_slash":
+			return (0.94 if is_player else 0.65) if action_elapsed < 0.15 else 1.0
+		"spin_slash":
+			return (0.96 if is_player else 0.66) if action_elapsed < 0.10 else 1.0
+		"pommel_strike":
+			return 1.0 if is_player else 0.76
 		"thrust":
-			return w if action_elapsed < 0.11 else 1.0
-		"kick":
-			return (0.95 if is_player else 0.75) if action_elapsed < 0.10 else 1.0
+			return w if action_elapsed < 0.105 else 1.0
+		"kick", "leg_sweep":
+			return (0.96 if is_player else 0.76) if action_elapsed < 0.095 else 1.0
 	return 1.0
 
 
@@ -537,11 +561,23 @@ func get_weapon_damage_mult() -> float:
 
 
 func get_guard_crush_mult() -> float:
-	return _weapon_spec_val("guard_crush", 1.0)
+	var m := _weapon_spec_val("guard_crush", 1.0)
+	if current_action == "jump_slash":
+		m *= 1.55
+	elif current_action == "mordhau_smash":
+		m *= 1.70
+	elif current_action == "spin_slash":
+		m *= 1.18
+	return m
 
 
 func get_cut_armor_pierce() -> float:
-	return clampf(_weapon_spec_val("ap_cut", 0.0) + (0.42 if half_swording else 0.0), 0.0, 0.85)
+	var bonus := 0.42 if half_swording else 0.0
+	if current_action == "mordhau_smash":
+		bonus = maxf(bonus, 0.72)
+	elif current_action == "jump_slash":
+		bonus += 0.22
+	return clampf(_weapon_spec_val("ap_cut", 0.0) + bonus, 0.0, 0.88)
 
 
 func get_thrust_armor_pierce() -> float:
@@ -691,6 +727,39 @@ func grant_riposte() -> void:
 	riposte_timer = RIPOSTE_WINDOW
 
 
+func grant_chain_cancel() -> void:
+	chain_cancel_timer = 0.42
+
+
+func can_chain_cancel_into(next_move: String) -> bool:
+	if chain_cancel_timer <= 0.0 or next_move == "" or next_move == current_action:
+		return false
+	match current_action:
+		"pommel_strike":
+			return action_elapsed >= 0.14
+		"slash_high", "slash_low", "thrust", "leg_sweep":
+			return action_elapsed >= 0.21
+		"kick":
+			return action_elapsed >= 0.19
+	return false
+
+
+func is_airborne() -> bool:
+	return not is_dead and current_action == "jump_slash" and action_elapsed >= 0.05 and action_elapsed <= 0.27
+
+
+func is_low_profile() -> bool:
+	return not is_dead and current_action == "leg_sweep" and action_elapsed >= 0.06 and action_elapsed <= 0.30
+
+
+func is_pommel_active() -> bool:
+	return not is_dead and current_action == "pommel_strike" and action_elapsed >= 0.065 and action_elapsed <= 0.20 and can_wield()
+
+
+func is_sweep_active() -> bool:
+	return not is_dead and current_action == "leg_sweep" and action_elapsed >= 0.09 and action_elapsed <= 0.27 and can_kick()
+
+
 func is_riposte_ready() -> bool:
 	return riposte_timer > 0.0 or _riposte_active_attack
 
@@ -712,40 +781,88 @@ func spend_stamina(amount: float) -> void:
 
 
 func start_attack(move_name: String) -> bool:
-	if is_dead or current_action != "":
+	if is_dead:
 		return false
+	if current_action != "":
+		if current_action in ["dash_fwd", "dash_back"] or can_chain_cancel_into(move_name):
+			current_action = ""
+			chain_cancel_timer = 0.0
+		else:
+			return false
 	if (move_name in ATTACK_MOVES) and not can_wield():
 		return false
-	if move_name == "kick" and not can_kick():
+	if move_name in ["kick", "leg_sweep"] and not can_kick():
+		return false
+	if move_name == "jump_slash" and not can_dash():
 		return false
 	var is_rip := riposte_timer > 0.0 and move_name in ATTACK_MOVES
-	var cost := (12.0 if move_name != "kick" else 10.0) * stat("stamina_cost_mult") * (0.70 if is_rip else 1.0)
+	var base_cost := 12.0
+	match move_name:
+		"kick", "leg_sweep": base_cost = 10.0
+		"pommel_strike": base_cost = 8.0
+		"jump_slash": base_cost = 16.0
+		"spin_slash": base_cost = 15.0
+		"mordhau_smash": base_cost = 14.0
+	var cost := base_cost * stat("stamina_cost_mult") * (0.68 if is_rip else 1.0)
 	if stamina < cost:
 		return false
 
 	spend_stamina(cost)
 	parrying = false
+	dash_timer = 0.0
 	_riposte_active_attack = is_rip
 	if is_rip:
 		riposte_timer = 0.0
 	current_action = move_name
 	action_elapsed = 0.0
-	_action_speed = effective_attack_speed() * (1.24 if is_rip else 1.0)
+	_spin_second_armed = false
+	_action_speed = effective_attack_speed() * (1.25 if is_rip else 1.0)
 	attack_serial += 1
-	play_anim(move_name, 0.05, _action_speed)
-	request_sfx.emit("whoosh", 0.14)
+
+	# Forward root-step momentum so attacks explosively drive body weight into the blow!
+	var step_spd := 0.0
+	match move_name:
+		"slash_high", "slash_low": step_spd = 195.0
+		"thrust": step_spd = 295.0
+		"jump_slash": step_spd = 450.0
+		"pommel_strike": step_spd = 245.0
+		"spin_slash": step_spd = 275.0
+		"mordhau_smash": step_spd = 235.0
+		"leg_sweep": step_spd = 255.0
+		"kick": step_spd = 135.0
+	lunge_vx = float(facing) * step_spd * get_mobility()
+
+	if anim_player != null and anim_player.current_animation == move_name:
+		anim_player.stop()
+	play_anim(move_name, 0.04, _action_speed)
+	request_sfx.emit("whoosh", 0.16)
 	_update_head_expression()
 	return true
 
 
 func start_dash(dir_sign: float) -> void:
-	if is_dead or dash_cooldown > 0.0 or stamina < 15.0 or not can_dash():
+	if is_dead or dash_cooldown > 0.0 or stamina < 13.0 or not can_dash():
 		return
-	spend_stamina(15.0)
+	# Fast-action Dash-Cancel: allow cancelling attack recovery (>= 0.21s) into an evasive or chase dash!
+	if current_action != "":
+		if current_action in ATTACK_MOVES and action_elapsed >= 0.21:
+			current_action = ""
+			_blade_trail.clear()
+		elif current_action not in ["dash_fwd", "dash_back"]:
+			return
+	spend_stamina(13.0)
+	parrying = false
 	dash_dir = 1.0 if dir_sign >= 0.0 else -1.0
-	dash_timer = 0.14
+	dash_timer = 0.15
 	dash_cooldown = stat("dash_cooldown")
-	request_sfx.emit("whoosh", 0.2)
+	var fwd_dash := dash_dir * float(facing) > 0.0
+	current_action = "dash_fwd" if fwd_dash else "dash_back"
+	action_elapsed = 0.0
+	_action_speed = 1.0
+	play_anim(current_action, 0.03)
+	_capture_dash_ghost()
+	_ghost_emit_cd = 0.032
+	request_sfx.emit("whoosh", 0.24)
 
 
 func trigger_hurt(heavy: bool = false) -> void:
@@ -784,7 +901,7 @@ func kill_fighter() -> void:
 func _on_animation_finished(anim_name: StringName) -> void:
 	if is_dead:
 		return
-	if String(anim_name) in ["slash_high", "slash_low", "thrust", "kick", "hurt", "parry_recoil"]:
+	if String(anim_name) in TIMED_ACTIONS:
 		if String(anim_name) in ["hurt", "parry_recoil"]:
 			_stagger_immunity = STAGGER_IMMUNITY
 		current_action = ""
@@ -841,15 +958,31 @@ func _process(delta: float) -> void:
 			blade_drip_timer = randf_range(0.18, 0.45)
 			request_blood_spray.emit(blade_tip_marker.global_position, Vector2(randf_range(-25, 25), randf_range(10, 45)), 1, false)
 
-	# Knockback & Dash Physics
+	# Knockback, Attack Root-Lunge & Dash Physics
 	if dash_timer > 0.0:
 		dash_timer -= delta
 		position.x = clampf(position.x + dash_dir * stat("dash_speed") * get_mobility() * delta, 120.0, 1160.0)
+		_ghost_emit_cd -= delta
+		if _ghost_emit_cd <= 0.0:
+			_ghost_emit_cd = 0.035
+			_capture_dash_ghost()
+	if absf(lunge_vx) > 4.0 and not is_dead and current_action != "":
+		if current_action in ["hurt", "parry_recoil"] or parrying:
+			lunge_vx = 0.0
+		else:
+			position.x = clampf(position.x + lunge_vx * delta, 120.0, 1160.0)
+			lunge_vx *= exp(-9.5 * delta)
+	else:
+		lunge_vx = 0.0
 	if absf(knockback_vx) > 2.0:
 		position.x = clampf(position.x + knockback_vx * delta, 120.0, 1160.0)
 		knockback_vx *= maxf(0.0, 1.0 - 9.0 * delta)
+	for gi in range(_dash_ghosts.size() - 1, -1, -1):
+		_dash_ghosts[gi]["life"] = float(_dash_ghosts[gi]["life"]) - delta
+		if float(_dash_ghosts[gi]["life"]) <= 0.0:
+			_dash_ghosts.remove_at(gi)
 
-	# Leg sever pelvis drop
+	# Leg sever + dynamic IK stance crouch pelvis drop
 	var target_drop := 0.0
 	if severed.get("thigh_l", false) and severed.get("thigh_r", false):
 		target_drop = 68.0
@@ -857,12 +990,18 @@ func _process(delta: float) -> void:
 		target_drop = 45.0
 	elif severed.get("thigh_l", false) or severed.get("thigh_r", false):
 		target_drop = 14.0
-	extra_pelvis_drop = lerpf(extra_pelvis_drop, target_drop, minf(1.0, 10.0 * delta))
+	var stance_off := _ik_stance_crouch if current_action == "" and not is_dead else 0.0
+	extra_pelvis_drop = lerpf(extra_pelvis_drop, target_drop + stance_off, minf(1.0, 12.0 * delta))
 	if skeleton != null:
 		skeleton.position.y = extra_pelvis_drop
 
 	if current_action != "":
 		action_elapsed += delta * _action_speed * _windup_mult()
+		# Spin Slash re-arms its second sweeping strike mid-whirlwind!
+		if current_action == "spin_slash" and not _spin_second_armed and action_elapsed >= 0.225:
+			_spin_second_armed = true
+			attack_serial += 1
+			request_sfx.emit("whoosh", 0.22)
 	if anim_player != null:
 		anim_player.speed_scale = _windup_mult()
 
@@ -873,6 +1012,7 @@ func _process(delta: float) -> void:
 	_buffer_timer = maxf(0.0, _buffer_timer - delta)
 	_stagger_immunity = maxf(0.0, _stagger_immunity - delta)
 	riposte_timer = maxf(0.0, riposte_timer - delta)
+	chain_cancel_timer = maxf(0.0, chain_cancel_timer - delta)
 	_jab_timer = maxf(0.0, _jab_timer - delta)
 	_jab_cd = maxf(0.0, _jab_cd - delta)
 	if half_swording and not can_half_sword():
@@ -904,7 +1044,7 @@ func _process(delta: float) -> void:
 
 	var use_ik_arm := (is_player and cursor_aim_enabled and input_enabled) or (not is_player and aim_override_enabled)
 	if not is_dead:
-		if use_ik_arm and can_wield() and current_action == "":
+		if use_ik_arm and can_wield() and (current_action == "" or current_action in ["dash_fwd", "dash_back"]):
 			_solve_sword_arm_to_cursor(delta)
 		elif bone_ua_r != null and bone_fa_r != null and bone_weapon != null:
 			_cursor_rearm_timer = 0.06 if touch_mode_active else 0.22
@@ -999,21 +1139,54 @@ func _process_player_input(delta: float) -> void:
 		if throw_weapon():
 			return
 
-	# Queue one-shot moves on the press edge; the buffer lets a press made slightly
-	# before the current action ends still come out, instead of being swallowed.
-	if Input.is_action_just_pressed("slash") or (not cursor_aim_enabled and lmb_edge) or (not can_wield() and lmb_edge):
-		_buffered_move = "slash" if can_wield() else "jab"
+	# Queue one-shot & special moves on the press edge; buffer + chain-cancel keeps combat blistering!
+	var parry_held := touch_parry or Input.is_action_pressed("parry") or (mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT))
+	var in_dash := dash_timer > 0.0 or current_action in ["dash_fwd", "dash_back"]
+
+	if Input.is_action_just_pressed("jump_attack"):
+		_buffered_move = "jump_slash" if can_wield() else "jab"
+		_buffer_timer = INPUT_BUFFER_TIME
+	elif Input.is_action_just_pressed("pommel"):
+		_buffered_move = "mordhau_smash" if half_swording and can_wield() else ("pommel_strike" if can_wield() else "jab")
+		_buffer_timer = INPUT_BUFFER_TIME
+	elif Input.is_action_just_pressed("spin_slash"):
+		_buffered_move = "spin_slash" if can_wield() else "jab"
+		_buffer_timer = INPUT_BUFFER_TIME
+	elif Input.is_action_just_pressed("slash") or (not cursor_aim_enabled and lmb_edge) or (not can_wield() and lmb_edge):
+		if not can_wield():
+			_buffered_move = "jab"
+		elif parry_held:
+			_buffered_move = "pommel_strike"
+		elif in_dash and dash_dir * float(facing) > 0.0:
+			_buffered_move = "jump_slash"
+		else:
+			_buffered_move = "slash"
 		_buffer_timer = INPUT_BUFFER_TIME
 	elif Input.is_action_just_pressed("thrust"):
-		_buffered_move = "thrust" if can_wield() else "jab"
+		if not can_wield():
+			_buffered_move = "jab"
+		elif half_swording:
+			_buffered_move = "mordhau_smash"
+		elif in_dash:
+			_buffered_move = "spin_slash"
+		else:
+			_buffered_move = "thrust"
 		_buffer_timer = INPUT_BUFFER_TIME
 	elif Input.is_action_just_pressed("kick"):
-		_buffered_move = "kick"
+		_buffered_move = "leg_sweep" if low_held else "kick"
 		_buffer_timer = INPUT_BUFFER_TIME
 
 	var mv := clampf(touch_move + Input.get_axis("move_left", "move_right"), -1.0, 1.0)
 
-	var parry_held := touch_parry or Input.is_action_pressed("parry") or (mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT))
+	# Guard + Slash fires an instant close-quarters Pommel Smash right out of block!
+	if parry_held and _buffered_move == "pommel_strike" and _buffer_timer > 0.0 and can_wield():
+		parrying = false
+		parry_hold_time = 99.0
+		if start_attack("pommel_strike"):
+			_buffered_move = ""
+			_buffer_timer = 0.0
+			return
+
 	if parry_held and can_feint_to_parry():
 		abort_windup()
 		if not parrying:
@@ -1029,7 +1202,7 @@ func _process_player_input(delta: float) -> void:
 		# Allow cautious footwork while holding guard so thumbs never feel glued to the floor!
 		if absf(mv) > 0.12:
 			bar_tilt = lerpf(bar_tilt, mv * 0.06, 8.0 * delta)
-			position.x = clampf(position.x + mv * get_move_speed() * 0.62 * delta, 120.0, 1160.0)
+			position.x = clampf(position.x + mv * get_move_speed() * 0.65 * delta, 120.0, 1160.0)
 		play_anim("parry_low" if guard_zone == "low" else "parry", 0.06)
 		return
 	else:
@@ -1039,26 +1212,27 @@ func _process_player_input(delta: float) -> void:
 	if Input.is_action_just_pressed("dash"):
 		start_dash(mv if absf(mv) >= 0.2 else float(facing))
 
-	if _buffer_timer > 0.0 and _buffered_move != "" and current_action == "":
+	if _buffer_timer > 0.0 and _buffered_move != "":
 		var move_name := _buffered_move
-		if move_name == "jab":
-			if start_jab():
-				_buffered_move = ""
-				_buffer_timer = 0.0
-		else:
-			if move_name == "slash":
-				move_name = "slash_low" if low_held else "slash_high"
-			if start_attack(move_name):
+		if move_name == "slash":
+			move_name = "slash_low" if low_held else "slash_high"
+		if current_action == "" or current_action in ["dash_fwd", "dash_back"] or can_chain_cancel_into(move_name):
+			if move_name == "jab":
+				if start_jab():
+					_buffered_move = ""
+					_buffer_timer = 0.0
+			elif start_attack(move_name):
 				_buffered_move = ""
 				_buffer_timer = 0.0
 
 	if current_action == "":
-		bar_tilt = lerpf(bar_tilt, mv * 0.08, 8.0 * delta)
+		bar_tilt = lerpf(bar_tilt, mv * 0.09, 10.0 * delta)
 		if absf(mv) > 0.12:
 			position.x = clampf(position.x + mv * get_move_speed() * delta, 120.0, 1160.0)
-			play_anim("walk", 0.08)
+			var retreating := mv * float(facing) < -0.05
+			play_anim("walk_back" if retreating and anim_player.has_animation("walk_back") else "walk", 0.07)
 		else:
-			play_anim("idle", 0.1)
+			play_anim("idle", 0.09)
 
 
 func is_blade_active() -> bool:
@@ -1066,9 +1240,17 @@ func is_blade_active() -> bool:
 		return false
 	match current_action:
 		"slash_high", "slash_low":
-			return action_elapsed >= 0.13 and action_elapsed <= 0.34
+			return action_elapsed >= 0.125 and action_elapsed <= 0.33
 		"thrust":
-			return action_elapsed >= 0.11 and action_elapsed <= 0.30
+			return action_elapsed >= 0.105 and action_elapsed <= 0.29
+		"jump_slash":
+			return action_elapsed >= 0.175 and action_elapsed <= 0.36
+		"mordhau_smash":
+			return action_elapsed >= 0.135 and action_elapsed <= 0.31
+		"spin_slash":
+			return (action_elapsed >= 0.095 and action_elapsed <= 0.195) or (action_elapsed >= 0.235 and action_elapsed <= 0.36)
+		"pommel_strike", "leg_sweep", "kick":
+			return false
 		_:
 			return cursor_aim_enabled and _cursor_sweep_timer > 0.0 and not parrying
 
@@ -1076,13 +1258,15 @@ func is_blade_active() -> bool:
 func is_thrust_strike() -> bool:
 	if current_action == "thrust":
 		return true
-	return current_action == "" and _cursor_sweep_timer > 0.0 and _cursor_strike_mode == "thrust"
+	return (current_action == "" or current_action in ["dash_fwd", "dash_back"]) and _cursor_sweep_timer > 0.0 and _cursor_strike_mode == "thrust"
 
 
 func get_strike_power() -> float:
 	var pwr := 1.0
 	match current_action:
-		"slash_high", "slash_low", "thrust":
+		"jump_slash", "mordhau_smash":
+			pwr = 1.0
+		"slash_high", "slash_low", "thrust", "spin_slash":
 			pwr = 1.0
 		_:
 			pwr = _cursor_power_now()
@@ -1152,16 +1336,24 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 	if l1 < 1.0 or l2 < 1.0:
 		return
 
-	# Subtle torso & head lean into the cursor aim height/reach
+	# Full-body kinetic IK coupling: torso lean + subtle athletic knee/pelvis lunge into low or far cuts!
 	var cursor_local_pre := bone_torso.to_local(cursor_aim_world)
 	var chest_origin := Vector2(12.0, -78.0)
 	var raw_aim_vec := cursor_local_pre - chest_origin
 	var raw_aim_ang := clampf(raw_aim_vec.angle(), deg_to_rad(-80.0), deg_to_rad(65.0))
-	var target_lean := clampf((raw_aim_ang + 0.25) * 0.18, deg_to_rad(-10.0), deg_to_rad(14.0))
-	_ik_torso_lean = lerpf(_ik_torso_lean, target_lean, minf(1.0, 14.0 * delta))
+	var target_lean := clampf((raw_aim_ang + 0.25) * 0.24, deg_to_rad(-14.0), deg_to_rad(18.0))
+	_ik_torso_lean = lerpf(_ik_torso_lean, target_lean, minf(1.0, 16.0 * delta))
 	bone_torso.rotation += _ik_torso_lean
 	if bone_head != null:
-		bone_head.rotation += clampf(raw_aim_ang * 0.16, deg_to_rad(-12.0), deg_to_rad(12.0))
+		bone_head.rotation += clampf(raw_aim_ang * 0.18, deg_to_rad(-14.0), deg_to_rad(14.0))
+	var reach_ext := clampf((raw_aim_vec.length() - 145.0) / 130.0, 0.0, 1.0)
+	var low_crouch := clampf(sin(raw_aim_ang), -0.35, 1.0) * 11.0 + reach_ext * 9.0
+	_ik_stance_crouch = lerpf(_ik_stance_crouch, low_crouch, minf(1.0, 12.0 * delta))
+	if current_action == "" and bone_thigh_r != null and bone_shin_r != null and bone_thigh_l != null:
+		var knee_flex := clampf(_ik_stance_crouch * 0.012, -0.08, 0.26)
+		bone_thigh_r.rotation -= knee_flex
+		bone_shin_r.rotation += knee_flex * 1.15
+		bone_thigh_l.rotation += knee_flex * 0.75
 
 	# Re-evaluate cursor in Torso local space after torso lean
 	var cursor_local := bone_torso.to_local(cursor_aim_world)
@@ -1903,7 +2095,7 @@ func _update_head_expression() -> void:
 		expr = "dead"
 	elif current_action == "hurt" or current_action == "parry_recoil":
 		expr = "pain"
-	elif current_action in ["slash_high", "slash_low", "thrust", "kick"]:
+	elif current_action in ["slash_high", "slash_low", "thrust", "kick", "jump_slash", "pommel_strike", "leg_sweep", "spin_slash", "mordhau_smash"]:
 		expr = "yell"
 	elif hp < 0.55 * max_hp:
 		expr = "bloody"
@@ -1963,7 +2155,47 @@ func _solve_offhand_two_bone_ik() -> void:
 	bone_hand_l.rotation = 0.0
 
 
+func _capture_dash_ghost() -> void:
+	if bone_pelvis == null or bone_torso == null or bone_head == null:
+		return
+	_dash_ghosts.append({
+		"life": 0.16,
+		"max_life": 0.16,
+		"pel": bone_pelvis.global_position,
+		"head": bone_head.global_position,
+		"boot_l": bone_boot_l.global_position if bone_boot_l != null else global_position + Vector2(-24, 110),
+		"boot_r": bone_boot_r.global_position if bone_boot_r != null else global_position + Vector2(24, 110),
+		"hand_r": bone_hand_r.global_position if bone_hand_r != null else bone_torso.global_position,
+		"tip": blade_tip_marker.global_position if has_weapon and blade_tip_marker != null else Vector2.ZERO,
+	})
+	if _dash_ghosts.size() > 5:
+		_dash_ghosts.pop_front()
+
+
 func _draw() -> void:
+	# 0. Grounded Dynamic Contact Shadow on Courtyard Flagstones + Dash Speed Afterimages
+	var floor_loc_y := 562.0 - global_position.y
+	var air_lift := maxf(0.0, -(bone_pelvis.position.y * rig_scale)) if bone_pelvis != null else 0.0
+	var sh_scale := clampf(1.0 - air_lift / 145.0, 0.42, 1.05)
+	var sh_alpha := (0.20 if is_dead else 0.34) * sh_scale
+	draw_set_transform(Vector2(0.0, floor_loc_y + 4.0), 0.0, Vector2(1.0, 0.24))
+	draw_circle(Vector2.ZERO, 62.0 * sh_scale, Color(0.02, 0.01, 0.02, sh_alpha))
+	draw_circle(Vector2(0.0, 0.0), 38.0 * sh_scale, Color(0.01, 0.01, 0.01, sh_alpha * 0.85))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+	for gh in _dash_ghosts:
+		var gf := clampf(float(gh["life"]) / float(gh["max_life"]), 0.0, 1.0)
+		var g_col := (Color(0.95, 0.78, 0.38, 0.28 * gf) if is_player else Color(0.92, 0.32, 0.36, 0.28 * gf))
+		var g_pel := to_local(gh["pel"])
+		var g_hd := to_local(gh["head"])
+		draw_line(g_pel, g_hd, g_col, 24.0 * gf, true)
+		draw_circle(g_hd + Vector2(0, -10), 14.0 * gf, g_col)
+		draw_line(g_pel, to_local(gh["boot_l"]), g_col, 13.0 * gf, true)
+		draw_line(g_pel, to_local(gh["boot_r"]), g_col, 13.0 * gf, true)
+		var g_tip: Vector2 = gh["tip"]
+		if g_tip != Vector2.ZERO:
+			draw_line(to_local(gh["hand_r"]), to_local(g_tip), Color(1.0, 0.94, 0.72, 0.36 * gf), 3.2 * gf, true)
+
 	# 1. Weapon Motion Slash Ribbon (intensity & colour reflect real strike power!)
 	if _blade_trail.size() >= 2:
 		var pwr_vis := get_strike_power()

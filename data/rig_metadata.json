@@ -2596,6 +2596,80 @@
 			},
 			"texture": "res://assets/parts_v2/p5_upperarm_0.png",
 			"width": 40
+		},
+		"p_weapon_halberd": {
+			"category": "weapon",
+			"char": "p1",
+			"file": "parts_v2/p_weapon_halberd.png",
+			"height": 103.0,
+			"id": "p_weapon_halberd",
+			"label": "Crimson Halberd",
+			"pivot": [
+				90.0,
+				51.0
+			],
+			"scale": 0.88,
+			"sockets": {
+				"gripBack": [
+					44.0,
+					51.0
+				],
+				"gripFront": [
+					132.0,
+					51.0
+				],
+				"guard": [
+					210.0,
+					51.0
+				],
+				"pommel": [
+					12.0,
+					51.0
+				],
+				"tip": [
+					440.0,
+					51.0
+				]
+			},
+			"texture": "res://assets/parts_v2/p_weapon_halberd.png",
+			"width": 444.0
+		},
+		"p_weapon_warhammer": {
+			"category": "weapon",
+			"char": "p4",
+			"file": "parts_v2/p_weapon_warhammer.png",
+			"height": 104.0,
+			"id": "p_weapon_warhammer",
+			"label": "Bec de Corbin",
+			"pivot": [
+				78.0,
+				44.0
+			],
+			"scale": 0.88,
+			"sockets": {
+				"gripBack": [
+					38.0,
+					44.0
+				],
+				"gripFront": [
+					112.0,
+					44.0
+				],
+				"guard": [
+					175.0,
+					44.0
+				],
+				"pommel": [
+					10.0,
+					44.0
+				],
+				"tip": [
+					348.0,
+					44.0
+				]
+			},
+			"texture": "res://assets/parts_v2/p_weapon_warhammer.png",
+			"width": 352.0
 		}
 	},
 	"version": 2.0

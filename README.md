@@ -7,8 +7,9 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
 - **Physical blade combat.** Swept blade-vs-blade and blade-vs-body capsule collision with sweet-spot vs. ricasso scaling, edge cuts vs. armour-piercing thrusts, and physical arm rebound on parry/plate impact.
 - **Cursor sword control.** The sword arm follows the mouse (or right stick) through weighted two-bone IK. Swing through a real arc to build limb-chopping momentum (gold trail), or drive the point forward to thrust.
 - **Perfect parries & ripostes.** Raise your guard just before impact to stagger the attacker, or block cleanly to earn a brief golden **Riposte** window with faster, harder counters.
-- **Half-Swording (`Q` / `R3`).** Grip the centre of a two-handed blade with your off-hand for close-quarters leverage, cheaper blocks, and heavy armour-piercing against full plate.
-- **Weapon Loadouts, Disarms & Sword Throws (`F` / `MMB`).** Choose **Signature**, **Iron Pollaxe** (guard-crushing disarmer), **Sword + Buckler** (wide parry window & buckler bashes), or **Katzbalger** (fast one-handed sidearm). Hurl your weapon across the stage, deflect flying steel, brawl with gauntlet jabs, and scramble to pick up any dropped blade on the floorboards!
+- **Half-Swording (`Q` / `R3`) & Mordhau Thunderblow (`Q` -> `K`/`L`).** Grip the centre of a two-handed blade with your off-hand for close-quarters leverage, cheaper blocks, and an overhead crossguard hammer blow (`Mordhau`) that crushes 70%+ of plate armour.
+- **Fast-Action Special Moves & Chain/Dash Cancels.** Vault over low sweeps with **Leap Cleave (`W`)**, crack visors at point-blank with **Pommel Bash (`L`/`C` or `Guard + Slash`)**, duck clean under high slashes with **Ankle Sweep (`S + E`)**, shred strings with **Whirlwind Double-Cut (`U`)**, chain-cancel landed hits into follow-ups, or **Dash-Cancel (`Shift`)** recovery with speed afterimages!
+- **6 Weapon Loadouts, Disarms & Sword Throws (`F` / `MMB`).** Choose **Signature**, **Crimson Halberd**, **Bec de Corbin Warhammer**, **Iron Pollaxe**, **Sword + Buckler**, or **Katzbalger**. Hurl your weapon across the stage, deflect flying steel, brawl with gauntlet jabs, and scramble to pick up any dropped blade on the floorboards!
 - **Knock-Off Hats, Cracking Helmets & Earned Dismemberment.** Solid headshots knock off feathered hats or crack off Gothic plate helmets, exposing bare heads to mid-fight decapitation. High slashes can snap live overhead marionette strings (`Strings & Steel`), and shoving a rival into the proscenium wall triggers a **Corner Crush**.
 - **5 distinct fighters** (see `scripts/FighterStats.gd`):
 
@@ -34,8 +35,11 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
 | Move | A / D (or ← →) | Left stick / D-pad | Slide left/right on Left Stick (tight 36 px full-speed span + frame-1 reversal) |
 | Aim & cut | Move and fling the mouse | Right stick | Swipe / arc across 360° Right Blade Wheel (0 ms live 2-bone IK cuts) |
 | Quick slash | J (or LMB in *Keys* mode) | X / RB | Quick tap on Right side (high or low) |
-| Thrust | K (or drive mouse forward) | Y | Sharp horizontal forward whip on Right Blade Wheel (fires mid-swipe) |
-| Kick | E | A | Quick downward flick on Left Stick (fires mid-swipe) |
+| Thrust / Mordhau | K (Mordhau when Half-Swording) | Y | Sharp horizontal forward whip on Right Blade Wheel |
+| Leap Plunge Cleave | W (or Fwd-Dash + Slash) | RT + X | Quick Up+Forward diagonal flick on Left Stick |
+| Pommel Visor Bash | L / C (or Parry + Slash) | L3 | 2nd-finger tap while holding Rear Guard Parry |
+| Whirlwind Spin Cut | U (or Dash + Thrust) | RT + Y | Back-Dash + Quick Right Tap |
+| Kick / Ankle Sweep | E (or `S + E` to Duck & Sweep) | A (`Down + A` Sweep) | Down flick = Kick · Down+Forward flick = Leg Sweep |
 | Half-Sword stance | Q | Right stick click (R3) | Quick upward flick on Left Stick (fires mid-swipe) |
 | Hurl weapon | F / Middle mouse | — | Two-finger flick on Right side |
 | Parry | Space / RMB | B / LB / LT | Pull or flick Right Wheel into Rear Guard Arc (or hold 2nd finger) |
@@ -67,7 +71,7 @@ scripts/
 tools/
   CharacterRigBuilder.gd  builds fighter .tscn rigs from data/rig_metadata.json
   BuildAllRigs.gd         headless rig + arena builder
-  SmokeTest.gd            102-check headless gameplay test suite
+  SmokeTest.gd            116-check headless gameplay test suite
   BalanceSim.gd           multi-bot headless AI & combat balance simulator
 data/rig_metadata.json    sprite parts, pivots and sockets for every fighter
 ```

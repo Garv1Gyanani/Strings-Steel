@@ -15,25 +15,25 @@ enum State { NEUTRAL, DEFEND, RETREAT }
 
 const DIFFICULTY := {
 	"normal": {
-		"reaction": 0.25, "reaction_jitter": 0.10,
+		"reaction": 0.24, "reaction_jitter": 0.09,
 		"parry_skill": 0.48, "perfect_chance": 0.12, "zone_read": 0.62,
-		"attack_cd": Vector2(0.75, 1.25), "think": Vector2(0.22, 0.40),
-		"speed": 0.88, "punish": 0.40, "anti_turtle": 0.35, "dash_use": 0.10,
-		"retreat_hp": 0.0, "riposte": 0.42, "whiff_bait": 0.15,
+		"attack_cd": Vector2(0.62, 1.05), "think": Vector2(0.18, 0.34),
+		"speed": 0.92, "punish": 0.44, "anti_turtle": 0.38, "dash_use": 0.14,
+		"retreat_hp": 0.0, "riposte": 0.46, "whiff_bait": 0.16,
 	},
 	"hard": {
-		"reaction": 0.14, "reaction_jitter": 0.05,
+		"reaction": 0.135, "reaction_jitter": 0.045,
 		"parry_skill": 0.80, "perfect_chance": 0.32, "zone_read": 0.84,
-		"attack_cd": Vector2(0.40, 0.76), "think": Vector2(0.12, 0.24),
-		"speed": 0.98, "punish": 0.80, "anti_turtle": 0.72, "dash_use": 0.42,
-		"retreat_hp": 0.26, "riposte": 0.80, "whiff_bait": 0.38,
+		"attack_cd": Vector2(0.32, 0.62), "think": Vector2(0.10, 0.20),
+		"speed": 1.02, "punish": 0.82, "anti_turtle": 0.75, "dash_use": 0.46,
+		"retreat_hp": 0.26, "riposte": 0.82, "whiff_bait": 0.40,
 	},
 	"brutal": {
-		"reaction": 0.10, "reaction_jitter": 0.04,
+		"reaction": 0.095, "reaction_jitter": 0.035,
 		"parry_skill": 0.90, "perfect_chance": 0.50, "zone_read": 0.93,
-		"attack_cd": Vector2(0.28, 0.54), "think": Vector2(0.08, 0.18),
-		"speed": 1.06, "punish": 0.94, "anti_turtle": 0.90, "dash_use": 0.60,
-		"retreat_hp": 0.30, "riposte": 0.92, "whiff_bait": 0.55,
+		"attack_cd": Vector2(0.22, 0.44), "think": Vector2(0.07, 0.15),
+		"speed": 1.08, "punish": 0.95, "anti_turtle": 0.92, "dash_use": 0.64,
+		"retreat_hp": 0.30, "riposte": 0.94, "whiff_bait": 0.58,
 	},
 }
 
@@ -397,7 +397,8 @@ func _walk(me: FighterController, dir: float, delta: float) -> void:
 	if me.current_action != "":
 		return
 	me.position.x = clampf(me.position.x + dir * me.get_move_speed() * float(_cfg["speed"]) * delta, 120.0, 1160.0)
-	me.play_anim("walk", 0.08)
+	var retreating := dir * float(me.facing) < -0.05
+	me.play_anim("walk_back" if retreating and me.anim_player.has_animation("walk_back") else "walk", 0.07)
 
 
 func _begin_defend(me: FighterController, foe: FighterController) -> void:
@@ -420,9 +421,9 @@ func _set_guard_zone(me: FighterController, foe: FighterController) -> void:
 
 
 func _foe_attack_zone(foe: FighterController) -> String:
-	if foe.current_action == "slash_low":
+	if foe.current_action in ["slash_low", "leg_sweep"]:
 		return "low"
-	if foe.current_action in ["slash_high", "thrust"]:
+	if foe.current_action in ["slash_high", "thrust", "jump_slash", "mordhau_smash", "spin_slash"]:
 		return "high"
 	return _foe_blade_line(foe)
 
@@ -442,19 +443,39 @@ func _choose_attack(me: FighterController, foe: FighterController, dist: float) 
 		return "kick" if me.can_kick() and dist < 190.0 else ""
 	var read := float(_cfg["zone_read"])
 	var style := String(me.stats.get("ai_style", "balanced"))
+	# Close clinch: bash visor with Pommel Strike or Mordhau!
+	if dist < 150.0 and randf() < (0.34 if style in ["bully", "master"] else 0.22):
+		return "mordhau_smash" if me.half_swording else "pommel_strike"
 	# Attack the line the foe is NOT guarding!
 	if foe.parrying and randf() < read * 0.85:
+		if dist < 162.0 and randf() < 0.30:
+			return "pommel_strike"
 		var kick_p := 0.55 if style == "bully" else 0.35
-		if me.can_kick() and dist < 182.0 and randf() < kick_p:
-			return "kick"
+		if me.can_kick() and dist < 185.0 and randf() < kick_p:
+			return "leg_sweep" if (foe.guard_zone == "high" and randf() < 0.52) else "kick"
+		if foe.guard_zone == "low" and me.can_dash() and randf() < 0.38:
+			return "jump_slash"
 		return "slash_low" if foe.guard_zone == "high" else "slash_high"
-	# A cursor fighter holding the blade out is fishing for a passive block: kick it or cut around it!
+	# Vault over enemy low sweeps!
+	if foe.current_action == "leg_sweep" and me.can_dash() and randf() < read:
+		return "jump_slash"
+	# Half-Sword Mordhau vs plate armour!
+	if me.half_swording and dist < 188.0 and randf() < 0.36:
+		return "mordhau_smash"
+	# A cursor fighter holding the blade out is fishing for a passive block: kick/pommel it or cut around it!
 	var foe_blade_held := foe.is_player and foe.cursor_aim_enabled and foe.current_action == "" and foe.can_wield() and foe.get_blade_tip_speed() < 260.0
 	if foe_blade_held and randf() < read * 0.82:
+		if dist < 156.0 and randf() < 0.35:
+			return "pommel_strike"
 		var kick_p2 := 0.62 if style == "bully" else 0.45
 		if me.can_kick() and dist < 182.0 and randf() < kick_p2:
-			return "kick"
+			return "leg_sweep" if (_foe_blade_line(foe) == "high" and randf() < 0.45) else "kick"
 		return "slash_low" if _foe_blade_line(foe) == "high" else ("thrust" if dist > 195.0 else "slash_high")
+	# Signature style specials: Vaulting Plunge Cleaves & Zwerchhau Whirlwinds!
+	if dist >= 165.0 and dist <= 238.0 and me.can_dash() and style in ["executioner", "pressure", "bully"] and randf() < 0.16:
+		return "jump_slash"
+	if dist <= 198.0 and style in ["pressure", "duelist", "master"] and randf() < 0.16:
+		return "spin_slash"
 	# Landsknecht "pressure" style alternates high/low lines so it rarely repeats a slash line!
 	if style == "pressure" and _last_chosen_move in ["slash_high", "slash_low"] and randf() < 0.72:
 		return "slash_low" if _last_chosen_move == "slash_high" else "slash_high"

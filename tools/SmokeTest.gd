@@ -562,6 +562,84 @@ func _run() -> void:
 	var brutal_off_arm := p1().apply_blade_damage("forearm_l", 20.0, p1().position + Vector2(-20, -90), Vector2(-1, 0), true, true, 0.85, 1.0, 0.75, false, 0.0)
 	check(brutal_off_arm and not p1().is_dead, "Sever: BRUTAL severs outer limbs on first clean heavy slash while keeping the fight alive")
 
+	print("== Fast-action moveset, 15-anim rig, chain/dash cancels & new arsenal")
+	_reset_both()
+	check(arena._slash_arc_tex != null and arena._impact_burst_tex != null, "hand-painted slash crescent & impact burst VFX sprites loaded")
+	p1().apply_loadout("halberd")
+	check(p1().weapon_part_id == "p_weapon_halberd" and p1().weapon_sprite.texture != null, "Crimson Halberd loadout equips custom inked polearm sprite")
+	p1().apply_loadout("warhammer")
+	check(p1().weapon_part_id == "p_weapon_warhammer" and p1().get_cut_armor_pierce() >= 0.50, "Bec de Corbin warhammer loadout equips custom sprite with 50%+ armor pierce")
+
+	# 1. All new animations present on rig + walk_back retreat + dash afterimages
+	_reset_both()
+	var has_new_anims := true
+	for an in ["walk_back", "dash_fwd", "dash_back", "jump_slash", "pommel_strike", "leg_sweep", "spin_slash", "mordhau_smash"]:
+		if not p1().anim_player.has_animation(an):
+			has_new_anims = false
+	check(has_new_anims, "all 8 new fast-action animations baked into fighter rigs")
+	p1().input_enabled = true
+	p1().touch_move = -0.85
+	p1()._process(0.05)
+	check(String(p1().anim_player.current_animation) == "walk_back", "retreating plays coiled walk_back animation instead of moonwalking")
+	p1().touch_move = 0.0
+	p1().start_dash(1.0)
+	check(p1().current_action == "dash_fwd" and p1()._dash_ghosts.size() >= 1, "dash triggers dedicated lunge pose and speed afterimage ghosts")
+
+	# 2. Pommel Strike -> Hit-Confirm Chain Cancel into Slash_Low -> Dash-Cancel Recovery!
+	_reset_both()
+	p1().position.x = 500.0
+	p2().position.x = 635.0
+	var hp_pre_pommel := p2().hp
+	check(p1().start_attack("pommel_strike"), "Pommel Strike starts cleanly")
+	p1().action_elapsed = 0.12
+	arena._resolve_combat()
+	check(p2().hp < hp_pre_pommel and p2().current_action == "parry_recoil" and p1().riposte_timer > 0.0, "Pommel Bash staggers defender at close range and grants Riposte")
+	p1().action_elapsed = 0.16
+	check(p1().start_attack("slash_low"), "hit-confirmed Pommel Bash chain-cancels early into Slash_Low")
+	p1().action_elapsed = 0.24
+	p1().dash_cooldown = 0.0
+	p1().start_dash(-1.0)
+	check(p1().dash_timer > 0.0 and p1().current_action == "dash_back", "attack recovery can be Dash-Canceled for fast-action evasion")
+
+	# 3. Vaulting Jump_Slash leaps cleanly over enemy Leg_Sweep!
+	_reset_both()
+	p1().position.x = 490.0
+	p2().position.x = 640.0
+	p1().start_attack("jump_slash")
+	p1().action_elapsed = 0.16
+	p2().start_attack("leg_sweep")
+	p2().action_elapsed = 0.14
+	var hp1_air := p1().hp
+	arena._resolve_combat()
+	check(p1().is_airborne() and is_equal_approx(p1().hp, hp1_air), "vaulting Jump_Slash leaps cleanly over an incoming Leg_Sweep")
+
+	# 4. Low-Profile Leg_Sweep ducks cleanly underneath enemy Slash_High and trips high guard!
+	_reset_both()
+	p1().position.x = 490.0
+	p2().position.x = 635.0
+	p1().start_attack("leg_sweep")
+	p1().action_elapsed = 0.14
+	p1().anim_player.play("leg_sweep", 0.0)
+	p1().anim_player.advance(0.14)
+	p2().start_attack("slash_high")
+	p2().action_elapsed = 0.22
+	p2().anim_player.play("slash_high", 0.0)
+	p2().anim_player.advance(0.22)
+	var hp1_duck := p1().hp
+	var hp2_trip := p2().hp
+	arena._resolve_combat()
+	check(p1().is_low_profile() and is_equal_approx(p1().hp, hp1_duck) and p2().hp < hp2_trip, "ducking Leg_Sweep evades Slash_High and sweeps the attacker's legs")
+
+	# 5. Whirlwind Spin_Slash re-arms second strike mid-whirlwind & Mordhau crushes armor!
+	_reset_both()
+	p1().start_attack("spin_slash")
+	var ser_first := p1().attack_serial
+	p1()._process(0.26)
+	check(p1().attack_serial == ser_first + 1, "Spin_Slash re-arms a second independent strike mid-whirlwind")
+	_reset_both()
+	p1().set_half_sword(true, false)
+	check(p1().start_attack("mordhau_smash") and p1().get_cut_armor_pierce() >= 0.70, "Half-Sword Mordhau Thunderblow grants 70%+ armor pierce against plate")
+
 	print("== Back to title")
 	arena._go_to_title()
 	await frames(3)

@@ -180,7 +180,14 @@ func _on_finger_drag(idx: int, pos: Vector2, raw_vel: Vector2) -> void:
 		# Instant mid-flick gestures on fresh touch (<= 0.13s) — fires in ~35ms WITHOUT waiting for finger lift!
 		# Once holding > 0.13s to walk, sliding NEVER triggers accidental dashes!
 		if not _left_gesture_fired and _left_touch_time > 0.001 and _left_touch_time <= 0.13 and player != null:
-			if absf(total_d.x) >= 28.0 and absf(_left_vel.x) >= 780.0 and absf(total_d.x) > absf(total_d.y) * 1.35:
+			var face_f := float(player.facing)
+			if total_d.y <= -26.0 and total_d.x * face_f >= 24.0 and _left_vel.length() >= 680.0:
+				player.start_attack("jump_slash")
+				_left_gesture_fired = true
+			elif total_d.y >= 26.0 and total_d.x * face_f >= 24.0 and _left_vel.length() >= 680.0:
+				player.start_attack("leg_sweep")
+				_left_gesture_fired = true
+			elif absf(total_d.x) >= 28.0 and absf(_left_vel.x) >= 780.0 and absf(total_d.x) > absf(total_d.y) * 1.35:
 				player.start_dash(1.0 if total_d.x > 0.0 else -1.0)
 				_left_gesture_fired = true
 			elif total_d.y >= 32.0 and _left_vel.y >= 700.0 and total_d.y > absf(total_d.x) * 1.25:
@@ -282,11 +289,14 @@ func _on_finger_up(idx: int, pos: Vector2) -> void:
 			player.touch_move = 0.0
 			player.touch_low = _right_parrying and player.touch_low
 	elif idx == _right_idx:
-		# Quick Tap on Right Side -> Instant Sword Slash (High / Low) or Gauntlet Jab!
+		# Quick Tap on Right Side -> Dash-Cleave / Spin-Slash when dashing, or Instant Sword Slash / Jab!
 		if not _right_fired_strike and _right_touch_time <= 0.20 and _right_max_travel < 20.0 and _right_alt_idx == -1 and player != null:
 			var vp_h := maxf(480.0, get_viewport_rect().size.y)
 			if player.can_wield():
-				player.start_attack("slash_low" if pos.y > vp_h * 0.65 else "slash_high")
+				if player.dash_timer > 0.0:
+					player.start_attack("jump_slash" if player.dash_dir * float(player.facing) > 0.0 else "spin_slash")
+				else:
+					player.start_attack("slash_low" if pos.y > vp_h * 0.65 else "slash_high")
 			else:
 				player.start_jab()
 		_right_idx = -1
@@ -295,6 +305,10 @@ func _on_finger_up(idx: int, pos: Vector2) -> void:
 		if _right_alt_idx == -1 and player != null:
 			player.touch_parry = false
 	elif idx == _right_alt_idx:
+		if not _right_alt_thrown and (pos - _right_alt_origin).length() < 24.0 and _right_parrying and player != null and player.can_wield():
+			player.touch_parry = false
+			_right_parrying = false
+			player.start_attack("mordhau_smash" if player.half_swording else "pommel_strike")
 		_right_alt_idx = -1
 		if not _right_parrying and player != null:
 			player.touch_parry = false

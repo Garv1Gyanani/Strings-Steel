@@ -58,10 +58,13 @@ var particles_chunks: Array[Dictionary] = []
 var particles_mist: Array[Dictionary] = []
 var arterial_jets: Array[Dictionary] = []
 var slash_flashes: Array[Dictionary] = []
+var vfx_sprites: Array[Dictionary] = []
 var callouts: Array[Dictionary] = []
 var candles: Array[Dictionary] = []
 var _leaves: Array[Dictionary] = []
 var _stage_tex: Texture2D
+var _slash_arc_tex: Texture2D
+var _impact_burst_tex: Texture2D
 var blood_flash_alpha: float = 0.0
 
 const COURTYARD_RECT := Rect2(-208.0, -56.0, 1696.0, 954.0)
@@ -115,6 +118,10 @@ func _ready() -> void:
 
 	if ResourceLoader.exists("res://assets/stage_courtyard.jpg"):
 		_stage_tex = ResourceLoader.load("res://assets/stage_courtyard.jpg")
+	if ResourceLoader.exists("res://assets/parts_v2/fx_slash_crescent.png"):
+		_slash_arc_tex = ResourceLoader.load("res://assets/parts_v2/fx_slash_crescent.png")
+	if ResourceLoader.exists("res://assets/parts_v2/fx_impact_burst.png"):
+		_impact_burst_tex = ResourceLoader.load("res://assets/parts_v2/fx_impact_burst.png")
 
 	stage_layer = Node2D.new()
 	stage_layer.name = "StageLayer"
@@ -364,6 +371,7 @@ func _reset_stage() -> void:
 	particles_mist.clear()
 	arterial_jets.clear()
 	slash_flashes.clear()
+	vfx_sprites.clear()
 	callouts.clear()
 	blood_flash_alpha = 0.0
 	blood.clear()
@@ -631,9 +639,13 @@ func _resolve_combat() -> void:
 			_handle_blade_clash(p1, p2, best_pt)
 			_handle_blade_clash(p2, p1, best_pt)
 
-	# 2. Kicks & Unarmed / Buckler Bashes
+	# 2. Kicks, Low Sweeps, Pommel Bashes & Unarmed / Buckler Bashes
 	_check_kick(p1, p2)
 	_check_kick(p2, p1)
+	_check_leg_sweep(p1, p2)
+	_check_leg_sweep(p2, p1)
+	_check_pommel(p1, p2)
+	_check_pommel(p2, p1)
 	_check_jab(p1, p2)
 	_check_jab(p2, p1)
 
@@ -761,6 +773,7 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 		def.grant_riposte()
 		atk.knockback_vx = -float(atk.facing) * 320.0
 		_spawn_sparks(pt, 36)
+		_spawn_vfx_burst(pt, 0.88, Color(1.0, 0.94, 0.62))
 		_on_cut_flash(pt, "PERFECT PARRY!", Color(1.0, 0.88, 0.35))
 		if def == p2:
 			ai.notify_blocked(true)
@@ -801,7 +814,7 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 
 
 func _check_kick(atk: FighterController, def: FighterController) -> void:
-	if not atk.is_kick_active() or def.is_dead:
+	if not atk.is_kick_active() or def.is_dead or def.is_airborne():
 		return
 	var key := "kick:%d:%d" % [atk.get_instance_id(), atk.attack_serial]
 	if _last_clash_serial.has(key):
@@ -820,9 +833,88 @@ func _check_kick(atk: FighterController, def: FighterController) -> void:
 		def.spend_stamina(stam_dmg)
 		def.parrying = false
 		def.trigger_hurt(false)
+		atk.grant_chain_cancel()
 		shake_mag = maxf(shake_mag, 10.0)
 		_on_cut_flash(foot_pt, "PUSH KICK!", Color(0.92, 0.76, 0.38))
 		_check_corner_crush(def, foot_pt)
+
+
+func _check_leg_sweep(atk: FighterController, def: FighterController) -> void:
+	if not atk.is_sweep_active() or def.is_dead:
+		return
+	var key := "sweep:%d:%d" % [atk.get_instance_id(), atk.attack_serial]
+	if _last_clash_serial.has(key):
+		return
+	var dist_x := absf(def.position.x - atk.position.x)
+	var facing_def := (def.position.x - atk.position.x) * float(atk.facing) >= -18.0
+	if not facing_def or dist_x > 196.0:
+		return
+	if def.is_airborne():
+		_last_clash_serial[key] = true
+		_on_cut_flash(def.position + Vector2(0, -140), "LEAPED OVER!", Color(0.76, 0.92, 1.0))
+		return
+	# Low guard blocks the sweep cleanly; high guard gets its legs swept out from underneath!
+	if def.parrying and def.can_wield() and def.guard_zone == "low" and def.stamina >= 12.0:
+		_last_clash_serial[key] = true
+		def.spend_stamina(12.0)
+		def.grant_riposte()
+		atk.knockback_vx = -float(atk.facing) * 180.0
+		sfx.play_sfx("thud", 0.12)
+		_on_cut_flash(def.position + Vector2(0, 45), "SWEEP BLOCKED!", Color(0.88, 0.88, 0.72))
+		return
+	_last_clash_serial[key] = true
+	var hit_pt := def.position + Vector2(0, 58.0)
+	sfx.play_sfx("thud", 0.10, 1.5)
+	def.hp = maxf(0.0, def.hp - 12.0 * (def.stat("armor_mult") if def.is_armored_slot("shin_l") else 1.0))
+	def.spend_stamina(20.0)
+	def.parrying = false
+	def.knockback_vx = float(atk.facing) * 290.0
+	atk.grant_chain_cancel()
+	hitstop_timer = 0.055
+	shake_mag = maxf(shake_mag, 12.0)
+	_spawn_vfx_burst(hit_pt, 0.52, Color(0.95, 0.82, 0.48))
+	_on_cut_flash(hit_pt + Vector2(0, -24), "ANKLE SWEEP!", Color(1.0, 0.72, 0.32))
+	if def.hp <= 0.0:
+		def.kill_fighter()
+	else:
+		def.trigger_hurt(true)
+		_check_corner_crush(def, hit_pt)
+
+
+func _check_pommel(atk: FighterController, def: FighterController) -> void:
+	if not atk.is_pommel_active() or def.is_dead:
+		return
+	var key := "pommel:%d:%d" % [atk.get_instance_id(), atk.attack_serial]
+	if _last_clash_serial.has(key):
+		return
+	var dist_x := absf(def.position.x - atk.position.x)
+	var facing_def := (def.position.x - atk.position.x) * float(atk.facing) >= -15.0
+	if not facing_def or dist_x > 168.0:
+		return
+	_last_clash_serial[key] = true
+	var hit_pt := def.position + Vector2(-float(def.facing) * 24.0, -124.0)
+	sfx.play_sfx("clang", 0.08, 1.8)
+	_spawn_sparks(hit_pt, 18)
+	_spawn_vfx_burst(hit_pt, 0.62, Color(1.0, 0.88, 0.45))
+	var dmg := 11.0 * atk.stat("damage_mult")
+	def.hp = maxf(0.0, def.hp - dmg * (0.78 if def.is_armored_slot("head") else 1.0))
+	def.spend_stamina(24.0)
+	def.parrying = false
+	def.knockback_vx = float(atk.facing) * 265.0
+	if def._has_removable_headgear() and float(def.limb_hp.get("head", 68.0)) <= 48.0:
+		def._pop_headgear(Vector2(float(atk.facing), -0.35))
+	else:
+		def.limb_hp["head"] = maxf(0.0, float(def.limb_hp.get("head", 68.0)) - 22.0)
+	atk.grant_chain_cancel()
+	atk.grant_riposte()
+	hitstop_timer = 0.06
+	shake_mag = maxf(shake_mag, 12.0)
+	_on_cut_flash(hit_pt + Vector2(0, -18), "POMMEL BASH!", Color(1.0, 0.84, 0.36))
+	if def.hp <= 0.0:
+		def.kill_fighter()
+	else:
+		def.trigger_hurt(true)
+		_check_corner_crush(def, hit_pt)
 
 
 func _check_jab(atk: FighterController, def: FighterController) -> void:
@@ -919,6 +1011,12 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 	if best_slot == "":
 		return
 
+	# Low-profile Leg Sweep ducks cleanly underneath high horizontal/overhead cuts & head-level thrusts!
+	if def.is_low_profile() and (atk.current_action == "slash_high" or (atk.current_action == "thrust" and best_slot == "head")):
+		atk.hit_registered_serial = atk.attack_serial
+		_on_cut_flash(def.position + Vector2(0, -90), "DUCKED!", Color(0.76, 0.94, 1.0))
+		return
+
 	# Explicit directional guard: if the defender is actively parrying the attacked line,
 	# catch the blow on their crossguard even in close measure (unless their guard breaks!).
 	if _is_covered_by_parry(atk, def, best_slot, best_pt):
@@ -929,6 +1027,7 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 			return
 
 	atk.hit_registered_serial = atk.attack_serial
+	atk.grant_chain_cancel()
 	var pwr := atk.get_strike_power()
 	var b_guard: Vector2 = blade[0]
 	var b_vec: Vector2 = Vector2(blade[1]) - b_guard
@@ -938,17 +1037,31 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 		var cx := float(atk.facing) * absf(atk._cursor_last_dir.x) if absf(atk._cursor_last_dir.x) > 0.2 else float(atk.facing)
 		swing_dir = Vector2(cx, atk._cursor_last_dir.y).normalized()
 	var is_thrust := atk.is_thrust_strike()
-	var attacker_heavy := pwr >= FighterController.HEAVY_POWER_THRESHOLD and blade_pos_frac >= 0.38 and not is_thrust
+	var attacker_heavy := pwr >= FighterController.HEAVY_POWER_THRESHOLD and (blade_pos_frac >= 0.36 or atk.current_action == "mordhau_smash") and not is_thrust
 	var is_rip := atk._riposte_active_attack
 	atk._riposte_active_attack = false
 	var dmg := (24.0 if is_thrust else 20.0) * atk.stat("damage_mult") * atk.get_weapon_damage_mult() * (atk.stat("thrust_mult") if is_thrust else 1.0)
-	if atk.current_action == "":
-		# Free-form cursor cuts have slightly less body-weight than lunges, while touch-wheel swipes stay crisp.
-		var free_mult := (0.90 if atk.touch_mode_active else 0.82)
-		dmg *= 0.88 if is_thrust else free_mult
+	match atk.current_action:
+		"jump_slash":
+			dmg *= 1.35
+			_on_cut_flash(best_pt + Vector2(0, -22), "PLUNGE CLEAVE!", Color(1.0, 0.72, 0.28))
+		"mordhau_smash":
+			dmg *= 1.28
+			blade_pos_frac = maxf(blade_pos_frac, 0.80)
+			_on_cut_flash(best_pt + Vector2(0, -22), "MORDHAU!", Color(1.0, 0.84, 0.38))
+		"spin_slash":
+			dmg *= 0.72
+		"":
+			# Free-form cursor cuts have slightly less body-weight than lunges, while touch-wheel swipes stay crisp.
+			var free_mult := (0.90 if atk.touch_mode_active else 0.82)
+			dmg *= 0.88 if is_thrust else free_mult
 	if is_rip:
 		dmg *= 1.18
 		_on_cut_flash(best_pt, "RIPOSTE!", Color(1.0, 0.88, 0.42))
+	if not is_thrust and pwr >= 0.62:
+		_spawn_vfx_slash_arc(atk.position + Vector2(float(atk.facing) * 62.0, -108.0), float(atk.facing), swing_dir.angle(), 0.78 if atk.current_action in ["jump_slash", "mordhau_smash", "spin_slash"] else 0.60)
+	if atk.current_action == "mordhau_smash":
+		_spawn_vfx_burst(best_pt, 0.76, Color(1.0, 0.88, 0.48))
 	var ap := atk.get_thrust_armor_pierce() if is_thrust else atk.get_cut_armor_pierce()
 	var did_sever := def.apply_blade_damage(best_slot, dmg, best_pt, swing_dir, bool(settings["one_hit_sever"]), attacker_heavy, pwr, atk.get_limb_damage_mult(), blade_pos_frac, is_thrust, ap)
 	atk.blade_blood = minf(1.0, atk.blade_blood + (0.65 if did_sever else 0.24 * pwr))
@@ -1294,6 +1407,13 @@ func _step_particles(delta: float) -> void:
 		if float(sf["life"]) <= 0.0:
 			slash_flashes.remove_at(i)
 
+	for i in range(vfx_sprites.size() - 1, -1, -1):
+		var vs: Dictionary = vfx_sprites[i]
+		vs["life"] = float(vs["life"]) - delta
+		vs["scale"] = float(vs["scale"]) + float(vs.get("grow", 0.8)) * delta
+		if float(vs["life"]) <= 0.0:
+			vfx_sprites.remove_at(i)
+
 	for i in range(particles_sparks.size() - 1, -1, -1):
 		var s: Dictionary = particles_sparks[i]
 		s["life"] = float(s["life"]) - delta
@@ -1494,6 +1614,19 @@ func _draw_fx() -> void:
 		fx_layer.draw_line(spos - sdir * slen * 0.5, spos + sdir * slen * 0.5, Color(0.95, 0.12, 0.16, 0.85 * a), 8.0 * a, true)
 		fx_layer.draw_line(spos - sdir * slen * 0.42, spos + sdir * slen * 0.42, Color(1.0, 0.96, 0.88, a), 3.0 * a, true)
 
+	for vs in vfx_sprites:
+		var vtex: Texture2D = vs.get("tex", null)
+		if vtex == null:
+			continue
+		var va := clampf(float(vs["life"]) / float(vs["max_life"]), 0.0, 1.0)
+		var vcol: Color = vs["col"]
+		vcol.a *= va * va
+		var vsc := float(vs["scale"])
+		var flip_s := float(vs.get("flip_x", 1.0))
+		fx_layer.draw_set_transform(Vector2(vs["pos"]), float(vs["rot"]), Vector2(vsc * flip_s, vsc))
+		fx_layer.draw_texture(vtex, -vtex.get_size() * 0.5, vcol)
+		fx_layer.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
 	for sp in particles_sparks:
 		var spos: Vector2 = sp["pos"]
 		var svel: Vector2 = sp["vel"]
@@ -1512,6 +1645,38 @@ func _draw_fx() -> void:
 # ---------------------------------------------------------------------------
 # HUD
 # ---------------------------------------------------------------------------
+
+func _spawn_vfx_slash_arc(pos: Vector2, face_sign: float, angle_rad: float, base_scale: float = 0.65) -> void:
+	if _slash_arc_tex == null or vfx_sprites.size() >= 18:
+		return
+	vfx_sprites.append({
+		"tex": _slash_arc_tex,
+		"pos": pos,
+		"rot": angle_rad * 0.45,
+		"scale": base_scale,
+		"grow": 0.95,
+		"flip_x": 1.0 if face_sign >= 0.0 else -1.0,
+		"life": 0.15,
+		"max_life": 0.15,
+		"col": Color(1.0, 0.95, 0.86, 0.82),
+	})
+
+
+func _spawn_vfx_burst(pos: Vector2, base_scale: float = 0.68, tint: Color = Color(1.0, 0.92, 0.58)) -> void:
+	if _impact_burst_tex == null or vfx_sprites.size() >= 18:
+		return
+	vfx_sprites.append({
+		"tex": _impact_burst_tex,
+		"pos": pos,
+		"rot": randf_range(0.0, TAU),
+		"scale": base_scale * 0.72,
+		"grow": 2.4,
+		"flip_x": 1.0,
+		"life": 0.16,
+		"max_life": 0.16,
+		"col": Color(tint.r, tint.g, tint.b, 0.88),
+	})
+
 
 func _refresh_hud() -> void:
 	if ui == null or p1 == null or p2 == null:
