@@ -64,6 +64,8 @@ var _last_button_serial: int = -1
 var _punish_time: float = 0.0
 var _punish_decided: bool = false
 var _turtle_decided: bool = false
+var _foe_spin_habit: float = 0.0
+var _foe_spinning_multi: bool = false
 
 # Queued follow-up (riposte / dash-in strike)
 var _pending_attack: String = ""
@@ -94,6 +96,8 @@ func reset() -> void:
 	_punish_time = 0.0
 	_punish_decided = false
 	_turtle_decided = false
+	_foe_spin_habit = 0.0
+	_foe_spinning_multi = false
 	_pending_attack = ""
 	_pending_delay = 0.0
 	_last_chosen_move = ""
@@ -103,6 +107,10 @@ func reset() -> void:
 
 ## Called by the arena when this AI's guard stopped an attack.
 func notify_blocked(perfect: bool) -> void:
+	# If the foe is mid-chained whirlwind (Hit #2 still coming!), keep guard up until both hits pass!
+	if _foe_spinning_multi and not perfect:
+		_state_timer = maxf(_state_timer, 0.24)
+		return
 	if perfect or randf() < float(_cfg["riposte"]):
 		state = State.NEUTRAL
 		_state_timer = 0.0
@@ -130,6 +138,8 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 	_state_timer = maxf(0.0, _state_timer - delta)
 	_redecide_timer = maxf(0.0, _redecide_timer - delta)
 	_stance_cd = maxf(0.0, _stance_cd - delta)
+	_foe_spin_habit = maxf(0.0, _foe_spin_habit - 0.16 * delta)
+	_foe_spinning_multi = foe.current_action == "spin_slash" and not foe._spin_second_armed
 
 	# Drive smooth 2-bone IK guard posture whenever the AI isn't in a committed animation.
 	_update_guard_ik(delta, me, foe, dist, dir_to_foe)
@@ -176,26 +186,38 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 		_last_button_serial = foe.attack_serial
 		_threat_time = 0.0
 		_episode_decided = false
+		if foe.current_action == "spin_slash" and not foe._spin_second_armed:
+			_foe_spin_habit = minf(4.0, _foe_spin_habit + 1.0)
 
-	# --- 1. React to a perceived threat (never burn the decision while staggered) ---
+	# --- 1. React to a perceived threat (and adapt fast against predictable U/spin spammers!) ---
 	var style := String(me.stats.get("ai_style", "balanced"))
-	var parry_p := clampf(float(_cfg["parry_skill"]) + (0.08 if style == "master" else 0.0), 0.0, 0.96)
-	var bait_p := float(_cfg["whiff_bait"]) * (1.45 if style == "duelist" else 1.0)
+	var reading_spin_spam := foe.current_action == "spin_slash" and _foe_spin_habit >= 1.1
+	var foe_waggling := foe.is_player and foe._waggle_streak >= 2
+	var parry_p := clampf(float(_cfg["parry_skill"]) + (0.08 if style == "master" else 0.0) + (0.26 if reading_spin_spam else 0.0), 0.0, 0.98)
+	var bait_p := float(_cfg["whiff_bait"]) * (1.45 if style == "duelist" else 1.0) + (0.42 if reading_spin_spam else 0.0) + (0.35 if foe_waggling else 0.0)
 	var can_act := me.current_action == "" or (difficulty != "normal" and me.can_feint_to_parry())
-	var under_fire := threat and _threat_time >= _reaction_needed
+	var eff_reaction := _reaction_needed * (0.62 if reading_spin_spam else 1.0)
+	var under_fire := threat and _threat_time >= eff_reaction
 	if under_fire and can_act and (not _episode_decided or _redecide_timer <= 0.0) and state != State.DEFEND:
 		_episode_decided = true
 		_redecide_timer = 0.24
 		_roll_reaction()
-		# Sometimes back-dash to make a committed swing whiff, then lunge-punish recovery!
-		if me.current_action == "" and dist > 165.0 and dist < 245.0 and me.dash_cooldown <= 0.0 and foe.current_action in FighterController.ATTACK_MOVES and randf() < bait_p * 0.45:
+		# Back-dash to make a committed spin/swing whiff, then skewer recovery with Lunge Thrust!
+		var bait_chance := bait_p * (0.72 if reading_spin_spam else 0.45)
+		if me.current_action == "" and dist > 158.0 and dist < 248.0 and me.dash_cooldown <= 0.0 and foe.current_action in FighterController.ATTACK_MOVES and randf() < bait_chance:
 			me.start_dash(-dir_to_foe)
 			_pending_attack = "thrust"
-			_pending_delay = 0.16
+			_pending_delay = 0.20 if foe.current_action == "spin_slash" else 0.16
 			return
+		# Close-range read on predictable raw spin startup: boot them out of it before blade comes around!
+		if reading_spin_spam and me.current_action == "" and dist < 158.0 and foe.action_elapsed < 0.09 and me.can_kick() and randf() < 0.42:
+			if _try_attack(me, "kick"):
+				return
 		if me.can_wield() and randf() < parry_p:
 			me.abort_windup()
 			_begin_defend(me, foe)
+			if reading_spin_spam:
+				me.guard_zone = "high"
 		elif me.current_action == "" and me.dash_cooldown <= 0.0 and dist < 210.0 and randf() < float(_cfg["dash_use"]):
 			me.start_dash(-dir_to_foe)
 			_attack_cd = maxf(_attack_cd, 0.16)

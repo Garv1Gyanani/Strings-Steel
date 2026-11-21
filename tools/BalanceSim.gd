@@ -49,7 +49,7 @@ func _run() -> void:
 	else:
 		print("=== BalanceSim (Sever mode: %s) ===" % ["BRUTAL" if brutal_sever else "NORMAL"])
 		print("bot      | AI diff | bot wins | AI wins | draws | avg round s | min s | bot severs/rd | tot severs/rd")
-		for bot in ["splasher", "waggler", "swinger", "masher", "ai"]:
+		for bot in ["splasher", "u_spam", "waggler", "swinger", "masher", "ai"]:
 			for diff in ["normal", "hard", "brutal"]:
 				await _run_matchup(bot, diff)
 
@@ -137,6 +137,11 @@ func _drive_bot(bot: String, me: FighterController, foe: FighterController, dt: 
 			me.touch_move = dir if dist > 165.0 else 0.0
 			var center_s := foe.position + Vector2(-dir * 35.0, -135.0)
 			me.aim_override = center_s + Vector2(0, 26.0 * sin(TAU * 5.0 * t))
+		"u_spam":
+			# Mindlessly walks in and spams U (spin_slash) every single frame!
+			me.touch_move = dir if dist > 175.0 else 0.0
+			if dist < 245.0:
+				me.start_attack("spin_slash")
 		"waggler":
 			# Walk in to ~165 px and waggle the blade up/down at 4 Hz across the foe.
 			me.touch_move = dir if dist > 175.0 else (-dir if dist < 140.0 else 0.0)

@@ -797,20 +797,31 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 	atk.hit_registered_serial = atk.attack_serial
 	atk.apply_blade_rebound(0.95)
 	def.spend_stamina(cost)
+	var stuffed_spin := false
 	if explicit_guard:
 		def.grant_riposte()
+		if atk.current_action == "spin_slash":
+			# Blocking Hit #1 of a Whirlwind Spin arrests rotational momentum so Hit #2 never phases through!
+			atk._spin_second_armed = true
+			if not atk._spin_was_chained:
+				stuffed_spin = true
+				atk.spend_stamina(10.0)
+				atk.trigger_hurt(true)
 	if blades_meet:
 		atk.spend_stamina(8.0)
 		def.apply_blade_rebound(0.80)
-	hitstop_timer = 0.065
-	shake_mag = maxf(shake_mag, 12.0)
+	hitstop_timer = 0.075 if stuffed_spin else 0.065
+	shake_mag = maxf(shake_mag, 14.0 if stuffed_spin else 12.0)
 	sfx.play_sfx("clang", 0.12)
-	_rumble(0.45, 0.35, 0.12)
-	atk.knockback_vx = -float(atk.facing) * 140.0
+	_rumble(0.55 if stuffed_spin else 0.45, 0.45 if stuffed_spin else 0.35, 0.14 if stuffed_spin else 0.12)
+	atk.knockback_vx = -float(atk.facing) * (250.0 if stuffed_spin else 140.0)
 	def.knockback_vx = -float(def.facing) * 110.0
-	_on_cut_flash(pt, "CLANG!" if not passive_guard or explicit_guard else "BLOCKED", Color(0.95, 0.92, 0.72))
+	if stuffed_spin:
+		_on_cut_flash(pt, "SPIN STUFFED!", Color(1.0, 0.80, 0.32))
+	else:
+		_on_cut_flash(pt, "CLANG!" if not passive_guard or explicit_guard else "BLOCKED", Color(0.95, 0.92, 0.72))
 	if def == p2 and explicit_guard:
-		ai.notify_blocked(false)
+		ai.notify_blocked(stuffed_spin)
 
 
 func _check_kick(atk: FighterController, def: FighterController) -> void:
@@ -1052,14 +1063,18 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 		"spin_slash":
 			dmg *= 0.72
 		"":
-			# Free-form cursor cuts have slightly less body-weight than lunges, while touch-wheel swipes stay crisp.
-			var free_mult := (0.90 if atk.touch_mode_active else 0.82)
-			dmg *= 0.88 if is_thrust else free_mult
+			# Free-form mouse & touch-wheel cuts cleave with crisp steel bite!
+			var free_mult := (0.95 if atk.touch_mode_active else 0.90)
+			dmg *= 0.92 if is_thrust else free_mult
 	if is_rip:
 		dmg *= 1.18
 		_on_cut_flash(best_pt, "RIPOSTE!", Color(1.0, 0.88, 0.42))
-	if not is_thrust and pwr >= 0.62:
-		_spawn_vfx_slash_arc(atk.position + Vector2(float(atk.facing) * 62.0, -108.0), float(atk.facing), swing_dir.angle(), 0.78 if atk.current_action in ["jump_slash", "mordhau_smash", "spin_slash"] else 0.60)
+	if def.is_spin_exposed():
+		dmg *= 1.28
+		def.trigger_hurt(true)
+		_on_cut_flash(best_pt + Vector2(0, -24), "SPIN PUNISHED!", Color(1.0, 0.54, 0.26))
+	if not is_thrust and pwr >= 0.46:
+		_spawn_vfx_slash_arc(atk.position + Vector2(float(atk.facing) * 62.0, -108.0), float(atk.facing), swing_dir.angle(), 0.78 if atk.current_action in ["jump_slash", "mordhau_smash", "spin_slash"] else 0.62)
 	if atk.current_action == "mordhau_smash":
 		_spawn_vfx_burst(best_pt, 0.76, Color(1.0, 0.88, 0.48))
 	var ap := atk.get_thrust_armor_pierce() if is_thrust else atk.get_cut_armor_pierce()
@@ -1087,7 +1102,8 @@ func _is_covered_by_parry(atk: FighterController, def: FighterController, slot: 
 	if not facing_atk:
 		return false
 	var is_low_leg := slot in ["thigh_r", "shin_r", "thigh_l", "shin_l"]
-	var is_low_strike := atk.current_action == "slash_low" or is_low_leg or (atk.current_action == "" and hit_pt.y > def.position.y - 36.0)
+	var high_move := atk.current_action in ["slash_high", "thrust", "jump_slash", "mordhau_smash", "spin_slash"]
+	var is_low_strike := atk.current_action in ["slash_low", "leg_sweep"] or (not high_move and (is_low_leg or (atk.current_action == "" and hit_pt.y > def.position.y - 36.0)))
 	if def.guard_zone == "low":
 		return is_low_strike or (slot == "torso" and hit_pt.y > def.position.y - 68.0)
 	return not is_low_strike

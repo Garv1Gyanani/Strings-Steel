@@ -32,19 +32,19 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
 
 | Action | Keyboard / Mouse | Gamepad | Touch (Button-Free Translucent Wheels) |
 |---|---|---|---|
-| Move | A / D (or ← →) | Left stick / D-pad | Slide left/right on Left Stick (tight 36 px full-speed span + frame-1 reversal) |
-| Aim & cut | Move and fling the mouse | Right stick | Swipe / arc across 360° Right Blade Wheel (0 ms live 2-bone IK cuts) |
-| Quick slash | J (or LMB in *Keys* mode) | X / RB | Quick tap on Right side (high or low) |
-| Thrust / Mordhau | K (Mordhau when Half-Swording) | Y | Sharp horizontal forward whip on Right Blade Wheel |
-| Leap Plunge Cleave | W (or Fwd-Dash + Slash) | RT + X | Quick Up+Forward diagonal flick on Left Stick |
-| Pommel Visor Bash | L / C (or Parry + Slash) | L3 | 2nd-finger tap while holding Rear Guard Parry |
-| Whirlwind Spin Cut | U (or Dash + Thrust) | RT + Y | Back-Dash + Quick Right Tap |
+| Move & Attack Drift | A / D (or ← →, works mid-swing!) | Left stick / D-pad | Slide left/right on Left Stick (tight 32 px full-speed span + frame-1 reversal) |
+| Effortless 210° Swing | Move mouse (or Hold LMB + Drag) | Right stick | Swipe / arc across 360° Right Blade Wheel (0 ms unlocked 2-bone IK cuts) |
+| Slash & 3-Hit Combo | LMB / J (`High -> Low -> Spin` on hit) | X / RB | Quick tap on Right side (chains 3-hit combo on hit-confirm) |
+| Thrust / Mordhau | Wheel Up / MB4 / V / K | Y | Sharp horizontal forward whip on Right Blade Wheel |
+| Leap Plunge Cleave | W (or Fwd-Dash + LMB/Slash) | RT + X | Quick Up+Forward diagonal flick on Left Stick |
+| Pommel Visor Bash | C / L (or RMB/Parry + LMB) | L3 | 2nd-finger tap while holding Rear Guard Parry |
+| Whirlwind Spin Cut | Wheel Down / MB5 / X / U (best chained!) | RT + Y | Back-Dash + Quick Right Tap (raw neutral spins can be **Spin-Stuffed**!) |
 | Kick / Ankle Sweep | E (or `S + E` to Duck & Sweep) | A (`Down + A` Sweep) | Down flick = Kick · Down+Forward flick = Leg Sweep |
 | Half-Sword stance | Q | Right stick click (R3) | Quick upward flick on Left Stick (fires mid-swipe) |
 | Hurl weapon | F / Middle mouse | — | Two-finger flick on Right side |
-| Parry | Space / RMB | B / LB / LT | Pull or flick Right Wheel into Rear Guard Arc (or hold 2nd finger) |
+| Parry & Recovery Cancel | RMB / Space | B / LB / LT | Pull straight back into Rear Guard Arc (or hold 2nd finger) |
 | Low guard | S (or aim low) | Left stick down | Pull Rear Guard Arc low (or Left Stick down) |
-| Dash | Shift / ↑ | RT / D-pad up | Quick horizontal flick (fires mid-swipe) or 2x tap on Left Stick |
+| Dash / Dash-Cancel | Shift / ↑ / Double-Tap A or D | RT / D-pad up | Quick horizontal flick (fires mid-swipe) or 2x tap on Left Stick |
 | Pause | Esc / P | Start | Top `II MENU` pill |
 | Restart round | R | Back | Pause menu |
 

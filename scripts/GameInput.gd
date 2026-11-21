@@ -13,9 +13,9 @@ const KEYS := {
 	"dash": [KEY_SHIFT, KEY_UP],
 	"jump_attack": [KEY_W],
 	"slash": [KEY_J],
-	"thrust": [KEY_K],
-	"pommel": [KEY_L, KEY_C],
-	"spin_slash": [KEY_U],
+	"thrust": [KEY_V, KEY_K],
+	"pommel": [KEY_C, KEY_L],
+	"spin_slash": [KEY_X, KEY_U],
 	"kick": [KEY_E],
 	"parry": [KEY_SPACE],
 	"half_sword": [KEY_Q],
@@ -28,7 +28,7 @@ const PAD_BUTTONS := {
 	"move_left": [JOY_BUTTON_DPAD_LEFT],
 	"move_right": [JOY_BUTTON_DPAD_RIGHT],
 	"guard_low": [JOY_BUTTON_DPAD_DOWN],
-	"dash": [JOY_BUTTON_DPAD_UP, JOY_BUTTON_LEFT_STICK],
+	"dash": [JOY_BUTTON_DPAD_UP],
 	"slash": [JOY_BUTTON_X, JOY_BUTTON_RIGHT_SHOULDER],
 	"thrust": [JOY_BUTTON_Y],
 	"pommel": [JOY_BUTTON_LEFT_STICK],
@@ -57,7 +57,7 @@ const DEADZONES := {
 }
 
 # Keys that should match by layout-independent physical position.
-const PHYSICAL := [KEY_W, KEY_A, KEY_D, KEY_S, KEY_J, KEY_K, KEY_L, KEY_U, KEY_C, KEY_E, KEY_Q, KEY_F, KEY_R, KEY_P]
+const PHYSICAL := [KEY_W, KEY_A, KEY_D, KEY_S, KEY_J, KEY_K, KEY_L, KEY_U, KEY_C, KEY_X, KEY_V, KEY_E, KEY_Q, KEY_F, KEY_R, KEY_P]
 
 
 static func register() -> void:

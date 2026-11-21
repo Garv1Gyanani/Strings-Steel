@@ -22,15 +22,15 @@ var enabled: bool = false
 
 const SPLIT_FRAC := 0.45
 const TOP_SAFE_Y := 92.0
-const LEFT_DEADZONE := 8.0
-const LEFT_FULL_SPAN := 36.0
-const LEFT_FOLLOW_RADIUS := 44.0
+const LEFT_DEADZONE := 7.0
+const LEFT_FULL_SPAN := 32.0
+const LEFT_FOLLOW_RADIUS := 42.0
 const LEFT_DRAW_RADIUS := 68.0
 const RIGHT_RADIUS := 82.0
-const RIGHT_AIM_SPAN := 54.0
-const RIGHT_DEADZONE := 10.0
-const WHIP_SPEED_THRESHOLD := 680.0
-const WHIP_DIST_THRESHOLD := 28.0
+const RIGHT_AIM_SPAN := 40.0
+const RIGHT_DEADZONE := 6.0
+const WHIP_SPEED_THRESHOLD := 960.0
+const WHIP_DIST_THRESHOLD := 30.0
 const MAX_OPACITY := 0.38
 
 # Left stick state
@@ -256,7 +256,7 @@ func _check_instant_right_whip() -> void:
 	if not player.can_wield():
 		if fwd_d > 14.0 or absf(whip_d.y) > 22.0:
 			fired = player.start_jab()
-	elif fwd_d >= 26.0 and absf(whip_d.y) < fwd_d * 0.48 and fwd_v >= 520.0:
+	elif fwd_d >= 28.0 and absf(whip_d.y) < fwd_d * 0.22 and fwd_v >= 920.0:
 		fired = player.start_attack("thrust")
 	if fired:
 		_right_fired_strike = true
@@ -289,12 +289,15 @@ func _on_finger_up(idx: int, pos: Vector2) -> void:
 			player.touch_move = 0.0
 			player.touch_low = _right_parrying and player.touch_low
 	elif idx == _right_idx:
-		# Quick Tap on Right Side -> Dash-Cleave / Spin-Slash when dashing, or Instant Sword Slash / Jab!
-		if not _right_fired_strike and _right_touch_time <= 0.20 and _right_max_travel < 20.0 and _right_alt_idx == -1 and player != null:
+		# Quick Tap on Right Side -> Dash-Cleave / Spin-Slash when dashing, or Instant 3-Hit Combo Slash / Jab!
+		if not _right_fired_strike and _right_touch_time <= 0.21 and _right_max_travel < 22.0 and _right_alt_idx == -1 and player != null:
 			var vp_h := maxf(480.0, get_viewport_rect().size.y)
 			if player.can_wield():
 				if player.dash_timer > 0.0:
 					player.start_attack("jump_slash" if player.dash_dir * float(player.facing) > 0.0 else "spin_slash")
+				elif player.chain_cancel_timer > 0.0 and player.current_action != "":
+					var next_tap := "slash_low" if player.current_action == "slash_high" else ("spin_slash" if player.current_action == "slash_low" else "slash_high")
+					player.start_attack(next_tap)
 				else:
 					player.start_attack("slash_low" if pos.y > vp_h * 0.65 else "slash_high")
 			else:
@@ -345,9 +348,9 @@ func _sync_right_aim() -> void:
 	var forward_vel := _right_vel.x * facing_f
 
 	# Rear Guard Arc + Reflex Pull-Back Parry:
-	# Pulling or flicking backward (away from rival) snaps straight into High or Low Parry!
-	var held_rear := forward_x < -20.0 and absf(rel.y) <= absf(forward_x) * 1.55 and forward_vel < 240.0
-	var reflex_pull := forward_vel < -440.0 and forward_x < -8.0 and absf(_right_vel.y) < absf(_right_vel.x) * 1.35
+	# Pulling straight backward (away from rival) snaps into Parry, NEVER hijacking vertical/diagonal slashes!
+	var held_rear := forward_x < -26.0 and absf(rel.y) <= absf(forward_x) * 0.85 and absf(_right_vel.y) < 220.0 and forward_vel < 160.0
+	var reflex_pull := forward_vel < -460.0 and forward_x < -12.0 and absf(_right_vel.y) < absf(_right_vel.x) * 0.90
 	if (held_rear or reflex_pull) and player.can_feint_to_parry():
 		_right_parrying = true
 		player.touch_parry = true
@@ -362,14 +365,14 @@ func _sync_right_aim() -> void:
 			player.touch_parry = false
 
 	var norm := rel / RIGHT_AIM_SPAN
-	if norm.length() > 1.35:
-		norm = norm.normalized() * 1.35
-	var guard_center := player.global_position + Vector2(facing_f * 126.0, -116.0)
-	var vert_commit := minf(1.0, absf(norm.y) * 0.85)
-	var reach_x := norm.x * (150.0 if forward_x >= 0.0 else 105.0) + (facing_f * 74.0 * vert_commit if forward_x >= -8.0 else 0.0)
-	var target_w := guard_center + Vector2(reach_x, norm.y * 192.0)
+	if norm.length() > 1.55:
+		norm = norm.normalized() * 1.55
+	var guard_center := player.global_position + Vector2(facing_f * 132.0, -122.0)
+	var vert_commit := minf(1.0, absf(norm.y) * 0.95)
+	var reach_x := norm.x * (168.0 if forward_x >= 0.0 else 92.0) + (facing_f * 92.0 * vert_commit if forward_x >= -18.0 else 0.0)
+	var target_w := guard_center + Vector2(reach_x, norm.y * 228.0)
 	target_w.x = clampf(target_w.x, 40.0, 1240.0)
-	target_w.y = clampf(target_w.y, 112.0, 565.0)
+	target_w.y = clampf(target_w.y, 75.0, 585.0)
 	player.aim_override_enabled = true
 	player.aim_override = target_w
 

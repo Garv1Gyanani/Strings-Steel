@@ -654,6 +654,119 @@ func _run() -> void:
 		max_abs_head_deg = maxf(max_abs_head_deg, absf(rad_to_deg(p2().bone_head.rotation)))
 	check(max_abs_head_deg <= 40.0, "severed head string droops naturally and never spins 360° clockwise (max %.1f°)" % max_abs_head_deg)
 
+	print("== Effortless 210° Mouse & Touch Swinging, Backhand Combos & Ergonomic Cancels")
+	_reset_both()
+	p1().input_enabled = true
+	p1().cursor_aim_enabled = true
+	p1().aim_override_enabled = true
+	p1().position.x = 465.0
+	p2().position.x = 635.0
+	p1().set_facing(1)
+	p2().set_facing(-1)
+	# 1. Overhead chamber lifts arm freely above crown (was handcuffed near -65°!)
+	p1().aim_override = p1().position + Vector2(75.0, -250.0)
+	for _oh in range(5):
+		p1()._process(0.016)
+	check(rad_to_deg(p1().bone_ua_r.rotation) < -92.0, "mouse overhead aim lifts sword arm high into Vom Tag chamber (%.1f°)" % rad_to_deg(p1().bone_ua_r.rotation))
+
+	# 2. Smooth 80ms downward mouse flick cleaves cleanly AND immediate upward backhand slices again!
+	var hp_pre_down := p2().hp
+	for sy in [235.0, 285.0, 340.0, 395.0, 445.0]:
+		p1().aim_override = Vector2(630.0, sy)
+		p1()._process(0.016)
+		arena._resolve_combat()
+	var hp_after_down := p2().hp
+	check(hp_after_down < hp_pre_down, "effortless 80ms downward mouse swing cleaves rival cleanly")
+	# Immediate upward backhand return stroke (only ~80ms later, well inside old 340ms lockout!)
+	for sy2 in [425.0, 375.0, 320.0, 265.0, 220.0]:
+		p1().aim_override = Vector2(630.0, sy2)
+		p1()._process(0.020)
+		arena._resolve_combat()
+	check(p2().hp < hp_after_down, "immediate reverse backhand mouse swing re-arms and cuts without dead lockout")
+
+	# 3. Touch swipe slightly behind origin (x = -22px) stays in live slash IK instead of locking into parry!
+	_reset_both()
+	p1().input_enabled = true
+	arena._on_setting_changed("touch", true)
+	p1().position.x = 465.0
+	p2().position.x = 635.0
+	p1().set_facing(1)
+	p2().set_facing(-1)
+	var hp_pre_diag_touch := p2().hp
+	tc._on_finger_down(4, Vector2(980, 460))
+	tc._process(0.016)
+	for ty in [408.0, 436.0, 468.0, 502.0, 532.0]:
+		tc._on_finger_drag(4, Vector2(958.0, ty), Vector2(-40.0, 620.0))
+		tc._process(0.016)
+		p1()._process(0.016)
+		arena._resolve_combat()
+	check(not p1().parrying and p2().hp < hp_pre_diag_touch, "touch vertical/diagonal swipe slightly left of origin cleaves freely without accidental parry lock")
+	tc._on_finger_up(4, Vector2(958.0, 532.0))
+	arena._on_setting_changed("touch", false)
+
+	# 4. 3-Hit single-button Slash combo (slash_high -> slash_low -> spin_slash) + Recovery-to-Parry + Attack Steering!
+	_reset_both()
+	p1().input_enabled = true
+	Input.action_press("slash")
+	p1()._process(0.016)
+	Input.action_release("slash")
+	var c1 := p1().current_action
+	p1().grant_chain_cancel()
+	p1().action_elapsed = 0.23
+	Input.action_press("slash")
+	p1()._process(0.016)
+	Input.action_release("slash")
+	var c2 := p1().current_action
+	p1().grant_chain_cancel()
+	p1().action_elapsed = 0.23
+	Input.action_press("slash")
+	p1()._process(0.016)
+	Input.action_release("slash")
+	var c3 := p1().current_action
+	check(c1 == "slash_high" and c2 == "slash_low" and c3 == "spin_slash", "pressing Slash/LMB 3x on hit chains slash_high -> slash_low -> spin_slash (%s->%s->%s)" % [c1, c2, c3])
+
+	_reset_both()
+	p1().input_enabled = true
+	p1().start_attack("slash_high")
+	p1().lunge_vx = 0.0
+	var x_pre_steer := p1().position.x
+	p1().touch_move = 1.0
+	p1()._process(0.05)
+	p1().touch_move = 0.0
+	check(p1().position.x > x_pre_steer + 4.0, "holding A/D during an attack steers spacing instead of gluing feet to floor")
+	p1().action_elapsed = 0.28
+	p1().touch_parry = true
+	p1()._process(0.016)
+	p1().touch_parry = false
+	check(p1().parrying and p1().current_action == "", "pressing Parry during post-swing recovery cancels immediately into guard")
+
+	# 5. Anti-U-Spam ("SPIN STUFFED!"): raw neutral spin has cooldown, gets stuffed into recoil on parry, while combo finisher bypasses cooldown!
+	_reset_both()
+	p1().position.x = 490.0
+	p2().position.x = 635.0
+	check(p1().start_attack("spin_slash") and p1()._spin_cd > 1.0, "raw neutral U/spin_slash starts balance cooldown (_spin_cd)")
+	p1().current_action = ""
+	check(not p1().start_attack("spin_slash"), "back-to-back raw U-spam is blocked while _spin_cd > 0")
+	p1().current_action = "slash_low"
+	p1().action_elapsed = 0.23
+	p1().grant_chain_cancel()
+	check(p1().start_attack("spin_slash") and p1()._spin_was_chained, "earned hit-confirmed combo chain into spin_slash bypasses raw spin cooldown")
+	_reset_both()
+	p1().position.x = 495.0
+	p2().position.x = 635.0
+	p2().parrying = true
+	p2().parry_hold_time = 0.6
+	p2().guard_zone = "high"
+	p2().anim_player.play("parry", 0.0)
+	p2().anim_player.seek(0.15, true)
+	p1().start_attack("spin_slash")
+	p1().action_elapsed = 0.14
+	p1().anim_player.play("spin_slash", 0.0)
+	p1().anim_player.seek(0.14, true)
+	var p2_hp_spin_block := p2().hp
+	arena._resolve_combat()
+	check(is_equal_approx(p2().hp, p2_hp_spin_block) and p1().current_action == "parry_recoil" and p1()._spin_second_armed, "High Parry cleanly catches raw spin_slash (even low arc), stuffs Hit #2, and staggers spammer")
+
 	print("== Back to title")
 	arena._go_to_title()
 	await frames(3)

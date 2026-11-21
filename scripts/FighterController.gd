@@ -61,12 +61,17 @@ var _buffered_move: String = ""
 var _buffer_timer: float = 0.0
 var _lmb_prev: bool = false
 var _mmb_prev: bool = false
+var _prev_poll_mouse_vp: Vector2 = Vector2(-1.0, -1.0)
+var _mouse_vp_vel: Vector2 = Vector2.ZERO
+var _last_tap_dir: int = 0
+var _last_tap_ms: int = -9999
+var _combo_slash_step: int = 0
 var _jab_timer: float = 0.0
 var _jab_cd: float = 0.0
 var _pad_aim_frame: int = -1
 var _pad_aim_cache: Vector2 = Vector2.ZERO
 
-const INPUT_BUFFER_TIME := 0.22
+const INPUT_BUFFER_TIME := 0.24
 const STAMINA_REGEN_DELAY := 0.28
 const ATTACK_MOVES := ["slash_high", "slash_low", "thrust", "jump_slash", "pommel_strike", "spin_slash", "mordhau_smash"]
 const COMBO_WINDOW := 1.1
@@ -75,10 +80,11 @@ const TIMED_ACTIONS := ["slash_high", "slash_low", "thrust", "kick", "jump_slash
 const VITAL_SLOTS := ["head", "torso"]
 const STAGGER_IMMUNITY := 0.48
 ## Minimum blade-tip speed (px/s), swing arc (px), and recovery between cursor cuts.
-const CURSOR_CUT_SPEED := 500.0
-const CURSOR_CUT_MIN_ARC := 50.0
-const CURSOR_CUT_RECOVERY := 0.34
-const HEAVY_POWER_THRESHOLD := 0.58
+const CURSOR_CUT_SPEED := 310.0
+const CURSOR_CUT_MIN_ARC := 42.0
+const CURSOR_WORLD_MIN_ARC := 58.0
+const CURSOR_CUT_RECOVERY := 0.17
+const HEAVY_POWER_THRESHOLD := 0.56
 const RIPOSTE_WINDOW := 0.48
 
 var _combo_hits: int = 0
@@ -89,12 +95,19 @@ var _riposte_active_attack: bool = false
 var chain_cancel_timer: float = 0.0
 var lunge_vx: float = 0.0
 var _spin_second_armed: bool = false
+var _spin_cd: float = 0.0
+var _spin_was_chained: bool = false
+var _spin_spam_heat: float = 0.0
 var _ik_stance_crouch: float = 0.0
 var _proc_offsets: Dictionary = {}
 var _dash_ghosts: Array[Dictionary] = []
 var _ghost_emit_cd: float = 0.0
 var _swing_arc_px: float = 0.0
 var _swing_arc_dir: Vector2 = Vector2.ZERO
+var _cursor_arc_px: float = 0.0
+var _cursor_arc_dir: Vector2 = Vector2.ZERO
+var _waggle_streak: int = 0
+var _waggle_decay_timer: float = 0.0
 var _cursor_strike_mode: String = "cut" # "cut" | "thrust"
 var _rebound_ua: float = 0.0
 var _rebound_wpn: float = 0.0
@@ -252,6 +265,13 @@ func reset_fighter() -> void:
 	_riposte_active_attack = false
 	_swing_arc_px = 0.0
 	_swing_arc_dir = Vector2.ZERO
+	_cursor_arc_px = 0.0
+	_cursor_arc_dir = Vector2.ZERO
+	_waggle_streak = 0
+	_waggle_decay_timer = 0.0
+	_combo_slash_step = 0
+	_last_tap_dir = 0
+	_last_tap_ms = -9999
 	_cursor_strike_mode = "cut"
 	_rebound_ua = 0.0
 	_rebound_wpn = 0.0
@@ -265,6 +285,9 @@ func reset_fighter() -> void:
 	lunge_vx = 0.0
 	chain_cancel_timer = 0.0
 	_spin_second_armed = false
+	_spin_cd = 0.0
+	_spin_was_chained = false
+	_spin_spam_heat = 0.0
 	_ik_stance_crouch = 0.0
 	_proc_offsets.clear()
 	_dash_ghosts.clear()
@@ -508,7 +531,7 @@ func _windup_mult() -> float:
 		"jump_slash":
 			return (0.94 if is_player else 0.65) if action_elapsed < 0.15 else 1.0
 		"spin_slash":
-			return (0.96 if is_player else 0.66) if action_elapsed < 0.10 else 1.0
+			return ((0.96 if _spin_was_chained else 0.80) if is_player else 0.66) if action_elapsed < 0.11 else 1.0
 		"pommel_strike":
 			return 1.0 if is_player else 0.76
 		"thrust":
@@ -633,15 +656,30 @@ func toggle_half_sword() -> bool:
 	return set_half_sword(not half_swording, true)
 
 
-## Early in an attack wind-up (before the blade commits at ~0.11-0.13), a fighter can
-## abort the swing into a parry (feint-to-guard) instead of eating an incoming blow.
+## Early in an attack wind-up (or during post-swing recovery for human players), a fighter can
+## snap straight into a parry instead of feeling locked out of defense.
 func can_feint_to_parry() -> bool:
-	return can_wield() and (current_action == "" or (current_action in ATTACK_MOVES and action_elapsed < 0.095))
+	if not can_wield():
+		return false
+	if current_action == "" or current_action in ["dash_fwd", "dash_back"]:
+		return true
+	if current_action in ATTACK_MOVES:
+		if current_action == "spin_slash" and not _spin_was_chained:
+			return is_player and action_elapsed >= 0.38
+		var windup_lim := 0.135 if is_player else 0.095
+		if action_elapsed < windup_lim:
+			return true
+		if is_player:
+			var recov_start := 0.19 if current_action == "pommel_strike" else 0.27
+			return action_elapsed >= recov_start
+	return false
 
 
 func abort_windup() -> void:
-	if current_action in ATTACK_MOVES and action_elapsed < 0.095:
+	if current_action in ["dash_fwd", "dash_back"] or (current_action in ATTACK_MOVES and can_feint_to_parry()):
 		current_action = ""
+		dash_timer = 0.0
+		lunge_vx = 0.0
 		_action_speed = 1.0
 		_blade_trail.clear()
 
@@ -784,6 +822,10 @@ func is_sweep_active() -> bool:
 	return not is_dead and current_action == "leg_sweep" and action_elapsed >= 0.09 and action_elapsed <= 0.27 and can_kick()
 
 
+func is_spin_exposed() -> bool:
+	return not is_dead and current_action == "spin_slash" and not _spin_was_chained and (action_elapsed < 0.12 or action_elapsed > 0.34)
+
+
 func is_riposte_ready() -> bool:
 	return riposte_timer > 0.0 or _riposte_active_attack
 
@@ -796,7 +838,10 @@ func apply_blade_rebound(strength: float = 1.0) -> void:
 	_cursor_sweep_timer = 0.0
 	_swing_arc_px = 0.0
 	_swing_arc_dir = Vector2.ZERO
-	_cursor_rearm_timer = maxf(_cursor_rearm_timer, 0.24 * s)
+	if s >= 0.75:
+		_cursor_arc_px = 0.0
+		_cursor_arc_dir = Vector2.ZERO
+		_cursor_rearm_timer = maxf(_cursor_rearm_timer, 0.09 * s)
 
 
 func spend_stamina(amount: float) -> void:
@@ -807,25 +852,29 @@ func spend_stamina(amount: float) -> void:
 func start_attack(move_name: String) -> bool:
 	if is_dead:
 		return false
+	var is_rip := riposte_timer > 0.0 and move_name in ATTACK_MOVES
+	var from_chain_or_dash := is_rip
 	if current_action != "":
 		if current_action in ["dash_fwd", "dash_back"] or can_chain_cancel_into(move_name):
+			from_chain_or_dash = true
 			current_action = ""
 			chain_cancel_timer = 0.0
 		else:
 			return false
+	if move_name == "spin_slash" and not from_chain_or_dash and _spin_cd > 0.0:
+		return false
 	if (move_name in ATTACK_MOVES) and not can_wield():
 		return false
 	if move_name in ["kick", "leg_sweep"] and not can_kick():
 		return false
 	if move_name == "jump_slash" and not can_dash():
 		return false
-	var is_rip := riposte_timer > 0.0 and move_name in ATTACK_MOVES
 	var base_cost := 12.0
 	match move_name:
 		"kick", "leg_sweep": base_cost = 10.0
 		"pommel_strike": base_cost = 8.0
 		"jump_slash": base_cost = 16.0
-		"spin_slash": base_cost = 15.0
+		"spin_slash": base_cost = 15.0 if from_chain_or_dash else (21.0 + 6.0 * minf(2.0, _spin_spam_heat))
 		"mordhau_smash": base_cost = 14.0
 	var cost := base_cost * stat("stamina_cost_mult") * (0.68 if is_rip else 1.0)
 	if stamina < cost:
@@ -840,6 +889,13 @@ func start_attack(move_name: String) -> bool:
 	current_action = move_name
 	action_elapsed = 0.0
 	_spin_second_armed = false
+	if move_name == "spin_slash":
+		_spin_was_chained = from_chain_or_dash
+		if not from_chain_or_dash:
+			_spin_cd = 1.25
+			_spin_spam_heat = minf(3.0, _spin_spam_heat + 1.0)
+	else:
+		_spin_was_chained = false
 	_action_speed = effective_attack_speed() * (1.25 if is_rip else 1.0)
 	attack_serial += 1
 
@@ -850,7 +906,7 @@ func start_attack(move_name: String) -> bool:
 		"thrust": step_spd = 295.0
 		"jump_slash": step_spd = 450.0
 		"pommel_strike": step_spd = 245.0
-		"spin_slash": step_spd = 275.0
+		"spin_slash": step_spd = 265.0 if _spin_was_chained else 175.0
 		"mordhau_smash": step_spd = 235.0
 		"leg_sweep": step_spd = 255.0
 		"kick": step_spd = 135.0
@@ -868,8 +924,10 @@ func start_dash(dir_sign: float) -> void:
 	if is_dead or dash_cooldown > 0.0 or stamina < 13.0 or not can_dash():
 		return
 	# Fast-action Dash-Cancel: allow cancelling attack recovery (>= 0.21s) into an evasive or chase dash!
+	# (Unchained raw 360° spins must recover to >= 0.37s before dash-canceling so spin-spam stays punishable!)
 	if current_action != "":
-		if current_action in ATTACK_MOVES and action_elapsed >= 0.21:
+		var dc_min := 0.37 if (current_action == "spin_slash" and not _spin_was_chained) else 0.21
+		if current_action in ATTACK_MOVES and action_elapsed >= dc_min:
 			current_action = ""
 			_blade_trail.clear()
 		elif current_action not in ["dash_fwd", "dash_back"]:
@@ -1037,6 +1095,11 @@ func _process(delta: float) -> void:
 	_stagger_immunity = maxf(0.0, _stagger_immunity - delta)
 	riposte_timer = maxf(0.0, riposte_timer - delta)
 	chain_cancel_timer = maxf(0.0, chain_cancel_timer - delta)
+	_spin_cd = maxf(0.0, _spin_cd - delta)
+	_spin_spam_heat = maxf(0.0, _spin_spam_heat - 0.35 * delta)
+	_waggle_decay_timer = maxf(0.0, _waggle_decay_timer - delta)
+	if _waggle_decay_timer <= 0.0:
+		_waggle_streak = 0
 	_jab_timer = maxf(0.0, _jab_timer - delta)
 	_jab_cd = maxf(0.0, _jab_cd - delta)
 	if half_swording and not can_half_sword():
@@ -1076,9 +1139,10 @@ func _process(delta: float) -> void:
 		if use_ik_arm and can_wield() and (current_action == "" or current_action in ["dash_fwd", "dash_back"]):
 			_solve_sword_arm_to_cursor(delta)
 		elif bone_ua_r != null and bone_fa_r != null and bone_weapon != null:
-			_cursor_rearm_timer = 0.06 if touch_mode_active else 0.22
+			_cursor_rearm_timer = 0.04 if touch_mode_active else 0.08
 			_cursor_sweep_timer = 0.0
 			_swing_arc_px = 0.0
+			_cursor_arc_px = 0.0
 			_riposte_active_attack = _riposte_active_attack and current_action != ""
 			_ik_ua_r = bone_ua_r.rotation
 			_ik_fa_r = bone_fa_r.rotation
@@ -1126,7 +1190,7 @@ func _process(delta: float) -> void:
 	# Sword trail tracking during active attacks
 	if is_blade_active() and has_weapon and blade_guard_marker != null and blade_tip_marker != null:
 		_blade_trail.append([blade_guard_marker.global_position, blade_tip_marker.global_position])
-		if _blade_trail.size() > 8:
+		if _blade_trail.size() > 12:
 			_blade_trail.pop_front()
 	elif _blade_trail.size() > 0:
 		_blade_trail.pop_front()
@@ -1161,7 +1225,29 @@ func _mouse_in_stage() -> bool:
 	return get_viewport().get_mouse_position().y >= 106.0
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not is_player or not input_enabled or is_dead or touch_mode_active or get_tree().paused:
+		return
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if not mb.pressed or mb.position.y < 106.0:
+			return
+		if mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_XBUTTON1:
+			_buffered_move = "mordhau_smash" if half_swording and can_wield() else ("thrust" if can_wield() else "jab")
+			_buffer_timer = INPUT_BUFFER_TIME
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN or mb.button_index == MOUSE_BUTTON_XBUTTON2:
+			_buffered_move = "spin_slash" if can_wield() else "jab"
+			_buffer_timer = INPUT_BUFFER_TIME
+
+
 func _process_player_input(delta: float) -> void:
+	var dt_safe := maxf(0.005, delta)
+	var cur_vp_mouse := get_viewport().get_mouse_position()
+	if _prev_poll_mouse_vp.x < 0.0:
+		_prev_poll_mouse_vp = cur_vp_mouse
+	_mouse_vp_vel = (cur_vp_mouse - _prev_poll_mouse_vp) / dt_safe
+	_prev_poll_mouse_vp = cur_vp_mouse
+
 	var pad_aim := _read_pad_aim()
 	var low_held := touch_low or Input.is_action_pressed("guard_low") or pad_aim.y > 0.45
 	if cursor_aim_enabled and (not touch_mode_active or aim_override_enabled):
@@ -1178,11 +1264,35 @@ func _process_player_input(delta: float) -> void:
 	var mmb_edge := mmb and not _mmb_prev
 	_mmb_prev = mmb
 
+	# Seamless Click-and-Drag Mouse Swing: if the player holds LMB and sweeps the mouse fast
+	# right after clicking, hand control back to 1-to-1 live cursor IK so dragging swings freely!
+	if cursor_aim_enabled and lmb and current_action in ["slash_high", "slash_low"] and action_elapsed < 0.135 and _mouse_vp_vel.length() > 440.0:
+		abort_windup()
+		_cursor_rearm_timer = 0.0
+		_cursor_slash_cd = 0.0
+
 	if Input.is_action_just_pressed("half_sword"):
 		toggle_half_sword()
 	if Input.is_action_just_pressed("throw_weapon") or mmb_edge:
 		if throw_weapon():
 			return
+
+	# Double-tap A/D (or Left/Right) to Dash without reaching for Shift!
+	if not touch_mode_active and not _using_pad_aim:
+		var tap_d := 0
+		if Input.is_action_just_pressed("move_left"):
+			tap_d = -1
+		elif Input.is_action_just_pressed("move_right"):
+			tap_d = 1
+		if tap_d != 0:
+			var now_ms := Time.get_ticks_msec()
+			var dt_ms := now_ms - _last_tap_ms
+			if tap_d == _last_tap_dir and dt_ms >= 35 and dt_ms <= 235:
+				start_dash(float(tap_d))
+				_last_tap_ms = -9999
+			else:
+				_last_tap_dir = tap_d
+				_last_tap_ms = now_ms
 
 	# Queue one-shot & special moves on the press edge; buffer + chain-cancel keeps combat blistering!
 	var parry_held := touch_parry or Input.is_action_pressed("parry") or (mouse_in_stage and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT))
@@ -1197,16 +1307,23 @@ func _process_player_input(delta: float) -> void:
 	elif Input.is_action_just_pressed("spin_slash"):
 		_buffered_move = "spin_slash" if can_wield() else "jab"
 		_buffer_timer = INPUT_BUFFER_TIME
-	elif Input.is_action_just_pressed("slash") or (not cursor_aim_enabled and lmb_edge) or (not can_wield() and lmb_edge):
+	elif Input.is_action_just_pressed("slash") or lmb_edge:
 		if not can_wield():
 			_buffered_move = "jab"
+			_buffer_timer = INPUT_BUFFER_TIME
 		elif parry_held:
-			_buffered_move = "pommel_strike"
-		elif in_dash and dash_dir * float(facing) > 0.0:
-			_buffered_move = "jump_slash"
+			_buffered_move = "mordhau_smash" if half_swording else "pommel_strike"
+			_buffer_timer = INPUT_BUFFER_TIME
+		elif in_dash:
+			_buffered_move = "jump_slash" if dash_dir * float(facing) > 0.0 else "thrust"
+			_buffer_timer = INPUT_BUFFER_TIME
+		elif lmb_edge and cursor_aim_enabled and _mouse_vp_vel.length() > 380.0 and current_action == "":
+			# Already mid-mouse-swing: supercharge live IK cut instead of locking into canned anim!
+			_cursor_rearm_timer = 0.0
+			_cursor_slash_cd = 0.0
 		else:
 			_buffered_move = "slash"
-		_buffer_timer = INPUT_BUFFER_TIME
+			_buffer_timer = INPUT_BUFFER_TIME
 	elif Input.is_action_just_pressed("thrust"):
 		if not can_wield():
 			_buffered_move = "jab"
@@ -1223,11 +1340,11 @@ func _process_player_input(delta: float) -> void:
 
 	var mv := clampf(touch_move + Input.get_axis("move_left", "move_right"), -1.0, 1.0)
 
-	# Guard + Slash fires an instant close-quarters Pommel Smash right out of block!
-	if parry_held and _buffered_move == "pommel_strike" and _buffer_timer > 0.0 and can_wield():
+	# Guard + Slash fires an instant close-quarters Pommel Smash / Mordhau right out of block!
+	if parry_held and _buffered_move in ["pommel_strike", "mordhau_smash"] and _buffer_timer > 0.0 and can_wield():
 		parrying = false
 		parry_hold_time = 99.0
-		if start_attack("pommel_strike"):
+		if start_attack(_buffered_move):
 			_buffered_move = ""
 			_buffer_timer = 0.0
 			return
@@ -1260,17 +1377,31 @@ func _process_player_input(delta: float) -> void:
 	if _buffer_timer > 0.0 and _buffered_move != "":
 		var move_name := _buffered_move
 		if move_name == "slash":
-			move_name = "slash_low" if low_held else "slash_high"
+			if chain_cancel_timer > 0.0 and current_action != "":
+				if _combo_slash_step >= 1 and current_action in ["slash_high", "slash_low"]:
+					move_name = "spin_slash"
+				elif current_action == "slash_high":
+					move_name = "slash_low"
+				elif current_action == "slash_low":
+					move_name = "slash_high"
+				else:
+					move_name = "slash_low" if low_held else "slash_high"
+			else:
+				move_name = "slash_low" if low_held else "slash_high"
 		if current_action == "" or current_action in ["dash_fwd", "dash_back"] or can_chain_cancel_into(move_name):
+			var was_chaining := chain_cancel_timer > 0.0 and current_action != ""
 			if move_name == "jab":
 				if start_jab():
 					_buffered_move = ""
 					_buffer_timer = 0.0
 			elif start_attack(move_name):
+				_combo_slash_step = (_combo_slash_step + 1) if was_chaining else 0
 				_buffered_move = ""
 				_buffer_timer = 0.0
 
 	if current_action == "":
+		if chain_cancel_timer <= 0.0:
+			_combo_slash_step = 0
 		bar_tilt = lerpf(bar_tilt, mv * 0.09, 10.0 * delta)
 		if absf(mv) > 0.12:
 			position.x = clampf(position.x + mv * get_move_speed() * delta, 120.0, 1160.0)
@@ -1278,6 +1409,13 @@ func _process_player_input(delta: float) -> void:
 			play_anim("walk_back" if retreating and anim_player.has_animation("walk_back") else "walk", 0.07)
 		else:
 			play_anim("idle", 0.09)
+	elif current_action in ATTACK_MOVES or current_action in ["kick", "leg_sweep"]:
+		# Micro-spacing footwork during attacks & jumps so feet never feel glued to the floor!
+		if absf(mv) > 0.12:
+			var drift_scale := 0.56 if current_action == "jump_slash" else 0.42
+			position.x = clampf(position.x + mv * get_move_speed() * drift_scale * delta, 120.0, 1160.0)
+			if mv * float(facing) < -0.1:
+				lunge_vx *= exp(-14.0 * delta)
 
 
 func is_blade_active() -> bool:
@@ -1293,7 +1431,8 @@ func is_blade_active() -> bool:
 		"mordhau_smash":
 			return action_elapsed >= 0.135 and action_elapsed <= 0.31
 		"spin_slash":
-			return (action_elapsed >= 0.095 and action_elapsed <= 0.195) or (action_elapsed >= 0.235 and action_elapsed <= 0.36)
+			var s_start := 0.095 if _spin_was_chained else 0.120
+			return (action_elapsed >= s_start and action_elapsed <= 0.195) or (action_elapsed >= 0.235 and action_elapsed <= 0.36)
 		"pommel_strike", "leg_sweep", "kick":
 			return false
 		_:
@@ -1364,15 +1503,32 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 		cursor_aim_world = raw_tgt
 		_prev_cursor_aim_world = raw_tgt
 
+	# Track unidirectional world cursor travel so tiny +-26px micro-wiggles near the hilt
+	# never exploit blade lever-arm, while real mouse/touch swings trigger effortlessly!
+	var cur_world_delta := raw_tgt - _prev_cursor_aim_world
 	_prev_cursor_aim_world = raw_tgt
+	var cur_world_spd := cur_world_delta.length() / dt_safe
+	if cur_world_spd >= 180.0 and not parrying:
+		var cw_dir := cur_world_delta.normalized()
+		if _cursor_arc_dir.length_squared() < 0.1 or _cursor_arc_dir.dot(cw_dir) >= 0.10:
+			_cursor_arc_px = minf(420.0, _cursor_arc_px + cur_world_delta.length())
+			_cursor_arc_dir = (_cursor_arc_dir * 0.65 + cw_dir * 0.35).normalized()
+		else:
+			_cursor_arc_px = cur_world_delta.length()
+			_cursor_arc_dir = cw_dir
+	else:
+		_cursor_arc_px = maxf(0.0, _cursor_arc_px - 320.0 * delta)
+		if _cursor_arc_px <= 1.0:
+			_cursor_arc_dir = Vector2.ZERO
+
 	var weight := effective_blade_weight()
-	var rip_mult := 1.22 if riposte_timer > 0.0 else 1.0
-	if touch_mode_active:
-		# Single-stage physical slew: eliminate double-damping lag on 60-90ms phone thumb swipes!
+	var rip_mult := 1.25 if riposte_timer > 0.0 else 1.0
+	if is_player or touch_mode_active:
+		# Single-stage physical joint slew: zero Stage-1 cursor lag on both Mouse and Touch!
 		cursor_aim_world = raw_tgt
 	else:
-		var max_aim_step := (1950.0 / weight) * rip_mult * delta
-		var aim_delta := (raw_tgt - cursor_aim_world) * minf(1.0, 25.0 * delta)
+		var max_aim_step := (2100.0 / weight) * rip_mult * delta
+		var aim_delta := (raw_tgt - cursor_aim_world) * minf(1.0, 28.0 * delta)
 		cursor_aim_world += aim_delta.limit_length(max_aim_step)
 
 	var sh_pos := bone_ua_r.position
@@ -1381,19 +1537,19 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 	if l1 < 1.0 or l2 < 1.0:
 		return
 
-	# Full-body kinetic IK coupling: torso lean + subtle athletic knee/pelvis lunge into low or far cuts!
+	# Full-body kinetic IK coupling: torso coil/lean + athletic knee/pelvis lunge into wide cuts!
 	var cursor_local_pre := bone_torso.to_local(cursor_aim_world)
 	var chest_origin := Vector2(12.0, -78.0)
 	var raw_aim_vec := cursor_local_pre - chest_origin
-	var raw_aim_ang := clampf(raw_aim_vec.angle(), deg_to_rad(-80.0), deg_to_rad(65.0))
-	var target_lean := clampf((raw_aim_ang + 0.25) * 0.24, deg_to_rad(-14.0), deg_to_rad(18.0))
-	_ik_torso_lean = lerpf(_ik_torso_lean, target_lean, minf(1.0, 16.0 * delta))
+	var raw_aim_ang := clampf(raw_aim_vec.angle(), deg_to_rad(-115.0), deg_to_rad(82.0))
+	var target_lean := clampf((raw_aim_ang + 0.22) * 0.28, deg_to_rad(-20.0), deg_to_rad(22.0))
+	_ik_torso_lean = lerpf(_ik_torso_lean, target_lean, minf(1.0, 24.0 * delta))
 	_add_procedural_offset(bone_torso, _ik_torso_lean)
 	if bone_head != null:
-		_add_procedural_offset(bone_head, clampf(raw_aim_ang * 0.18, deg_to_rad(-14.0), deg_to_rad(14.0)))
-	var reach_ext := clampf((raw_aim_vec.length() - 145.0) / 130.0, 0.0, 1.0)
-	var low_crouch := clampf(sin(raw_aim_ang), -0.35, 1.0) * 11.0 + reach_ext * 9.0
-	_ik_stance_crouch = lerpf(_ik_stance_crouch, low_crouch, minf(1.0, 12.0 * delta))
+		_add_procedural_offset(bone_head, clampf(raw_aim_ang * 0.16, deg_to_rad(-16.0), deg_to_rad(16.0)))
+	var reach_ext := clampf((raw_aim_vec.length() - 135.0) / 125.0, 0.0, 1.0)
+	var low_crouch := clampf(sin(raw_aim_ang), -0.35, 1.0) * 12.0 + reach_ext * 10.0
+	_ik_stance_crouch = lerpf(_ik_stance_crouch, low_crouch, minf(1.0, 15.0 * delta))
 	if current_action == "" and bone_thigh_r != null and bone_shin_r != null and bone_thigh_l != null:
 		var knee_flex := clampf(_ik_stance_crouch * 0.012, -0.08, 0.26)
 		_add_procedural_offset(bone_thigh_r, -knee_flex)
@@ -1406,63 +1562,60 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 	var aim_dist := aim_from_chest.length()
 	var aim_dir := aim_from_chest / maxf(1.0, aim_dist)
 
-	# Move the hands 1-to-1 along the cursor vector inside the 2-handed reach envelope:
-	# - Pull cursor close -> hands pull in close to chest/head guard
-	# - Push cursor far -> arms extend out toward the cursor while keeping blade tip on cursor!
-	var desired_hand_dist := clampf(aim_dist - 95.0, 82.0, 148.0)
-	var hand_tgt := chest_origin + aim_dir * desired_hand_dist
-	# Offset hands slightly below the blade line when aiming high/mid so elbow hangs naturally beneath wrist
-	hand_tgt.y += clampf(22.0 * (1.0 - absf(aim_dir.y)), 6.0, 22.0)
+	# Full 210° HEMA reach envelope:
+	# - Overhead (high_factor): hands lift freely above crown (Vom Tag / Ochs) for huge downward cleaves!
+	# - Mid/Low: hands drive out forward & down so sweeps carry full reach through rival's torso & legs!
+	var high_factor := clampf(-aim_dir.y, 0.0, 1.0)
 	var low_factor := clampf(aim_dir.y, 0.0, 1.0)
-	var min_hand_x := 74.0 + 48.0 * low_factor
-	hand_tgt.x = clampf(hand_tgt.x, min_hand_x, 154.0)
-	hand_tgt.y = clampf(hand_tgt.y, sh_pos.y - 22.0, sh_pos.y + 158.0)
+	var desired_hand_dist := clampf(aim_dist - 80.0, 54.0, 166.0)
+	var hand_tgt := chest_origin + aim_dir * desired_hand_dist
+	hand_tgt.y += clampf(16.0 * (1.0 - absf(aim_dir.y)), 0.0, 16.0)
+	var min_hand_x := lerpf(60.0, 12.0, high_factor) + 38.0 * low_factor
+	hand_tgt.x = clampf(hand_tgt.x, min_hand_x, 168.0)
+	hand_tgt.y = clampf(hand_tgt.y, sh_pos.y - 114.0, sh_pos.y + 166.0)
 
-	# Keep within left-shoulder (sh_far) reach so the off-hand stays locked to the pommel
-	if bone_ua_l != null:
+	# Keep within left-shoulder (sh_far) reach when two-handed so the off-hand stays locked to the pommel
+	if bone_ua_l != null and weapon_is_two_handed() and _offhand_usable():
 		var sh_far := bone_ua_l.position
 		var to_far := hand_tgt - sh_far
-		var max_far_r := 152.0
+		var max_far_r := 170.0
 		if to_far.length() > max_far_r:
 			hand_tgt = sh_far + to_far.normalized() * max_far_r
 
 	var diff := hand_tgt - sh_pos
 	var dist := diff.length()
-	var max_r := (l1 + l2) * 0.95
-	var min_r := maxf(40.0, absf(l1 - l2) + 8.0)
+	var max_r := (l1 + l2) * 0.96
+	var min_r := maxf(36.0, absf(l1 - l2) + 6.0)
 	var d := clampf(dist, min_r, max_r)
 	var base_ang := diff.angle()
 	var cos_a := clampf((l1 * l1 + d * d - l2 * l2) / (2.0 * l1 * d), -1.0, 1.0)
 	var a := acos(cos_a)
 
-	# Choose natural downward-hanging elbow (+Y in Torso local space)
-	var ang_a := base_ang + a
-	var ang_b := base_ang - a
-	var elbow_a := sh_pos + Vector2(cos(ang_a), sin(ang_a)) * l1
-	var elbow_b := sh_pos + Vector2(cos(ang_b), sin(ang_b)) * l1
-	var score_a := elbow_a.y - maxf(0.0, elbow_a.x - sh_pos.x - 18.0) * 0.65
-	var score_b := elbow_b.y - maxf(0.0, elbow_b.x - sh_pos.x - 18.0) * 0.65
-	var chosen_upper := ang_a if score_a >= score_b else ang_b
-	var elbow_pt := elbow_a if score_a >= score_b else elbow_b
+	# Anatomical elbow flexion (Forearm_R:rotation <= 0): C-continuous across entire 210° arc with zero flips!
+	var chosen_upper := base_ang + a
+	var elbow_pt := sh_pos + Vector2(cos(chosen_upper), sin(chosen_upper)) * l1
 	var clamped_hand := sh_pos + Vector2(cos(base_ang), sin(base_ang)) * d
 	var chosen_lower := (clamped_hand - elbow_pt).angle()
 
 	var ua_target_rot := chosen_upper - PI * 0.5
 	var fa_target_rot := chosen_lower - chosen_upper
 
-	# Point the sword blade directly from the hand through the cursor!
+	# Point the sword blade directly from the hand through the cursor across full wrist range!
 	var blade_vec := cursor_local - clamped_hand
-	var desired_blade_ang := blade_vec.angle() if blade_vec.length() > 20.0 else aim_dir.angle()
+	var desired_blade_ang := blade_vec.angle() if blade_vec.length() > 16.0 else aim_dir.angle()
 	if parrying:
 		desired_blade_ang = -1.22 if guard_zone == "high" else 0.68
 	var neutral_blade_ang := chosen_lower - PI * 0.5
-	var wrist_cock := clampf(wrapf(desired_blade_ang - neutral_blade_ang, -PI, PI), deg_to_rad(-48.0), deg_to_rad(84.0))
+	var wrist_cock := clampf(wrapf(desired_blade_ang - neutral_blade_ang, -PI, PI), deg_to_rad(-96.0), deg_to_rad(112.0))
 
-	var k := minf(1.0, (60.0 if touch_mode_active else 23.0) * delta)
-	var slew_scale := (rip_mult / weight) * (3.60 if touch_mode_active else 1.0) * delta
-	_ik_ua_r = _step_angle_capped(_ik_ua_r, ua_target_rot, k, 12.6 * slew_scale)
-	_ik_fa_r = _step_angle_capped(_ik_fa_r, fa_target_rot, k, 15.2 * slew_scale)
-	_ik_wpn_r = _step_angle_capped(_ik_wpn_r, wrist_cock, k, 17.6 * slew_scale)
+	var lmb_boost := 1.16 if (is_player and not touch_mode_active and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)) else 1.0
+	var k := minf(1.0, (66.0 if touch_mode_active else (56.0 if is_player else 26.0)) * delta)
+	var weight_div := pow(weight, 0.52) if is_player else weight
+	var player_slew := 4.45 if touch_mode_active else (3.30 * lmb_boost)
+	var slew_scale := (rip_mult / weight_div) * (player_slew if is_player else 1.35) * delta
+	_ik_ua_r = _step_angle_capped(_ik_ua_r, ua_target_rot, k, 13.8 * slew_scale)
+	_ik_fa_r = _step_angle_capped(_ik_fa_r, fa_target_rot, k, 16.4 * slew_scale)
+	_ik_wpn_r = _step_angle_capped(_ik_wpn_r, wrist_cock, k, 19.5 * slew_scale)
 
 	bone_ua_r.rotation = _ik_ua_r + _rebound_ua
 	bone_fa_r.rotation = _ik_fa_r
@@ -1477,29 +1630,33 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 		var tip_delta := cur_tip_local - _prev_tip_local
 		var inst_tip_spd := tip_delta.length() / dt_safe
 		_prev_tip_local = cur_tip_local
-		var spd_blend := 22.0 if inst_tip_spd > _blade_tip_speed else 12.0
+		var spd_blend := 26.0 if inst_tip_spd > _blade_tip_speed else 13.0
 		_blade_tip_speed = lerpf(_blade_tip_speed, inst_tip_spd, minf(1.0, spd_blend * delta))
 
-		# Accumulate continuous swing arc so tiny wrist splashes cannot masquerade as cleaves.
-		var arc_spd_gate := 240.0 if touch_mode_active else 300.0
+		# Accumulate continuous swing arc (allowing smooth curved circular arcs dot >= 0.08!).
+		var arc_spd_gate := 200.0 if touch_mode_active else 230.0
+		if inst_tip_spd >= arc_spd_gate and not parrying and _cursor_last_dir.length_squared() > 0.1 and _cursor_last_dir.dot(tip_delta.normalized()) < -0.25:
+			# Deliberate opposite-direction return slash clears post-clash rearm immediately!
+			_cursor_rearm_timer = 0.0
 		if inst_tip_spd >= arc_spd_gate and not parrying and _cursor_rearm_timer <= 0.0:
 			var step_dir := tip_delta.normalized()
-			if _swing_arc_dir.length_squared() < 0.1 or _swing_arc_dir.dot(step_dir) >= 0.22:
-				_swing_arc_px = minf(320.0, _swing_arc_px + tip_delta.length())
-				_swing_arc_dir = (_swing_arc_dir * 0.65 + step_dir * 0.35).normalized()
+			if _swing_arc_dir.length_squared() < 0.1 or _swing_arc_dir.dot(step_dir) >= 0.08:
+				_swing_arc_px = minf(360.0, _swing_arc_px + tip_delta.length())
+				_swing_arc_dir = (_swing_arc_dir * 0.62 + step_dir * 0.38).normalized()
 			else:
 				_swing_arc_px = tip_delta.length()
 				_swing_arc_dir = step_dir
 		else:
-			_swing_arc_px = maxf(0.0, _swing_arc_px - (420.0 if touch_mode_active else 540.0) * delta)
+			_swing_arc_px = maxf(0.0, _swing_arc_px - (340.0 if touch_mode_active else 410.0) * delta)
 			if _swing_arc_px <= 1.0:
 				_swing_arc_dir = Vector2.ZERO
 
 		if parrying:
-			_cursor_rearm_timer = maxf(_cursor_rearm_timer, 0.04 if touch_mode_active else 0.16)
-		var min_cut_spd := 365.0 if touch_mode_active else CURSOR_CUT_SPEED
-		var min_cut_arc := 32.0 if touch_mode_active else CURSOR_CUT_MIN_ARC
-		var pre_gate_spd := 280.0 if touch_mode_active else 340.0
+			_cursor_rearm_timer = maxf(_cursor_rearm_timer, 0.03 if touch_mode_active else 0.08)
+		var min_cut_spd := 260.0 if touch_mode_active else CURSOR_CUT_SPEED
+		var min_cut_arc := 28.0 if touch_mode_active else CURSOR_CUT_MIN_ARC
+		var world_arc_ok := touch_mode_active or _using_pad_aim or _cursor_arc_px >= CURSOR_WORLD_MIN_ARC
+		var pre_gate_spd := 220.0 if touch_mode_active else 250.0
 		if is_player and inst_tip_spd >= pre_gate_spd and not parrying and _cursor_rearm_timer <= 0.0:
 			var tip_dir := tip_delta.normalized()
 			var blade_dir_local := Vector2.RIGHT
@@ -1509,43 +1666,57 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 					blade_dir_local = bv.normalized()
 			var axial := tip_dir.dot(blade_dir_local)
 			var perp := sqrt(maxf(0.0, 1.0 - axial * axial))
-			# Pulling the sword backward toward our own body is a withdrawal, not an attack!
-			var withdrawing := axial < -0.38 and perp < 0.72
+			# Only pure point-pulling straight back into our chest is a withdrawal (slashes stay 100% live!).
+			var withdrawing := axial < -0.52 and perp < 0.58 and tip_dir.x * float(facing) < -0.35
 			if withdrawing:
 				_cursor_sweep_timer = 0.0
 			else:
-				var fresh_swing := _cursor_sweep_timer <= 0.0 or _cursor_last_dir.dot(tip_dir) < 0.25
-				if fresh_swing and inst_tip_spd >= min_cut_spd and _swing_arc_px >= min_cut_arc and _cursor_slash_cd <= 0.0:
+				var dir_dot := _cursor_last_dir.dot(tip_dir) if _cursor_last_dir.length_squared() > 0.1 else -1.0
+				var reversed_swing := _cursor_last_dir.length_squared() > 0.1 and dir_dot < -0.15
+				var cd_gate := 0.12 if (reversed_swing and _waggle_streak < 2) else 0.0
+				var fresh_swing := _cursor_sweep_timer <= 0.0 or reversed_swing
+				if fresh_swing and inst_tip_spd >= min_cut_spd and _swing_arc_px >= min_cut_arc and world_arc_ok and _cursor_slash_cd <= cd_gate:
 					_cursor_strike_mode = "thrust" if (axial > 0.72 and perp < 0.68) else "cut"
 					var is_rip := riposte_timer > 0.0
-					var est_pwr := _cursor_power_now()
-					var cost := (5.0 + 9.0 * est_pwr) * stat("stamina_cost_mult") * (0.70 if is_rip else 1.0)
+					var next_streak := mini(6, _waggle_streak + 1) if _waggle_decay_timer > 0.0 else 0
+					var est_pwr := _cursor_power_now() * (0.52 if next_streak >= 2 else 1.0)
+					var waggle_tax := 4.5 * float(maxi(0, next_streak - 1))
+					var cost := (4.5 + 8.0 * est_pwr + waggle_tax) * stat("stamina_cost_mult") * (0.68 if is_rip else 1.0)
 					if stamina >= cost:
+						_waggle_streak = next_streak
+						_waggle_decay_timer = 0.34
 						spend_stamina(cost)
 						_riposte_active_attack = is_rip
 						if is_rip:
 							riposte_timer = 0.0
 						attack_serial += 1
-						_cursor_slash_cd = 0.21 if touch_mode_active else CURSOR_CUT_RECOVERY
+						var base_recov := 0.14 if touch_mode_active else CURSOR_CUT_RECOVERY
+						_cursor_slash_cd = base_recov + (0.08 * float(next_streak - 1) if next_streak >= 2 else 0.0)
 						_cursor_last_dir = tip_dir
-						_cursor_sweep_timer = 0.17 if touch_mode_active else 0.15
+						_cursor_sweep_timer = 0.21 if touch_mode_active else 0.20
+						if current_action == "" and absf(lunge_vx) < 75.0 and tip_dir.x * float(facing) > -0.25 and next_streak < 2:
+							lunge_vx += float(facing) * 78.0 * est_pwr * get_mobility()
 						if _cursor_whoosh_cd <= 0.0:
-							_cursor_whoosh_cd = 0.22
+							_cursor_whoosh_cd = 0.16
 							request_sfx.emit("whoosh", 0.16)
-				elif _cursor_sweep_timer > 0.0 and _cursor_last_dir.dot(tip_dir) >= 0.25:
-					_cursor_sweep_timer = 0.16 if touch_mode_active else 0.14
+				elif _cursor_sweep_timer > 0.0 and dir_dot >= -0.15:
+					# Follow curved/circular sword arcs smoothly so curved swings never die mid-stroke!
+					_cursor_last_dir = (_cursor_last_dir * 0.72 + tip_dir * 0.28).normalized()
+					_cursor_sweep_timer = 0.19 if touch_mode_active else 0.18
 
 
 func _cursor_power_now() -> float:
-	var spd_base := 290.0 if touch_mode_active else 380.0
-	var spd_span := 720.0 if touch_mode_active else 920.0
-	var arc_base := 26.0 if touch_mode_active else 42.0
-	var arc_span := 78.0 if touch_mode_active else 105.0
-	var spd_f := clampf((_blade_tip_speed - spd_base) / spd_span, 0.22 if touch_mode_active else 0.18, 1.0)
-	var arc_f := clampf((_swing_arc_px - arc_base) / arc_span, 0.22 if touch_mode_active else 0.18, 1.0)
-	var pwr := clampf(spd_f * (0.28 + 0.72 * arc_f), 0.22 if touch_mode_active else 0.18, 1.0)
+	var spd_base := 230.0 if touch_mode_active else 280.0
+	var spd_span := 580.0 if touch_mode_active else 720.0
+	var arc_base := 22.0 if touch_mode_active else 34.0
+	var arc_span := 64.0 if touch_mode_active else 86.0
+	var spd_f := clampf((_blade_tip_speed - spd_base) / spd_span, 0.26 if touch_mode_active else 0.22, 1.0)
+	var arc_f := clampf((_swing_arc_px - arc_base) / arc_span, 0.26 if touch_mode_active else 0.22, 1.0)
+	var pwr := clampf(spd_f * (0.34 + 0.66 * arc_f), 0.26 if touch_mode_active else 0.22, 1.0)
+	if _waggle_streak >= 2:
+		pwr *= 0.52
 	if _riposte_active_attack or riposte_timer > 0.0:
-		pwr = minf(1.0, pwr * 1.20)
+		pwr = minf(1.0, pwr * 1.22)
 	return pwr
 
 

@@ -165,15 +165,15 @@ func refresh_hint(cursor_aim: bool) -> void:
 	if _hint_lbl == null:
 		return
 	if bool(_settings.get("touch", false)):
-		_hint_lbl.text = "TOUCH:  Left = Move · Flick L/R = Dash · Up+Fwd = Leap Cleave · Down+Fwd = Sweep · Down = Kick · Up = Half-Sword  |  Right = 360° Swing · Back = Parry · Tap = Slash"
+		_hint_lbl.text = "TOUCH:  Left = Move · Flick L/R = Dash · Up+Fwd = Leap · Down+Fwd = Sweep · Down = Kick · Up = Half-Sword  |  Right = Effortless 360° Swing · Tap = Combo · Pull Back = Parry"
 		return
 	var pads := Input.get_connected_joypads()
 	if pads.size() > 0:
-		_hint_lbl.text = "PAD [%s]:  L-Stick Move  |  R-Stick Aim  |  X Slash  Y Thrust  L3 Pommel  A Kick (Down+A Sweep)  |  R3 Half-Sword  |  B/LB Parry  RT Dash" % Input.get_joy_name(pads[0]).left(16)
+		_hint_lbl.text = "PAD [%s]:  L-Stick Move  |  R-Stick Swing  |  X Slash/Combo  Y Thrust  L3 Pommel  A Kick (Down+A Sweep)  |  R3 Half-Sword  |  B/LB Parry  RT Dash" % Input.get_joy_name(pads[0]).left(16)
 	elif cursor_aim:
-		_hint_lbl.text = "A/D Move  |  Mouse: Swing  |  W Leap Cleave  L Pommel  U Spin  S+E Sweep  E Kick  Q Half-Sword  F Throw  |  RMB/Space Parry  Shift Dash-Cancel"
+		_hint_lbl.text = "A/D Move (2x/Shift Dash)  |  Mouse Swing or LMB Click/Combo  |  RMB/Space Parry  |  WheelUp/V Thrust  WheelDn/X Spin  C Pommel  W Leap  E Kick (S+E Sweep)  Q Half-Sword  F/MMB Throw"
 	else:
-		_hint_lbl.text = "A/D Move  |  J Slash  K Thrust  W Leap Cleave  L Pommel  U Spin  S+E Sweep  E Kick  Q Half-Sword  F Throw  |  Space Parry  Shift Dash-Cancel"
+		_hint_lbl.text = "A/D Move (2x/Shift Dash)  |  LMB/J Slash & Combo  V/K Thrust  X/U Spin  C/L Pommel  W Leap  E Kick (S+E Sweep)  Q Half-Sword  F Throw  |  RMB/Space Parry"
 
 
 # ---------------------------------------------------------------------------
