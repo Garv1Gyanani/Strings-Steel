@@ -4718,20 +4718,20 @@ _data = {
 &"walk_back": SubResource("Animation_26clt")
 }
 
-[node name="PlagueExecutioner" type="Node2D" unique_id=1290052588]
+[node name="PlagueExecutioner" type="Node2D" unique_id=1496001793]
 script = ExtResource("1_ib5h8")
 fighter_id = "plague_executioner"
 
-[node name="Skeleton2D" type="Skeleton2D" parent="." unique_id=691206129]
+[node name="Skeleton2D" type="Skeleton2D" parent="." unique_id=1235507544]
 scale = Vector2(0.68, 0.68)
 
-[node name="Pelvis" type="Bone2D" parent="Skeleton2D" unique_id=1316582025]
+[node name="Pelvis" type="Bone2D" parent="Skeleton2D" unique_id=159964329]
 rest = Transform2D(1, 0, 0, 1, 0, 0)
 auto_calculate_length_and_angle = false
 length = 26.6
 bone_angle = -90.0
 
-[node name="PelvisSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=645890185]
+[node name="PelvisSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=1023570474]
 z_index = 28
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.95, 0.95)
@@ -4739,7 +4739,7 @@ texture = ExtResource("3_q20cw")
 centered = false
 offset = Vector2(-73, -46)
 
-[node name="ScabbardSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=1888044437]
+[node name="ScabbardSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=2029379090]
 modulate = Color(0.78, 0.75, 0.8, 1)
 z_index = 20
 material = SubResource("ShaderMaterial_op66a")
@@ -4751,14 +4751,14 @@ centered = false
 offset = Vector2(-60, -18)
 metadata/base_tint = Color(0.78, 0.75, 0.8, 1)
 
-[node name="Thigh_L" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=24256426]
+[node name="Thigh_L" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=1193275929]
 position = Vector2(-29.449999, 70.299995)
 rest = Transform2D(1, 0, 0, 1, -29.449999, 70.299995)
 auto_calculate_length_and_angle = false
 length = 96.72
 bone_angle = 90.0
 
-[node name="ThighSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=1948118892]
+[node name="ThighSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=805959268]
 modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 10
 material = SubResource("ShaderMaterial_op66a")
@@ -4768,14 +4768,14 @@ centered = false
 offset = Vector2(-47, -20)
 metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="Shin_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=1196425538]
+[node name="Shin_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=1616463821]
 position = Vector2(0, 96.72)
 rest = Transform2D(1, 0, 0, 1, 0, 96.72)
 auto_calculate_length_and_angle = false
 length = 86.64
 bone_angle = 90.0
 
-[node name="ShinSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=678898251]
+[node name="ShinSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=325569982]
 modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 12
 material = SubResource("ShaderMaterial_op66a")
@@ -4785,7 +4785,7 @@ centered = false
 offset = Vector2(-40, -18)
 metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="PoleynSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=1989722788]
+[node name="PoleynSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=150730976]
 modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 13
 material = SubResource("ShaderMaterial_op66a")
@@ -4795,17 +4795,17 @@ centered = false
 offset = Vector2(-35, -36)
 metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="StringKneeL" type="Marker2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=600966703]
+[node name="StringKneeL" type="Marker2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=1213003967]
 position = Vector2(0, 10)
 
-[node name="Boot_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=139702055]
+[node name="Boot_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=1107029747]
 position = Vector2(0, 86.64)
 rest = Transform2D(1, 0, 0, 1, 0, 86.64)
 auto_calculate_length_and_angle = false
 length = 28.0
 bone_angle = 0.0
 
-[node name="BootSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L/Boot_L" unique_id=1985993979]
+[node name="BootSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L/Boot_L" unique_id=1820509248]
 modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 11
 material = SubResource("ShaderMaterial_op66a")
@@ -4815,14 +4815,14 @@ centered = false
 offset = Vector2(-28, -12)
 metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="Thigh_R" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=305495782]
+[node name="Thigh_R" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=1215705102]
 position = Vector2(33.25, 70.299995)
 rest = Transform2D(1, 0, 0, 1, 33.25, 70.299995)
 auto_calculate_length_and_angle = false
 length = 96.72
 bone_angle = 90.0
 
-[node name="ThighSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=1157744606]
+[node name="ThighSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=1195180066]
 z_index = 14
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.62, 0.62)
@@ -4830,14 +4830,14 @@ texture = ExtResource("5_k3gsf")
 centered = false
 offset = Vector2(-47, -20)
 
-[node name="Shin_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=1213477777]
+[node name="Shin_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=1930621824]
 position = Vector2(0, 96.72)
 rest = Transform2D(1, 0, 0, 1, 0, 96.72)
 auto_calculate_length_and_angle = false
 length = 86.64
 bone_angle = 90.0
 
-[node name="ShinSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=705110498]
+[node name="ShinSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=220882699]
 z_index = 16
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.76, 0.76)
@@ -4845,7 +4845,7 @@ texture = ExtResource("6_cb57q")
 centered = false
 offset = Vector2(-40, -18)
 
-[node name="PoleynSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=1416205413]
+[node name="PoleynSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=964709153]
 z_index = 17
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.68, 0.68)
@@ -4853,17 +4853,17 @@ texture = ExtResource("7_mbq36")
 centered = false
 offset = Vector2(-35, -36)
 
-[node name="StringKneeR" type="Marker2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=336002570]
+[node name="StringKneeR" type="Marker2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=1275657330]
 position = Vector2(0, 10)
 
-[node name="Boot_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=946441043]
+[node name="Boot_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=1834529350]
 position = Vector2(0, 86.64)
 rest = Transform2D(1, 0, 0, 1, 0, 86.64)
 auto_calculate_length_and_angle = false
 length = 28.0
 bone_angle = 0.0
 
-[node name="BootSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R/Boot_R" unique_id=1672946242]
+[node name="BootSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R/Boot_R" unique_id=1034287027]
 z_index = 15
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.88, 0.88)
@@ -4871,14 +4871,14 @@ texture = ExtResource("8_djj2j")
 centered = false
 offset = Vector2(-28, -12)
 
-[node name="Torso" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=540682355]
+[node name="Torso" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=853059928]
 position = Vector2(0, -26.6)
 rest = Transform2D(1, 0, 0, 1, 0, -26.6)
 auto_calculate_length_and_angle = false
 length = 141.11276
 bone_angle = -92.2906
 
-[node name="TorsoSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=956125950]
+[node name="TorsoSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=61788778]
 z_index = 30
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.94, 0.94)
@@ -4886,14 +4886,14 @@ texture = ExtResource("9_stlls")
 centered = false
 offset = Vector2(-70, -174)
 
-[node name="Head" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=908510236]
+[node name="Head" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1733364350]
 position = Vector2(-5.64, -141)
 rest = Transform2D(1, 0, 0, 1, -5.64, -141)
 auto_calculate_length_and_angle = false
 length = 78.0
 bone_angle = -90.0
 
-[node name="HeadSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=279996640]
+[node name="HeadSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=1334590971]
 z_index = 36
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.78, 0.78)
@@ -4901,24 +4901,24 @@ texture = ExtResource("10_0c5j6")
 centered = false
 offset = Vector2(-58, -122)
 
-[node name="Hat" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=1081276443]
+[node name="Hat" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=2017274503]
 position = Vector2(0, -78)
 rest = Transform2D(1, 0, 0, 1, 0, -78)
 auto_calculate_length_and_angle = false
 length = 32.0
 bone_angle = -90.0
 
-[node name="StringHead" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=398468944]
+[node name="StringHead" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=29132366]
 position = Vector2(0, -45)
 
-[node name="UpperArm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1618360786]
+[node name="UpperArm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1919972516]
 position = Vector2(24.44, -110.92)
 rest = Transform2D(1, 0, 0, 1, 24.44, -110.92)
 auto_calculate_length_and_angle = false
 length = 78.96
 bone_angle = 90.0
 
-[node name="UpperArmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=82250941]
+[node name="UpperArmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=725967756]
 modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 22
 material = SubResource("ShaderMaterial_op66a")
@@ -4928,14 +4928,14 @@ centered = false
 offset = Vector2(-18, -12)
 metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="Forearm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=21489810]
+[node name="Forearm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=2132043807]
 position = Vector2(0, 78.96)
 rest = Transform2D(1, 0, 0, 1, 0, 78.96)
 auto_calculate_length_and_angle = false
-length = 73.96
+length = 67.08
 bone_angle = 90.0
 
-[node name="ForearmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1359598130]
+[node name="ForearmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1049500896]
 modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 24
 material = SubResource("ShaderMaterial_op66a")
@@ -4945,30 +4945,30 @@ centered = false
 offset = Vector2(-34, -14)
 metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="Hand_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=2121861682]
-position = Vector2(0, 73.96)
-rest = Transform2D(1, 0, 0, 1, 0, 73.96)
+[node name="Hand_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1631114317]
+position = Vector2(0, 67.08)
+rest = Transform2D(1, 0, 0, 1, 0, 67.08)
 auto_calculate_length_and_angle = false
-length = 34.0
-bone_angle = 90.0
+length = 27.2085
+bone_angle = 88.5679
 
-[node name="HandSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=1017763645]
+[node name="HandSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=1810665915]
 modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 46
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.68, 0.68)
 texture = ExtResource("13_a705d")
 centered = false
-offset = Vector2(-30, -12)
+offset = Vector2(-30, -28)
 metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="GripCenter" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=1823589042]
-position = Vector2(0, 34)
+[node name="GripCenter" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=1367459260]
+position = Vector2(0.68, 27.2)
 
-[node name="StringHandL" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=572089571]
-position = Vector2(0, 73.96)
+[node name="StringHandL" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1697801581]
+position = Vector2(0, 67.08)
 
-[node name="PauldronSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=153872669]
+[node name="PauldronSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=793081826]
 modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 23
 material = SubResource("ShaderMaterial_op66a")
@@ -4979,14 +4979,14 @@ centered = false
 offset = Vector2(-47, -46)
 metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="UpperArm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=415413889]
+[node name="UpperArm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1231768463]
 position = Vector2(-43.24, -109.04)
 rest = Transform2D(1, 0, 0, 1, -43.24, -109.04)
 auto_calculate_length_and_angle = false
 length = 78.96
 bone_angle = 90.0
 
-[node name="UpperArmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=521116243]
+[node name="UpperArmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=968795203]
 z_index = 40
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.94, 0.94)
@@ -4994,14 +4994,14 @@ texture = ExtResource("11_j46tm")
 centered = false
 offset = Vector2(-18, -12)
 
-[node name="Forearm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=1315728090]
+[node name="Forearm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=1063295878]
 position = Vector2(0, 78.96)
 rest = Transform2D(1, 0, 0, 1, 0, 78.96)
 auto_calculate_length_and_angle = false
-length = 73.96
+length = 67.08
 bone_angle = 90.0
 
-[node name="ForearmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=2081989722]
+[node name="ForearmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=905276995]
 z_index = 48
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.86, 0.86)
@@ -5009,29 +5009,29 @@ texture = ExtResource("12_ftn4h")
 centered = false
 offset = Vector2(-34, -14)
 
-[node name="Hand_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=1875565056]
-position = Vector2(0, 73.96)
-rest = Transform2D(1, 0, 0, 1, 0, 73.96)
+[node name="Hand_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=1029413194]
+position = Vector2(0, 67.08)
+rest = Transform2D(1, 0, 0, 1, 0, 67.08)
 auto_calculate_length_and_angle = false
-length = 34.0
-bone_angle = 90.0
+length = 27.2085
+bone_angle = 88.5679
 
-[node name="HandSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=2025849290]
+[node name="HandSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=1696354221]
 z_index = 46
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.68, 0.68)
 texture = ExtResource("13_a705d")
 centered = false
-offset = Vector2(-30, -12)
+offset = Vector2(-30, -28)
 
-[node name="WeaponBone" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=1631383566]
-position = Vector2(0, 34)
-rest = Transform2D(1, 0, 0, 1, 0, 34)
+[node name="WeaponBone" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=1107189770]
+position = Vector2(0.68, 27.2)
+rest = Transform2D(1, 0, 0, 1, 0.68, 27.2)
 auto_calculate_length_and_angle = false
 length = 273.48
 bone_angle = 0.0
 
-[node name="WeaponSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=1385859374]
+[node name="WeaponSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=1342059318]
 z_index = 45
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.86, 0.86)
@@ -5039,7 +5039,7 @@ texture = ExtResource("15_ttak5")
 centered = false
 offset = Vector2(-104, -47)
 
-[node name="WeaponGuardSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=887912769]
+[node name="WeaponGuardSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=2124326322]
 z_index = 49
 material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.86, 0.86)
@@ -5049,18 +5049,18 @@ offset = Vector2(18, -47)
 region_enabled = true
 region_rect = Rect2(122, 0, 28, 93)
 
-[node name="PommelGripTarget" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=581992122]
+[node name="PommelGripTarget" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=1257514701]
 position = Vector2(-53.32, 0)
 
-[node name="BladeGuardMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=2061808219]
+[node name="BladeGuardMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=60132472]
 position = Vector2(32.68, 0)
 
-[node name="BladeTipMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=186752711]
+[node name="BladeTipMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=682758691]
 position = Vector2(273.48, 0)
 
-[node name="StringHandR" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=1470112368]
+[node name="StringHandR" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=1415304208]
 
-[node name="PauldronSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1624416017]
+[node name="PauldronSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1228894211]
 z_index = 43
 material = SubResource("ShaderMaterial_op66a")
 position = Vector2(-43.24, -109.04)
@@ -5069,5 +5069,5 @@ texture = ExtResource("14_qyp61")
 centered = false
 offset = Vector2(-47, -46)
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=804312742]
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=499238623]
 libraries/ = SubResource("AnimationLibrary_smdju")

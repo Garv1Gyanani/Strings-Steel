@@ -1423,6 +1423,11 @@ func _process(delta: float) -> void:
 
 	var use_ik_arm := (is_player and cursor_aim_enabled and input_enabled) or (not is_player and aim_override_enabled)
 	if not is_dead:
+		if not use_ik_arm and half_swording and current_action == "" and bone_ua_r != null and bone_fa_r != null and bone_weapon != null:
+			# Level idle/walk blade forward into an authentic HEMA Pflug (Plow) Half-Sword guard!
+			_add_procedural_offset(bone_ua_r, deg_to_rad(10.0))
+			_add_procedural_offset(bone_fa_r, deg_to_rad(8.0))
+			_add_procedural_offset(bone_weapon, deg_to_rad(56.0))
 		if use_ik_arm and can_wield() and (current_action == "" or current_action in ["dash_fwd", "dash_back"]):
 			_solve_sword_arm_to_cursor(delta)
 		elif bone_ua_r != null and bone_fa_r != null and bone_weapon != null:
@@ -1431,9 +1436,17 @@ func _process(delta: float) -> void:
 			_swing_arc_px = 0.0
 			_cursor_arc_px = 0.0
 			_riposte_active_attack = _riposte_active_attack and current_action != ""
+			if can_wield() and bone_hand_r != null:
+				var total_anim_rel := wrapf(bone_hand_r.rotation + bone_weapon.rotation, -PI, PI)
+				var desired_hr := clampf(total_anim_rel * 0.78, deg_to_rad(-66.0), deg_to_rad(70.0))
+				var delta_hr := wrapf(desired_hr - bone_hand_r.rotation, -PI, PI)
+				_add_procedural_offset(bone_hand_r, delta_hr)
+				_add_procedural_offset(bone_weapon, -delta_hr)
+				_ik_wpn_r = total_anim_rel
+			else:
+				_ik_wpn_r = bone_weapon.rotation
 			_ik_ua_r = bone_ua_r.rotation
 			_ik_fa_r = bone_fa_r.rotation
-			_ik_wpn_r = bone_weapon.rotation
 		if bool(severed_strings.get("head", false)) and bone_head != null:
 			_add_procedural_offset(bone_head, deg_to_rad(22.0))
 
@@ -1509,11 +1522,10 @@ func _process(delta: float) -> void:
 				hand_l_sprite.region_enabled = _hand_l_grip_region_enabled
 				hand_l_sprite.region_rect = _hand_l_grip_region
 			hand_l_sprite.z_index = 46
-		var cross_front := half_swording or has_buckler
 		if forearm_l_sprite != null:
-			forearm_l_sprite.z_index = 34 if cross_front else 24
+			forearm_l_sprite.z_index = 34
 		if couter_l_sprite != null:
-			couter_l_sprite.z_index = 35 if cross_front else 25
+			couter_l_sprite.z_index = 35
 		_solve_offhand_two_bone_ik()
 	elif not is_dead and not bool(severed.get("arm_l", false)) and bone_ua_l != null:
 		# Poised Italian duelist hip/back counterbalance stance when one-handed or disarmed!
@@ -1983,7 +1995,7 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 	if parrying:
 		desired_blade_ang = -1.22 if guard_zone == "high" else 0.68
 	var neutral_blade_ang := chosen_lower - PI * 0.5
-	var wrist_cock := clampf(wrapf(desired_blade_ang - neutral_blade_ang, -PI, PI), deg_to_rad(-96.0), deg_to_rad(112.0))
+	var wrist_cock := clampf(wrapf(desired_blade_ang - neutral_blade_ang, -PI, PI), deg_to_rad(-82.0), deg_to_rad(88.0))
 
 	var lmb_boost := 1.16 if (is_player and not touch_mode_active and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)) else 1.0
 	var k := minf(1.0, (66.0 if touch_mode_active else (56.0 if is_player else 26.0)) * delta)
@@ -1994,10 +2006,11 @@ func _solve_sword_arm_to_cursor(delta: float) -> void:
 	_ik_fa_r = _step_angle_capped(_ik_fa_r, fa_target_rot, k, 16.4 * slew_scale)
 	_ik_wpn_r = _step_angle_capped(_ik_wpn_r, wrist_cock, k, 19.5 * slew_scale)
 
+	var total_ik_rel := _ik_wpn_r + _rebound_wpn
 	bone_ua_r.rotation = _ik_ua_r + _rebound_ua
 	bone_fa_r.rotation = _ik_fa_r
-	bone_hand_r.rotation = 0.0
-	bone_weapon.rotation = _ik_wpn_r + _rebound_wpn
+	bone_hand_r.rotation = clampf(total_ik_rel * 0.78, deg_to_rad(-66.0), deg_to_rad(70.0))
+	bone_weapon.rotation = total_ik_rel - bone_hand_r.rotation
 
 	# Measure true fighter-local blade-tip velocity & swing arc AFTER applying IK!
 	if blade_tip_marker != null:
@@ -2717,49 +2730,82 @@ func _solve_offhand_two_bone_ik() -> void:
 
 	var sh_pos := bone_ua_l.position
 	var tgt_pos := Vector2.ZERO
+	var has_shaft_axis := false
+	var wpn_ang := 0.0
 	if has_buckler:
 		var buckler_y := -30.0 if guard_zone == "low" else (-88.0 if parrying else -68.0)
 		var buckler_x := 104.0 if parrying else 90.0
 		tgt_pos = Vector2(buckler_x, buckler_y)
 	elif half_swording and blade_guard_marker != null and blade_tip_marker != null:
-		tgt_pos = bone_torso.to_local(blade_guard_marker.global_position.lerp(blade_tip_marker.global_position, 0.42))
+		var g_loc := bone_torso.to_local(blade_guard_marker.global_position)
+		var t_loc := bone_torso.to_local(blade_tip_marker.global_position)
+		tgt_pos = g_loc.lerp(t_loc, 0.42)
+		if g_loc.distance_squared_to(t_loc) > 4.0:
+			wpn_ang = (t_loc - g_loc).angle()
+			has_shaft_axis = true
 	elif pommel_target != null:
 		tgt_pos = bone_torso.to_local(pommel_target.global_position)
+		if blade_guard_marker != null:
+			var g_loc2 := bone_torso.to_local(blade_guard_marker.global_position)
+			if g_loc2.distance_squared_to(tgt_pos) > 4.0:
+				wpn_ang = (g_loc2 - tgt_pos).angle()
+				has_shaft_axis = true
 	else:
 		return
+
 	var l1 := bone_fa_l.position.length()
 	var l2 := bone_hand_l.position.length()
-	var grip_marker := bone_hand_l.get_node_or_null("GripCenter") as Marker2D
-	if grip_marker != null:
-		l2 += grip_marker.position.length()
 	if l1 < 1.0 or l2 < 1.0:
 		return
+	var grip_local := Vector2.ZERO
+	var grip_marker := bone_hand_l.get_node_or_null("GripCenter") as Marker2D
+	if grip_marker != null:
+		grip_local = grip_marker.position
 
-	var diff := tgt_pos - sh_pos
-	var dist := diff.length()
-	var max_r := (l1 + l2) * 0.995
-	var min_r := maxf(2.0, absf(l1 - l2) + 2.0)
-	var d := clampf(dist, min_r, max_r)
+	var ua_rest_dir := bone_fa_l.position.angle()
+	var fa_rest_dir := bone_hand_l.position.angle()
+
+	# Estimate forearm direction first so we choose overhand vs thumb-up shaft polarity cleanly
+	# without ever twisting the left wrist 160+ degrees upside down on steep downward guards!
+	var est_lower := _solve_lower_elbow_branch(sh_pos, tgt_pos, l1, l2 + grip_local.length())[1]
+	var fa_zero_est := est_lower - fa_rest_dir
+	var grip_axis_ang := wpn_ang if has_shaft_axis else fa_zero_est
+	if has_shaft_axis and absf(wrapf(grip_axis_ang - fa_zero_est, -PI, PI)) > PI * 0.52:
+		grip_axis_ang = wrapf(wpn_ang + PI, -PI, PI)
+
+	var wrist_tgt := tgt_pos - grip_local.rotated(grip_axis_ang) if has_shaft_axis else tgt_pos
+	var solved := _solve_lower_elbow_branch(sh_pos, wrist_tgt, l1, l2)
+	var chosen_upper := solved[0]
+	var chosen_lower := solved[1]
+
+	bone_ua_l.rotation = chosen_upper - ua_rest_dir
+	bone_fa_l.rotation = chosen_lower - chosen_upper - (fa_rest_dir - ua_rest_dir)
+	if has_shaft_axis:
+		var fa_zero_ang := chosen_lower - fa_rest_dir
+		bone_hand_l.rotation = clampf(wrapf(grip_axis_ang - fa_zero_ang, -PI, PI), deg_to_rad(-70.0), deg_to_rad(70.0))
+	else:
+		bone_hand_l.rotation = 0.0
+
+
+func _solve_lower_elbow_branch(sh_pos: Vector2, end_tgt: Vector2, l1: float, l2: float) -> Array[float]:
+	var diff := end_tgt - sh_pos
+	var max_r := (l1 + l2) * 0.992
+	var min_r := maxf(6.0, absf(l1 - l2) + 4.0)
+	var d := clampf(diff.length(), min_r, max_r)
 	var base_ang := diff.angle()
 	var cos_a := clampf((l1 * l1 + d * d - l2 * l2) / (2.0 * l1 * d), -1.0, 1.0)
 	var a := acos(cos_a)
-
 	var ang_a := base_ang + a
 	var ang_b := base_ang - a
 	var elbow_a := sh_pos + Vector2(cos(ang_a), sin(ang_a)) * l1
 	var elbow_b := sh_pos + Vector2(cos(ang_b), sin(ang_b)) * l1
-	var score_a := elbow_a.y - maxf(0.0, elbow_a.x - sh_pos.x - 18.0) * 0.65
-	var score_b := elbow_b.y - maxf(0.0, elbow_b.x - sh_pos.x - 18.0) * 0.65
-	var chosen_upper := ang_a if score_a >= score_b else ang_b
-	var elbow_pt := elbow_a if score_a >= score_b else elbow_b
-
-	var chosen_lower := (tgt_pos - elbow_pt).angle()
-	var ua_rest_dir := bone_fa_l.position.angle()
-	var fa_rest_dir := bone_hand_l.position.angle()
-
-	bone_ua_l.rotation = chosen_upper - ua_rest_dir
-	bone_fa_l.rotation = chosen_lower - chosen_upper - (fa_rest_dir - ua_rest_dir)
-	bone_hand_l.rotation = 0.0
+	# Pure gravity-down elbow selection (larger Y = lower toward floor): never flips elbow above head!
+	var use_a := elbow_a.y >= elbow_b.y
+	var chosen_upper := ang_a if use_a else ang_b
+	var elbow_pt := elbow_a if use_a else elbow_b
+	var clamped_end := sh_pos + Vector2(cos(base_ang), sin(base_ang)) * d
+	var chosen_lower := (clamped_end - elbow_pt).angle()
+	return [chosen_upper, chosen_lower]
 
 
 func _capture_dash_ghost() -> void:

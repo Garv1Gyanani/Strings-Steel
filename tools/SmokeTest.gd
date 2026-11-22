@@ -1007,12 +1007,24 @@ func _run() -> void:
 		fc.reset_fighter()
 		fc._process(0.016)
 		var fid_cur := fc.fighter_id
+		var hr_sp := fc.get_node_or_null("Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/HandSprite_R") as Sprite2D
+		check(hr_sp != null and fc.hand_l_sprite != null and not hr_sp.region_enabled, "%s has dedicated closed-fist HandSprite_R and HandSprite_L (no flat baked paddle hands)" % fid_cur)
 		check(fc.head_sprite != null and fc.head_sprite.material != null, "%s uses PuppetInk ShaderMaterial on sprites" % fid_cur)
 		check(fc.weapon_guard_sprite != null and fc.weapon_guard_sprite.visible and fc.weapon_guard_sprite.z_index > 46, "%s builds active WeaponGuardSprite crossguard/swept-hilt overlay in front of hand" % fid_cur)
 		check(fc.str_knee_l != null and fc.str_knee_r != null, "%s routes leg marionette strings to dedicated StringKneeL/R markers" % fid_cur)
 		var th_l := fc.get_node_or_null("Skeleton2D/Pelvis/Thigh_L/ThighSprite_L") as Sprite2D
 		var th_r := fc.get_node_or_null("Skeleton2D/Pelvis/Thigh_R/ThighSprite_R") as Sprite2D
 		check(th_l != null and th_r != null and th_l.modulate.r < th_r.modulate.r - 0.10, "%s preserves 2.5D rear-limb shadow tint after reset_fighter()" % fid_cur)
+		if fid_cur != "venetian_bravo":
+			check(fc.forearm_l_sprite != null and fc.forearm_l_sprite.z_index == 34, "%s layers 2H off-hand forearm cleanly across torso (z=34) with no floating wrist" % fid_cur)
+			fc.apply_loadout("warhammer")
+			fc.anim_player.play("parry_low", 0.0)
+			fc.anim_player.seek(0.1, true)
+			fc._process(0.016)
+			check(absf(fc.bone_hand_r.rotation) > 0.35 and absf(fc.bone_weapon.rotation) < 0.65, "%s couples Hand_R wrist rotation to steep downward warhammer shaft" % fid_cur)
+			fc.apply_loadout("signature")
+			fc.reset_fighter()
+			fc._process(0.016)
 		if fid_cur in ["venetian_bravo", "plague_executioner", "landsknecht"]:
 			check(fc.get_node_or_null("Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/CouterSprite_R") == null, "%s has no mismatched tan p1_elbow_cap circle" % fid_cur)
 		if fid_cur == "venetian_bravo":
