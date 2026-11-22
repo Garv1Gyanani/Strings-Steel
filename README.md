@@ -21,8 +21,9 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
   | Black Knight | **Iron Bull Barge**: Unblockable hyper-armour plate shoulder ram (works unarmed!) | `42%` knockback resistance & boosted `16 HP` Corner Crush |
   | Venetian Bravo | **Punta Doppia**: Ducking low-profile slip into 2-hit Rapier needle lunge | `9`-stamina dashes & `1.45x` arterial bleed on thrusts |
 
-- **Live Animated Puppets on Character Select & 3 Modes:**
-  - **Live Stage Select**: Rigged marionettes breathe, sway on strings, swap weapons live, and perform signature flourishes in stage spotlights as you pick fighters and loadouts.
+- **Theatrical Main Menu, Live Stage Puppets & 3 Modes:**
+  - **Main Menu**: Launches into a gold-trimmed Main Menu (`Duel`, `Endless Gauntlet`, `Solo Practice Dojo`, `Controls & Moveset`, `Settings`, `Quit`) while two live marionettes breathe and perform periodic sword flourishes in stage spotlights behind the UI.
+  - **Live Stage Character Select**: Rigged marionettes sway on strings, swap weapons live, and perform signature flourishes as you pick fighters and loadouts.
   - **Duel**: Best of 3 rounds with a 90 s timer.
   - **Gauntlet**: Endless waves of random challengers that get tougher each wave. Your best wave is saved.
   - **Practice · Solo**: Open single-character dojo to practice footwork, mouse arcs, weapon throws, and signature combos alone — with `[R]` instant stage/weapon reset and a 1-click HUD toggle for an optional dummy (`OFF (Solo)` / `STATIC` / `GUARD` / `SPAR`).
@@ -74,7 +75,7 @@ scripts/
 tools/
   CharacterRigBuilder.gd  builds fighter .tscn rigs from data/rig_metadata.json
   BuildAllRigs.gd         headless rig + arena builder
-  SmokeTest.gd            159-check headless gameplay test suite
+  SmokeTest.gd            164-check headless gameplay test suite
   BalanceSim.gd           multi-bot headless AI & combat balance simulator
 data/rig_metadata.json    sprite parts, pivots and sockets for every fighter
 ```

@@ -15,6 +15,8 @@ signal pause_toggle_requested
 signal resume_requested
 signal restart_round_requested
 signal title_requested
+signal change_fighters_requested
+signal quit_requested
 signal rematch_requested
 signal setting_changed(key: String, value: Variant)
 
@@ -48,6 +50,16 @@ var _hint_lbl: Label
 
 # Screens
 var _title_root: Control
+var _title_page: String = "main" # "main" | "select" | "controls" | "settings"
+var _main_menu_view: Control
+var _select_view: Control
+var _controls_view: Control
+var _settings_view: Control
+var _main_menu_items: Array[Dictionary] = []
+var _main_focus_idx: int = 0
+var _main_gauntlet_btn: Button
+var _select_mode_lbl: Label
+var _title_p1_badge: PanelContainer
 var _title_p2_badge: PanelContainer
 var _vs_lbl: Label
 var _fight_btn: Button
@@ -136,7 +148,11 @@ func update_hud(p1: FighterController, p2: FighterController, limbs1: String, li
 		_p2_limbs.text = limbs2
 
 
-func show_title(p1_idx: int, p2_idx: int, mode: String, best_wave: int, p1_loadout: String = "signature", p2_loadout: String = "signature") -> void:
+func get_title_page() -> String:
+	return _title_page
+
+
+func show_title(p1_idx: int, p2_idx: int, mode: String, best_wave: int, p1_loadout: String = "signature", p2_loadout: String = "signature", page: String = "main") -> void:
 	_sel_p1 = p1_idx
 	_sel_p2 = -1 if mode == "gauntlet" else p2_idx
 	_sel_p1_loadout = p1_loadout if p1_loadout in FighterStats.LOADOUT_ORDER else "signature"
@@ -149,6 +165,26 @@ func show_title(p1_idx: int, p2_idx: int, mode: String, best_wave: int, p1_loado
 	_hud_root.visible = false
 	if _touch_ctrl != null:
 		_touch_ctrl.set_active(false)
+	show_title_page(page)
+
+
+func show_title_page(page: String) -> void:
+	_title_page = page if page in ["main", "select", "controls", "settings"] else "main"
+	if _main_menu_view != null:
+		_main_menu_view.visible = _title_page == "main"
+	if _select_view != null:
+		_select_view.visible = _title_page == "select"
+	if _controls_view != null:
+		_controls_view.visible = _title_page == "controls"
+	if _settings_view != null:
+		_settings_view.visible = _title_page == "settings"
+	if _title_p1_badge != null:
+		_title_p1_badge.visible = _title_page == "select"
+	if _title_p2_badge != null:
+		_title_p2_badge.visible = _title_page == "select" and _sel_mode != "practice"
+	_refresh_main_menu()
+	_refresh_title()
+	_refresh_settings()
 	_emit_preview("init")
 
 
@@ -221,20 +257,39 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_echo() or not event.is_pressed():
 		return
 	if _title_root != null and _title_root.visible:
-		if event.is_action_pressed("ui_accept"):
-			_emit_start()
-		elif event.is_action_pressed("ui_left"):
-			_cycle_p1(-1)
-		elif event.is_action_pressed("ui_right"):
-			_cycle_p1(1)
-		elif event.is_action_pressed("ui_up"):
-			_cycle_p2(-1)
-		elif event.is_action_pressed("ui_down"):
-			_cycle_p2(1)
-		else:
+		if _title_page == "main":
+			if event.is_action_pressed("ui_up") or event.is_action_pressed("jump_attack"):
+				_move_main_focus(-1)
+			elif event.is_action_pressed("ui_down") or event.is_action_pressed("guard_low"):
+				_move_main_focus(1)
+			elif event.is_action_pressed("ui_accept"):
+				_activate_main_focus()
+			else:
+				return
+			get_viewport().set_input_as_handled()
 			return
-		get_viewport().set_input_as_handled()
-		return
+		elif _title_page in ["controls", "settings"]:
+			if event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_accept"):
+				show_title_page("main")
+				get_viewport().set_input_as_handled()
+			return
+		else:
+			if event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel"):
+				show_title_page("main")
+			elif event.is_action_pressed("ui_accept"):
+				_emit_start()
+			elif event.is_action_pressed("ui_left"):
+				_cycle_p1(-1)
+			elif event.is_action_pressed("ui_right"):
+				_cycle_p1(1)
+			elif event.is_action_pressed("ui_up"):
+				_cycle_p2(-1)
+			elif event.is_action_pressed("ui_down"):
+				_cycle_p2(1)
+			else:
+				return
+			get_viewport().set_input_as_handled()
+			return
 	if _result_root != null and _result_root.visible:
 		if event.is_action_pressed("ui_accept"):
 			get_viewport().set_input_as_handled()
@@ -504,7 +559,7 @@ func _refresh_settings() -> void:
 		r.call()
 
 
-# --- Title / character select ---
+# --- Main Menu, Character Select, Controls Codex & Settings ---
 
 func _build_stage_wing_badge(title_txt: String, col: Color, left_side: bool, on_flourish: Callable) -> PanelContainer:
 	var badge := PanelContainer.new()
@@ -524,6 +579,68 @@ func _build_stage_wing_badge(title_txt: String, col: Color, left_side: bool, on_
 	return badge
 
 
+func _divider() -> ColorRect:
+	var line := ColorRect.new()
+	line.color = Color(0.85, 0.66, 0.28, 0.36)
+	line.custom_minimum_size = Vector2(0, 2)
+	return line
+
+
+func _add_main_menu_item(parent: VBoxContainer, label_txt: String, action: Callable, font_sz: int = 16, min_h: float = 44.0) -> Button:
+	var idx := _main_menu_items.size()
+	var btn := _button(label_txt, func(_b):
+		_main_focus_idx = idx
+		_refresh_main_menu()
+		action.call(), font_sz)
+	btn.custom_minimum_size = Vector2(336, min_h)
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	btn.mouse_entered.connect(func():
+		_main_focus_idx = idx
+		_refresh_main_menu())
+	parent.add_child(btn)
+	_main_menu_items.append({"btn": btn, "base": label_txt, "action": action})
+	return btn
+
+
+func _move_main_focus(delta_idx: int) -> void:
+	if _main_menu_items.is_empty():
+		return
+	_main_focus_idx = posmod(_main_focus_idx + delta_idx, _main_menu_items.size())
+	_refresh_main_menu()
+
+
+func _activate_main_focus() -> void:
+	if _main_menu_items.is_empty():
+		return
+	var idx := clampi(_main_focus_idx, 0, _main_menu_items.size() - 1)
+	var act: Callable = _main_menu_items[idx]["action"]
+	act.call()
+
+
+func _refresh_main_menu() -> void:
+	if _main_menu_items.is_empty():
+		return
+	for i in range(_main_menu_items.size()):
+		var item: Dictionary = _main_menu_items[i]
+		var btn: Button = item["btn"]
+		var base: String = String(item["base"])
+		if btn == _main_gauntlet_btn and _best_wave > 0:
+			base = "☠   ENDLESS GAUNTLET   (Best: %d)" % _best_wave
+		var focused := i == _main_focus_idx
+		btn.text = ("▶  " + base + "  ◀") if focused else base
+		var bg := Color(0.22, 0.11, 0.13, 0.98) if focused else Color(0.11, 0.07, 0.08, 0.94)
+		var bd := Color(1.0, 0.84, 0.38, 0.98) if focused else Color(0.48, 0.36, 0.20, 0.78)
+		btn.add_theme_stylebox_override("normal", _box(bg, bd, 6))
+		btn.add_theme_color_override("font_color", Color(1.0, 0.94, 0.72) if focused else INK)
+
+
+func _open_mode_select(mode_id: String) -> void:
+	_sel_mode = mode_id
+	if mode_id == "gauntlet":
+		_sel_p2 = -1
+	show_title_page("select")
+
+
 func _build_title() -> void:
 	_title_root = Control.new()
 	_full_rect(_title_root)
@@ -531,29 +648,87 @@ func _build_title() -> void:
 	add_child(_title_root)
 
 	# Split-stage theatre layout: NO full-screen dark dimmer so the live breathing marionettes
-	# stand illuminated in left & right stage spotlights while the sleek center console frames them!
-	var p1_badge := _build_stage_wing_badge("◀ YOU · LIVE STAGE", Color(0.62, 0.82, 1.0), true, func(): preview_flourish_requested.emit(true))
-	_title_root.add_child(p1_badge)
+	# stand illuminated in left & right stage spotlights behind the Main Menu & Character Select!
+	_title_p1_badge = _build_stage_wing_badge("◀ YOU · LIVE STAGE", Color(0.62, 0.82, 1.0), true, func(): preview_flourish_requested.emit(true))
+	_title_root.add_child(_title_p1_badge)
 	_title_p2_badge = _build_stage_wing_badge("RIVAL · LIVE STAGE ▶", Color(1.0, 0.62, 0.62), false, func(): preview_flourish_requested.emit(false))
 	_title_root.add_child(_title_p2_badge)
 
-	var center := CenterContainer.new()
-	_full_rect(center)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_title_root.add_child(center)
+	_build_main_menu_view()
+	_build_select_view()
+	_build_controls_view()
+	_build_settings_view()
+
+
+func _build_main_menu_view() -> void:
+	_main_menu_view = CenterContainer.new()
+	_full_rect(_main_menu_view)
+	_main_menu_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_title_root.add_child(_main_menu_view)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(444, 0)
+	panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.03, 0.04, 0.88), GOLD, 14))
+	_main_menu_view.add_child(panel)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 9)
+	panel.add_child(vb)
+
+	vb.add_child(_label("✦  ROYAL MARIONETTE ARENA  ✦", 11, GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	var title := _label("STRINGS & STEEL", 48, Color(1.0, 0.85, 0.48), HORIZONTAL_ALIGNMENT_CENTER)
+	title.add_theme_color_override("font_outline_color", Color(0.25, 0.03, 0.04))
+	title.add_theme_constant_override("outline_size", 8)
+	vb.add_child(title)
+	vb.add_child(_label("A physical HEMA blade duel to the last string", 13, Color(0.86, 0.77, 0.62), HORIZONTAL_ALIGNMENT_CENTER))
+	vb.add_child(_divider())
+
+	var menu_vb := VBoxContainer.new()
+	menu_vb.add_theme_constant_override("separation", 8)
+	vb.add_child(menu_vb)
+	_main_menu_items.clear()
+	_add_main_menu_item(menu_vb, "⚔   DUEL  ·  BEST OF 3", func(): _open_mode_select("duel"), 16, 44.0)
+	_main_gauntlet_btn = _add_main_menu_item(menu_vb, "☠   ENDLESS GAUNTLET", func(): _open_mode_select("gauntlet"), 16, 44.0)
+	_add_main_menu_item(menu_vb, "★   SOLO PRACTICE DOJO", func(): _open_mode_select("practice"), 16, 44.0)
+	_add_main_menu_item(menu_vb, "📖   CONTROLS & MOVESET", func(): show_title_page("controls"), 14, 38.0)
+	_add_main_menu_item(menu_vb, "⚙   SETTINGS", func(): show_title_page("settings"), 14, 38.0)
+	if not (OS.get_name() in ["Android", "iOS", "Web"]):
+		_add_main_menu_item(menu_vb, "✕   QUIT GAME", func(): quit_requested.emit(), 13, 36.0)
+
+	vb.add_child(_divider())
+	vb.add_child(_label("↑/↓ Navigate   ·   Enter / A Select   ·   Click Any Mode", 10, Color(0.72, 0.66, 0.56), HORIZONTAL_ALIGNMENT_CENTER))
+
+
+func _build_select_view() -> void:
+	_select_view = CenterContainer.new()
+	_full_rect(_select_view)
+	_select_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_select_view.visible = false
+	_title_root.add_child(_select_view)
+
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(576, 0)
 	panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.03, 0.04, 0.88), GOLD, 12))
-	center.add_child(panel)
+	_select_view.add_child(panel)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 8)
 	panel.add_child(vb)
 
-	var title := _label("STRINGS & STEEL", 36, Color(1.0, 0.84, 0.48), HORIZONTAL_ALIGNMENT_CENTER)
-	title.add_theme_color_override("font_outline_color", Color(0.25, 0.03, 0.04))
-	title.add_theme_constant_override("outline_size", 7)
-	vb.add_child(title)
-	vb.add_child(_label("A marionette duel to the last string", 12, Color(0.85, 0.75, 0.6), HORIZONTAL_ALIGNMENT_CENTER))
+	_select_mode_lbl = _label("CHOOSE YOUR FIGHTER", 26, Color(1.0, 0.84, 0.48), HORIZONTAL_ALIGNMENT_CENTER)
+	_select_mode_lbl.add_theme_color_override("font_outline_color", Color(0.25, 0.03, 0.04))
+	_select_mode_lbl.add_theme_constant_override("outline_size", 6)
+	vb.add_child(_select_mode_lbl)
+
+	var modes := HBoxContainer.new()
+	modes.alignment = BoxContainer.ALIGNMENT_CENTER
+	modes.add_theme_constant_override("separation", 8)
+	vb.add_child(modes)
+	_mode_btns["duel"] = _button("DUEL · BEST OF 3", func(_b): _set_mode("duel"), 11)
+	_mode_btns["gauntlet"] = _button("GAUNTLET · ENDLESS", func(_b): _set_mode("gauntlet"), 11)
+	_mode_btns["practice"] = _button("PRACTICE · SOLO", func(_b): _set_mode("practice"), 11)
+	modes.add_child(_mode_btns["duel"])
+	modes.add_child(_mode_btns["gauntlet"])
+	modes.add_child(_mode_btns["practice"])
 
 	var cards := HBoxContainer.new()
 	cards.add_theme_constant_override("separation", 10)
@@ -566,29 +741,127 @@ func _build_title() -> void:
 	_p2_card = _build_fighter_card("RIVAL", Color(1.0, 0.6, 0.6), func(d): _cycle_p2(d), func(): _cycle_loadout(false))
 	cards.add_child(_p2_card["root"])
 
-	var modes := HBoxContainer.new()
-	modes.alignment = BoxContainer.ALIGNMENT_CENTER
-	modes.add_theme_constant_override("separation", 8)
-	vb.add_child(modes)
-	_mode_btns["duel"] = _button("DUEL · BEST OF 3", func(_b): _set_mode("duel"), 12)
-	_mode_btns["gauntlet"] = _button("GAUNTLET · ENDLESS", func(_b): _set_mode("gauntlet"), 12)
-	_mode_btns["practice"] = _button("PRACTICE · SOLO", func(_b): _set_mode("practice"), 12)
-	modes.add_child(_mode_btns["duel"])
-	modes.add_child(_mode_btns["gauntlet"])
-	modes.add_child(_mode_btns["practice"])
-
-	var settings_center := CenterContainer.new()
-	settings_center.add_child(_build_settings_grid(130.0))
-	vb.add_child(settings_center)
-
+	var act_row := HBoxContainer.new()
+	act_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	act_row.add_theme_constant_override("separation", 14)
+	vb.add_child(act_row)
+	var back_btn := _button("←  MAIN MENU", func(_b): show_title_page("main"), 13)
+	back_btn.custom_minimum_size = Vector2(148, 44)
+	act_row.add_child(back_btn)
 	_fight_btn = _button("FIGHT!", func(_b): _emit_start(), 20)
 	_fight_btn.custom_minimum_size = Vector2(248, 44)
-	_fight_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	vb.add_child(_fight_btn)
+	act_row.add_child(_fight_btn)
 
 	_title_best_lbl = _label("", 11, Color(0.85, 0.75, 0.6), HORIZONTAL_ALIGNMENT_CENTER)
 	vb.add_child(_title_best_lbl)
-	vb.add_child(_label("←/→ pick fighter   ↑/↓ pick rival   Enter / A to start", 10, Color(0.7, 0.65, 0.55), HORIZONTAL_ALIGNMENT_CENTER))
+	vb.add_child(_label("←/→ pick fighter   ↑/↓ pick rival   Enter / A start   Esc Main Menu", 10, Color(0.7, 0.65, 0.55), HORIZONTAL_ALIGNMENT_CENTER))
+
+
+func _build_controls_view() -> void:
+	_controls_view = CenterContainer.new()
+	_full_rect(_controls_view)
+	_controls_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_controls_view.visible = false
+	_title_root.add_child(_controls_view)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(650, 0)
+	panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.03, 0.04, 0.92), GOLD, 12))
+	_controls_view.add_child(panel)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 10)
+	panel.add_child(vb)
+
+	vb.add_child(_label("CONTROLS & HEMA MOVESET", 28, Color(1.0, 0.84, 0.48), HORIZONTAL_ALIGNMENT_CENTER))
+	vb.add_child(_divider())
+
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 18)
+	vb.add_child(cols)
+
+	var left_col := VBoxContainer.new()
+	left_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_col.add_theme_constant_override("separation", 6)
+	cols.add_child(left_col)
+	left_col.add_child(_label("SWORDPLAY & DEFENCE", 13, Color(0.62, 0.82, 1.0)))
+	var left_txt := (
+		"• Mouse / R-Stick:  210° Live 2-Bone IK Swing\n" +
+		"  (Wide arc = gold limb-chopping power)\n" +
+		"• LMB / J / Pad X:  Slash & Mixup Chains\n" +
+		"• RMB / Space / Pad B:  High Parry (+ S = Low)\n" +
+		"• Perfect Parry:  Staggers foe + Zornhau Riposte\n" +
+		"• Q / R3:  Half-Sword (+ V/C = Mordhau vs plate)\n" +
+		"• F / Middle-Click:  Hurl Blade & Pick Up Steel"
+	)
+	var l_body := _label(left_txt, 12, INK)
+	l_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	left_col.add_child(l_body)
+
+	var right_col := VBoxContainer.new()
+	right_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_col.add_theme_constant_override("separation", 6)
+	cols.add_child(right_col)
+	right_col.add_child(_label("SPECIALS, FOOTWORK & TOUCH", 13, Color(1.0, 0.82, 0.44)))
+	var right_txt := (
+		"• G / Tab / Parry+E:  ★ Fighter Signature Move\n" +
+		"• W / Fwd-Dash+LMB:  Vaulting Leap Cleave\n" +
+		"• E (or S + E):  Push Kick (S+E = Ankle Sweep)\n" +
+		"• C / L / Parry+LMB:  Visor Pommel Bash\n" +
+		"• WheelUp/V · WheelDn/X:  Thrust · Whirlwind\n" +
+		"• 2x A/D or Shift:  Dash & Recovery Cancel\n" +
+		"• Mobile Touch:  L-Stick Move · R-Wheel Swing · 2x Tap = ★Sig"
+	)
+	var r_body := _label(right_txt, 12, INK)
+	r_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	right_col.add_child(r_body)
+
+	vb.add_child(_divider())
+	var back := _button("←  BACK TO MAIN MENU", func(_b): show_title_page("main"), 14)
+	back.custom_minimum_size = Vector2(220, 40)
+	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vb.add_child(back)
+
+
+func _build_settings_view() -> void:
+	_settings_view = CenterContainer.new()
+	_full_rect(_settings_view)
+	_settings_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_settings_view.visible = false
+	_title_root.add_child(_settings_view)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(540, 0)
+	panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.03, 0.04, 0.92), GOLD, 12))
+	_settings_view.add_child(panel)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 12)
+	panel.add_child(vb)
+
+	vb.add_child(_label("ARENA & GAMEPLAY SETTINGS", 28, Color(1.0, 0.84, 0.48), HORIZONTAL_ALIGNMENT_CENTER))
+	vb.add_child(_label("Changes apply live and save automatically", 12, Color(0.84, 0.76, 0.62), HORIZONTAL_ALIGNMENT_CENTER))
+	vb.add_child(_divider())
+
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 8)
+	var grid_center := CenterContainer.new()
+	grid_center.add_child(grid)
+	vb.add_child(grid_center)
+
+	for key in ["difficulty", "stage", "gore", "one_hit_sever", "cursor_aim", "touch", "strings", "sound"]:
+		var b := _button(_setting_label(key), func(_b): _toggle_setting(key), 13)
+		b.custom_minimum_size = Vector2(236, 38)
+		grid.add_child(b)
+		_settings_refreshers.append(func(): b.text = _setting_label(key))
+
+	vb.add_child(_divider())
+	var back := _button("←  BACK TO MAIN MENU", func(_b): show_title_page("main"), 14)
+	back.custom_minimum_size = Vector2(220, 40)
+	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vb.add_child(back)
 
 
 func _build_fighter_card(header: String, col: Color, on_cycle: Callable, on_loadout: Callable) -> Dictionary:
@@ -674,8 +947,17 @@ func _fill_card(card: Dictionary, idx: int, loadout_id: String, is_solo_practice
 func _refresh_title() -> void:
 	_fill_card(_p1_card, _sel_p1, _sel_p1_loadout, false)
 	_fill_card(_p2_card, _sel_p2, _sel_p2_loadout, _sel_mode == "practice")
+	if _select_mode_lbl != null:
+		if _sel_mode == "practice":
+			_select_mode_lbl.text = "★  SOLO PRACTICE DOJO"
+		elif _sel_mode == "gauntlet":
+			_select_mode_lbl.text = "☠  ENDLESS GAUNTLET"
+		else:
+			_select_mode_lbl.text = "⚔  DUEL · BEST OF 3"
+	if _title_p1_badge != null:
+		_title_p1_badge.visible = _title_page == "select"
 	if _title_p2_badge != null:
-		_title_p2_badge.visible = _sel_mode != "practice"
+		_title_p2_badge.visible = _title_page == "select" and _sel_mode != "practice"
 	if _vs_lbl != null:
 		_vs_lbl.text = "★" if _sel_mode == "practice" else "VS"
 	if _fight_btn != null:
@@ -689,15 +971,17 @@ func _refresh_title() -> void:
 			base = "PRACTICE · SOLO"
 		b.text = ("▶ " + base + " ◀") if k == _sel_mode else base
 	_title_best_lbl.text = "Gauntlet best: wave %d cleared" % _best_wave if _best_wave > 0 else ""
+	_refresh_main_menu()
 
 
 func _emit_preview(changed_tag: String) -> void:
+	var preview_mode := "duel" if (_title_page != "select" and changed_tag == "init") else _sel_mode
 	preview_changed.emit({
 		"p1": _sel_p1,
 		"p2": _sel_p2,
 		"p1_loadout": _sel_p1_loadout,
 		"p2_loadout": _sel_p2_loadout,
-		"mode": _sel_mode,
+		"mode": preview_mode,
 		"changed": changed_tag,
 	})
 
@@ -755,13 +1039,14 @@ func _build_pause() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 10)
 	vb.add_child(row)
-	row.add_child(_button("RESUME", func(_b): resume_requested.emit(), 15))
-	row.add_child(_button("RESTART ROUND", func(_b): restart_round_requested.emit(), 15))
-	row.add_child(_button("CHANGE FIGHTERS", func(_b): title_requested.emit(), 15))
+	row.add_child(_button("RESUME", func(_b): resume_requested.emit(), 14))
+	row.add_child(_button("RESTART ROUND", func(_b): restart_round_requested.emit(), 14))
+	row.add_child(_button("CHANGE FIGHTERS", func(_b): change_fighters_requested.emit(), 14))
+	row.add_child(_button("MAIN MENU", func(_b): title_requested.emit(), 14))
 	var settings_center := CenterContainer.new()
 	settings_center.add_child(_build_settings_grid())
 	vb.add_child(settings_center)
-	var help := _label("Swing through a wide arc for heavy limb-chopping cuts (gold trail); drive the point forward to thrust.\nPress Q to HALF-SWORD against plate armour; press F / Middle-Click to HURL your blade & scramble for dropped steel!\nHigh slashes snap marionette strings; kicks & guard-breaks against stage walls trigger CORNER CRUSH.", 12, Color(0.8, 0.74, 0.62), HORIZONTAL_ALIGNMENT_CENTER)
+	var help := _label("Swing through a wide arc for heavy limb-chopping cuts (gold trail); drive the point forward to thrust.\nPress G / Tab for your fighter's ★ SIGNATURE MOVE; Q to HALF-SWORD; F / Middle-Click to HURL your blade!\nHigh slashes snap marionette strings; kicks & guard-breaks against stage walls trigger CORNER CRUSH.", 12, Color(0.8, 0.74, 0.62), HORIZONTAL_ALIGNMENT_CENTER)
 	vb.add_child(help)
 
 
@@ -779,9 +1064,10 @@ func _build_result() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 10)
 	vb.add_child(row)
-	_result_primary = _button("REMATCH", func(_b): rematch_requested.emit(), 16)
+	_result_primary = _button("REMATCH", func(_b): rematch_requested.emit(), 15)
 	row.add_child(_result_primary)
-	row.add_child(_button("CHANGE FIGHTERS", func(_b): title_requested.emit(), 16))
+	row.add_child(_button("CHANGE FIGHTERS", func(_b): change_fighters_requested.emit(), 15))
+	row.add_child(_button("MAIN MENU", func(_b): title_requested.emit(), 15))
 
 
 # --- Clean translucent touch-wheel controller (no permanent buttons) ---

@@ -95,6 +95,8 @@ var practice_dummy_mode: String = "off" # "off" | "static" | "guard" | "spar"
 var _practice_revive_timer: float = 0.0
 var _title_preview_mode: String = "duel"
 var _title_p2_random: bool = false
+var _menu_attract_timer: float = 2.8
+var _menu_attract_left: bool = true
 var round_num: int = 1
 var wins_p1: int = 0
 var wins_p2: int = 0
@@ -181,7 +183,9 @@ func _ready() -> void:
 			_reset_practice_stage()
 		else:
 			_begin_round())
-	ui.title_requested.connect(_go_to_title)
+	ui.title_requested.connect(func(): _go_to_title("main"))
+	ui.change_fighters_requested.connect(func(): _go_to_title("select"))
+	ui.quit_requested.connect(func(): get_tree().quit())
 	ui.rematch_requested.connect(_on_rematch)
 	ui.setting_changed.connect(_on_setting_changed)
 
@@ -315,13 +319,14 @@ func _set_fighter(is_p1: bool, new_idx: int) -> void:
 # Match flow
 # ---------------------------------------------------------------------------
 
-func _go_to_title() -> void:
+func _go_to_title(page: String = "main") -> void:
 	_set_paused(false)
 	phase = Phase.TITLE
+	_menu_attract_timer = 2.6
 	_reset_stage()
 	_freeze_fighters(true)
 	ui.hide_result()
-	ui.show_title(p1_roster_idx, p2_roster_idx, match_mode, best_wave, p1_loadout, p2_loadout)
+	ui.show_title(p1_roster_idx, p2_roster_idx, match_mode, best_wave, p1_loadout, p2_loadout, page)
 
 
 func _on_preview_changed(cfg: Dictionary) -> void:
@@ -655,6 +660,14 @@ func _process(delta: float) -> void:
 		if p2 != null and p2.visible:
 			p2.position = TITLE_P2_POS
 			p2.set_facing(-1)
+		if ui != null and ui.get_title_page() == "main":
+			_menu_attract_timer -= unscaled_dt
+			if _menu_attract_timer <= 0.0:
+				_menu_attract_timer = 3.8
+				var actor := p1 if _menu_attract_left else p2
+				_menu_attract_left = not _menu_attract_left
+				if actor != null and actor.visible and actor.current_action == "":
+					actor.play_preview_flourish()
 		_idle_ai_fighter()
 		_step_particles(delta)
 		_step_callouts(unscaled_dt)

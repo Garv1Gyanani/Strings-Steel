@@ -72,8 +72,9 @@ func _run() -> void:
 	arena.settings["sound"] = false
 	arena.sfx.muted = true
 
-	print("== Title screen")
+	print("== Main Menu & Title screen")
 	check(arena.phase == TITLE, "game boots into the title screen")
+	check(arena.ui.get_title_page() == "main" and arena.ui._main_menu_view.visible and not arena.ui._select_view.visible, "game boots onto dedicated Main Menu before Character Select")
 	check(arena._stage_tex != null and arena._use_courtyard_stage(), "moonlit courtyard background texture loaded & active by default")
 	check(not p1().input_enabled, "player input is disabled on the title screen")
 	check(InputMap.has_action("slash") and InputMap.has_action("pause"), "InputMap actions registered")
@@ -991,6 +992,13 @@ func _run() -> void:
 
 	arena._go_to_title()
 	await frames(2)
+	check(arena.ui.get_title_page() == "main" and p1().visible and p2().visible, "MAIN MENU returns to Main Menu with both stage showcase marionettes visible")
+	arena.ui.show_title_page("controls")
+	check(arena.ui.get_title_page() == "controls" and arena.ui._controls_view.visible, "Main Menu opens Controls & Moveset codex")
+	arena.ui.show_title_page("settings")
+	check(arena.ui.get_title_page() == "settings" and arena.ui._settings_view.visible, "Main Menu opens dedicated Settings screen")
+	arena._go_to_title("select")
+	check(arena.ui.get_title_page() == "select" and arena.ui._select_view.visible, "CHANGE FIGHTERS jumps directly to Character Select screen")
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SETTINGS))
 	print("")
