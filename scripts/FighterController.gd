@@ -202,6 +202,14 @@ var _unhelmed_tex: Texture2D
 var _buckler_sprite: Sprite2D
 var _gore_stump_tex: Texture2D
 var _stump_sprites: Array[Sprite2D] = []
+var _hand_l_grip_tex: Texture2D
+var _hand_l_grip_offset: Vector2 = Vector2.ZERO
+var _hand_l_grip_scale: Vector2 = Vector2.ONE
+var _hand_l_grip_region_enabled: bool = false
+var _hand_l_grip_region: Rect2 = Rect2()
+var _hand_l_open_tex: Texture2D
+var _hand_l_open_offset: Vector2 = Vector2.ZERO
+var _hand_l_open_scale: Vector2 = Vector2.ONE
 
 # Active blade trail history [[guard_world, tip_world], ...]
 var _blade_trail: Array = []
@@ -237,6 +245,10 @@ var _prev_blade_seg: Array = []
 
 @onready var head_sprite: Sprite2D = $Skeleton2D/Pelvis/Torso/Head/HeadSprite
 @onready var weapon_sprite: Sprite2D = $Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone/WeaponSprite
+@onready var weapon_guard_sprite: Sprite2D = get_node_or_null("Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone/WeaponGuardSprite")
+@onready var hand_l_sprite: Sprite2D = get_node_or_null("Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L/HandSprite_L")
+@onready var forearm_l_sprite: Sprite2D = get_node_or_null("Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/ForearmSprite_L")
+@onready var couter_l_sprite: Sprite2D = get_node_or_null("Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/CouterSprite_L")
 @onready var pommel_target: Marker2D = $Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone/PommelGripTarget
 @onready var blade_guard_marker: Marker2D = $Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone/BladeGuardMarker
 @onready var blade_tip_marker: Marker2D = $Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone/BladeTipMarker
@@ -244,6 +256,8 @@ var _prev_blade_seg: Array = []
 @onready var str_head: Marker2D = $Skeleton2D/Pelvis/Torso/Head/StringHead
 @onready var str_hand_r: Marker2D = $Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/StringHandR
 @onready var str_hand_l: Marker2D = $Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/StringHandL
+@onready var str_knee_l: Marker2D = get_node_or_null("Skeleton2D/Pelvis/Thigh_L/Shin_L/StringKneeL")
+@onready var str_knee_r: Marker2D = get_node_or_null("Skeleton2D/Pelvis/Thigh_R/Shin_R/StringKneeR")
 
 
 func _ready() -> void:
@@ -324,11 +338,13 @@ func reset_fighter() -> void:
 	_repeat_move_timer = 0.0
 	_sever_grace_timer = 0.0
 	if scabbard_sprite != null:
-		scabbard_sprite.rotation = deg_to_rad(18.0)
+		scabbard_sprite.rotation = deg_to_rad(28.0)
 	if pauldron_r_sprite != null:
 		pauldron_r_sprite.rotation = 0.0
+		pauldron_r_sprite.visible = true
 	if pauldron_l_sprite != null:
 		pauldron_l_sprite.rotation = 0.0
+		pauldron_l_sprite.visible = true
 	knockback_vx = 0.0
 	lunge_vx = 0.0
 	chain_cancel_timer = 0.0
@@ -399,7 +415,10 @@ func _reset_sprite_tints(n: Node) -> void:
 	if n == null:
 		return
 	if n is Sprite2D:
-		(n as Sprite2D).modulate = Color(1, 1, 1, 1)
+		var sp := n as Sprite2D
+		var bt: Variant = sp.get_meta("base_tint", Color(1, 1, 1, 1))
+		sp.modulate = bt if typeof(bt) == TYPE_COLOR else Color(1, 1, 1, 1)
+		PuppetVisuals.apply_ink_material(sp)
 	for c in n.get_children():
 		_reset_sprite_tints(c)
 
@@ -446,7 +465,24 @@ func _load_character_assets() -> void:
 			_buckler_sprite.scale = Vector2(b_sc, b_sc)
 			_buckler_sprite.z_index = 49
 			_buckler_sprite.visible = false
+			PuppetVisuals.apply_ink_material(_buckler_sprite)
 			bone_hand_l.add_child(_buckler_sprite)
+	if hand_l_sprite != null:
+		_hand_l_grip_tex = hand_l_sprite.texture
+		_hand_l_grip_offset = hand_l_sprite.offset
+		_hand_l_grip_scale = hand_l_sprite.scale
+		_hand_l_grip_region_enabled = hand_l_sprite.region_enabled
+		_hand_l_grip_region = hand_l_sprite.region_rect
+	var open_id := String(_fighter_parts.get("hand_open", ""))
+	if open_id != "" and _meta_parts.has(open_id):
+		var o_spec: Dictionary = _meta_parts[open_id]
+		var o_path: String = o_spec.get("texture", "")
+		if ResourceLoader.exists(o_path):
+			_hand_l_open_tex = ResourceLoader.load(o_path)
+			var o_piv := _meta_vec2(o_spec.get("pivot", [35, 12]))
+			var o_sc := float(o_spec.get("scale", 0.68))
+			_hand_l_open_offset = -o_piv
+			_hand_l_open_scale = Vector2(o_sc, o_sc)
 	if ResourceLoader.exists("res://assets/parts_v2/p1_gore_0.png"):
 		_gore_stump_tex = ResourceLoader.load("res://assets/parts_v2/p1_gore_0.png")
 
@@ -502,11 +538,28 @@ func equip_weapon_part(part_id: String) -> bool:
 	var sw_guard := _meta_vec2(sw_sockets.get("guard", [110, 52]))
 	var sw_tip := _meta_vec2(sw_sockets.get("tip", [300, 52]))
 
-	weapon_sprite.texture = ResourceLoader.load(tex_path)
+	var sw_tex: Texture2D = ResourceLoader.load(tex_path)
+	weapon_sprite.texture = sw_tex
 	weapon_sprite.centered = false
 	weapon_sprite.offset = -sw_grip_front
 	weapon_sprite.scale = Vector2(sw_scale, sw_scale)
 	weapon_sprite.visible = true
+	PuppetVisuals.apply_ink_material(weapon_sprite)
+	if weapon_guard_sprite != null:
+		var grect: Array = sw_spec.get("guardOverlayRect", [])
+		if grect.size() >= 4:
+			var rx := float(grect[0])
+			var ry := float(grect[1])
+			weapon_guard_sprite.texture = sw_tex
+			weapon_guard_sprite.centered = false
+			weapon_guard_sprite.region_enabled = true
+			weapon_guard_sprite.region_rect = Rect2(rx, ry, float(grect[2]), float(grect[3]))
+			weapon_guard_sprite.offset = Vector2(rx, ry) - sw_grip_front
+			weapon_guard_sprite.scale = Vector2(sw_scale, sw_scale)
+			weapon_guard_sprite.visible = true
+			PuppetVisuals.apply_ink_material(weapon_guard_sprite)
+		else:
+			weapon_guard_sprite.visible = false
 	if pommel_target != null:
 		pommel_target.position = (sw_grip_back - sw_grip_front) * sw_scale
 	if blade_guard_marker != null:
@@ -819,6 +872,8 @@ func _spawn_weapon_projectile(flying_mode: bool, init_vel: Vector2) -> WeaponPro
 	parrying = false
 	_blade_trail.clear()
 	weapon_sprite.visible = false
+	if weapon_guard_sprite != null:
+		weapon_guard_sprite.visible = false
 	request_spawn_weapon_proj.emit(proj)
 	limb_state_changed.emit(self)
 	return proj
@@ -1400,7 +1455,7 @@ func _process(delta: float) -> void:
 		_scabbard_vel += (-accel_local * 0.0032 - _scabbard_ang * 64.0 - _scabbard_vel * 8.5) * delta
 		_scabbard_ang = clampf(_scabbard_ang + _scabbard_vel * delta, -0.46, 0.46)
 		if scabbard_sprite != null:
-			scabbard_sprite.rotation = deg_to_rad(18.0) + _scabbard_ang
+			scabbard_sprite.rotation = deg_to_rad(28.0) + _scabbard_ang
 
 		# Damped feather/plume lag spring on Hat bone
 		_hat_vel += (-accel_local * 0.0024 - _hat_spring * 72.0 - _hat_vel * 9.2) * delta
@@ -1408,11 +1463,13 @@ func _process(delta: float) -> void:
 		if bone_hat != null and not headgear_lost:
 			_add_procedural_offset(bone_hat, _hat_spring)
 
-		# Articulated 15th-century sliding rivets on shoulder Pauldrons
+		# Articulated 15th-century sliding rivets on shoulder Pauldrons (tracks overhead guards cleanly!)
 		if pauldron_r_sprite != null and bone_ua_r != null:
-			pauldron_r_sprite.rotation = lerpf(pauldron_r_sprite.rotation, clampf((bone_ua_r.rotation + 0.75) * 0.30, -0.52, 0.24), minf(1.0, 18.0 * delta))
+			pauldron_r_sprite.visible = not bool(severed.get("arm_r", false))
+			pauldron_r_sprite.rotation = lerpf(pauldron_r_sprite.rotation, clampf((bone_ua_r.rotation + 0.78) * 0.65, -1.32, 0.34), minf(1.0, 20.0 * delta))
 		if pauldron_l_sprite != null and bone_ua_l != null:
-			pauldron_l_sprite.rotation = lerpf(pauldron_l_sprite.rotation, clampf((bone_ua_l.rotation + 0.65) * 0.24, -0.40, 0.20), minf(1.0, 16.0 * delta))
+			pauldron_l_sprite.visible = not bool(severed.get("arm_l", false))
+			pauldron_l_sprite.rotation = lerpf(pauldron_l_sprite.rotation, clampf((bone_ua_l.rotation + 0.68) * 0.52, -1.05, 0.30), minf(1.0, 18.0 * delta))
 
 		# Tactile squash/stretch spring & overhead marionette bar vertical lift
 		_rig_squash = lerpf(_rig_squash, 0.0, minf(1.0, 18.0 * delta))
@@ -1444,12 +1501,39 @@ func _process(delta: float) -> void:
 	# Maintain Off-hand 2-bone IK unless dead, one-handed without buckler, or left arm injured/severed
 	var use_offhand_ik: bool = _offhand_usable() and (has_buckler or (has_weapon and weapon_is_two_handed() and not bool(severed.get("arm_r", false))))
 	if enable_offhand_ik and use_offhand_ik and not is_dead and current_action != "hurt" and current_action != "parry_recoil":
+		if hand_l_sprite != null and _hand_l_grip_tex != null:
+			if hand_l_sprite.texture != _hand_l_grip_tex:
+				hand_l_sprite.texture = _hand_l_grip_tex
+				hand_l_sprite.offset = _hand_l_grip_offset
+				hand_l_sprite.scale = _hand_l_grip_scale
+				hand_l_sprite.region_enabled = _hand_l_grip_region_enabled
+				hand_l_sprite.region_rect = _hand_l_grip_region
+			hand_l_sprite.z_index = 46
+		var cross_front := half_swording or has_buckler
+		if forearm_l_sprite != null:
+			forearm_l_sprite.z_index = 34 if cross_front else 24
+		if couter_l_sprite != null:
+			couter_l_sprite.z_index = 35 if cross_front else 25
 		_solve_offhand_two_bone_ik()
 	elif not is_dead and not bool(severed.get("arm_l", false)) and bone_ua_l != null:
-		# Natural counterbalance guard behind torso when one-handed or disarmed
-		bone_ua_l.rotation = lerp_angle(bone_ua_l.rotation, deg_to_rad(-28.0), 8.0 * delta)
+		# Poised Italian duelist hip/back counterbalance stance when one-handed or disarmed!
+		if hand_l_sprite != null:
+			if _hand_l_open_tex != null and hand_l_sprite.texture != _hand_l_open_tex:
+				hand_l_sprite.region_enabled = false
+				hand_l_sprite.texture = _hand_l_open_tex
+				hand_l_sprite.offset = _hand_l_open_offset
+				hand_l_sprite.scale = _hand_l_open_scale
+			hand_l_sprite.z_index = 25
+		if forearm_l_sprite != null:
+			forearm_l_sprite.z_index = 24
+		if couter_l_sprite != null:
+			couter_l_sprite.z_index = 25
+		var t_comp := -bone_torso.rotation * 0.45 if bone_torso != null else 0.0
+		bone_ua_l.rotation = lerp_angle(bone_ua_l.rotation, deg_to_rad(38.0) + t_comp, 9.0 * delta)
 		if bone_fa_l != null:
-			bone_fa_l.rotation = lerp_angle(bone_fa_l.rotation, deg_to_rad(-34.0), 8.0 * delta)
+			bone_fa_l.rotation = lerp_angle(bone_fa_l.rotation, deg_to_rad(-114.0), 9.0 * delta)
+		if bone_hand_l != null:
+			bone_hand_l.rotation = lerp_angle(bone_hand_l.rotation, deg_to_rad(-8.0), 9.0 * delta)
 
 	# Quick gauntlet jab / buckler bash arm extension when disarmed or bashing
 	if _jab_timer > 0.0 and not is_dead:
@@ -2291,6 +2375,7 @@ func _attach_gore_stump_sprite(parent_node: Node2D, local_pos: Vector2, rot_rad:
 	st.rotation = rot_rad
 	st.scale = Vector2(sc, sc)
 	st.z_index = 48
+	PuppetVisuals.apply_ink_material(st)
 	parent_node.add_child(st)
 	_stump_sprites.append(st)
 
@@ -2779,12 +2864,34 @@ func _draw() -> void:
 				draw_circle(p, r * 0.65, Color(0.64, 0.04, 0.07, 0.96))
 				draw_circle(p + Vector2(1.0, 0.0), maxf(2.0, r * 0.25), Color(0.90, 0.84, 0.72, 1.0))
 
-	# 3. Living Overhead Marionette Control Bar & Catenary Curved Strings
+	# 2b. Leather Scabbard Frog Strap & Flowing Crimson Sash Ribbon Tails (Bravo & Landsknecht)
+	if bone_pelvis != null and scabbard_sprite != null and scabbard_sprite.is_visible_in_tree():
+		var scab_p := to_local(scabbard_sprite.global_position)
+		var waist_p := to_local(bone_torso.global_position) if bone_torso != null else scab_p + Vector2(float(facing) * 16.0, -18.0)
+		draw_line(waist_p + Vector2(-float(facing) * 8.0, 6.0), scab_p + Vector2(0.0, 2.0), Color(0.16, 0.10, 0.08, 0.92), 4.6, true)
+		draw_circle(scab_p + Vector2(0.0, 2.0), 2.8, Color(0.76, 0.58, 0.26, 0.90))
+		if fighter_id in ["venetian_bravo", "landsknecht"]:
+			var sash_sway := clampf(-_frame_vx * 0.045, -22.0, 22.0) - float(facing) * (10.0 + _scabbard_ang * 28.0)
+			var s_root := waist_p + Vector2(-float(facing) * 14.0, 8.0)
+			var s_mid := s_root + Vector2(sash_sway * 0.55 - float(facing) * 8.0, 24.0)
+			var s_tip1 := s_mid + Vector2(sash_sway * 0.85 - float(facing) * 6.0, 26.0)
+			var s_tip2 := s_mid + Vector2(sash_sway * 0.60 - float(facing) * 14.0, 21.0)
+			var sash_dark := Color(0.10, 0.05, 0.07, 0.94)
+			var sash_col := Color(0.56, 0.11, 0.16, 0.94) if fighter_id == "venetian_bravo" else Color(0.62, 0.15, 0.14, 0.92)
+			draw_line(s_root, s_mid, sash_dark, 8.4, true)
+			draw_line(s_mid, s_tip1, sash_dark, 6.6, true)
+			draw_line(s_mid, s_tip2, sash_dark, 5.6, true)
+			draw_line(s_root, s_mid, sash_col, 6.0, true)
+			draw_line(s_mid, s_tip1, sash_col, 4.2, true)
+			draw_line(s_mid, s_tip2, sash_col.darkened(0.16), 3.4, true)
+
+	# 3. Living Overhead Marionette Control Bar, Brass Eyelets & Catenary Curved Strings
 	if not show_strings:
 		return
-	var string_col := Color(0.88, 0.80, 0.64, 0.48)
+	var string_col := Color(0.88, 0.80, 0.64, 0.50)
 	var bar_col := Color(0.36, 0.23, 0.13, 0.96)
 	var brass_col := Color(0.86, 0.68, 0.32, 0.94)
+	var brass_rim := Color(0.14, 0.09, 0.06, 0.90)
 	var bar_y := -345.0 + _bar_lift_y + (22.0 if is_dead else 0.0)
 	var tilt_sin := sin(bar_tilt)
 	var bar_l := Vector2(-82.0, bar_y - tilt_sin * 22.0)
@@ -2799,6 +2906,8 @@ func _draw() -> void:
 
 	var slack_base := 11.0 if current_action in ["hurt", "parry_recoil"] else (0.5 if is_airborne() else 4.5)
 	var bow_x := clampf(-_frame_vx * 0.032, -16.0, 16.0)
+	var knee_l_node: Node2D = str_knee_l if str_knee_l != null else bone_shin_l
+	var knee_r_node: Node2D = str_knee_r if str_knee_r != null else bone_shin_r
 	var attachments := [
 		["head", str_head, 0.0],
 		["torso", bone_torso, 0.0],
@@ -2806,8 +2915,8 @@ func _draw() -> void:
 		["arm_r", str_hand_r, 0.72],
 		["elbow_l", bone_fa_l, -0.45],
 		["elbow_r", bone_fa_r, 0.45],
-		["leg_l", bone_boot_l, -0.30],
-		["leg_r", bone_boot_r, 0.30],
+		["leg_l", knee_l_node, -0.30],
+		["leg_r", knee_r_node, 0.30],
 	]
 	for item in attachments:
 		var skey: String = item[0]
@@ -2817,6 +2926,9 @@ func _draw() -> void:
 			continue
 		var bar_pt := bar_l.lerp(bar_r, (bar_frac + 1.0) * 0.5)
 		var attach_local := to_local(marker.global_position)
+		draw_circle(bar_pt, 2.2, brass_col)
+		draw_circle(attach_local + Vector2(0.0, -3.0), 2.8, brass_rim)
+		draw_arc(attach_local + Vector2(0.0, -3.0), 2.1, 0.0, TAU, 10, brass_col, 1.3, true)
 		var ctrl_mid := bar_pt.lerp(attach_local, 0.52) + Vector2(bow_x, slack_base)
 		var prev_p := bar_pt
 		for si in range(1, 6):

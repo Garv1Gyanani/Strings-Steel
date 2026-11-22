@@ -1,2676 +1,2763 @@
 {
-	"fighters": {
-		"black_knight": {
-			"display_name": "Black Gothic Knight",
-			"hand_baked": false,
-			"id": "black_knight",
-			"parts": {
-				"boot": "p4_boot_clean",
-				"couter": "",
-				"forearm": "p4_forearm_0",
-				"hand_l": "p4_hand_fist",
-				"hand_r": "p4_hand_fist",
-				"hat": "",
-				"head": "p4_head_helm",
-				"pauldron": "p4_pauldron",
-				"pelvis": "p4_pelvis_front",
-				"poleyn": "p4_poleyn",
-				"scabbard": "p1_scabbard",
-				"shin": "p4_shin_0",
-				"slash_fx": "p1_slash",
-				"thigh": "p4_thigh_0",
-				"torso": "p4_torso_front",
-				"upperarm": "p4_upperarm_0",
-				"weapon": "p4_sword_flam"
-			},
-			"rig_scale": 0.68
-		},
-		"fechtmeister": {
-			"display_name": "Crimson Fechtmeister",
-			"hand_baked": false,
-			"id": "fechtmeister",
-			"parts": {
-				"boot": "p2_sabaton_clean",
-				"couter": "p2_couter",
-				"forearm": "p2_forearm_0",
-				"hand_l": "p2_hand_fist_down",
-				"hand_r": "p2_hand_fist_down",
-				"hat": "p2_hat_burgonet",
-				"head": "p2_head_calm",
-				"pauldron": "p2_pauldron",
-				"pelvis": "p2_pelvis_tasset",
-				"poleyn": "p2_poleyn",
-				"scabbard": "p1_scabbard",
-				"shin": "p2_shin_0",
-				"slash_fx": "p1_slash",
-				"thigh": "p2_thigh_0",
-				"torso": "p2_torso_front",
-				"upperarm": "p2_upperarm_0",
-				"weapon": "p2_sword_flam"
-			},
-			"rig_scale": 0.68
-		},
-		"landsknecht": {
-			"display_name": "Landsknecht Duelist",
-			"hand_baked": true,
-			"id": "landsknecht",
-			"parts": {
-				"boot": "p1_boot_0",
-				"couter": "p1_elbow_cap",
-				"forearm": "p1_forearm_fist_clean",
-				"hand_l": "",
-				"hand_r": "",
-				"hat": "p1_hat_feather",
-				"head": "p1_head_calm",
-				"pauldron": "p1_pauldron",
-				"pelvis": "p1_pelvis_front",
-				"poleyn": "",
-				"scabbard": "p1_scabbard",
-				"shin": "p1_shin_0",
-				"slash_fx": "p1_slash",
-				"thigh": "p1_thigh_0_clean",
-				"torso": "p1_torso_front_clean",
-				"upperarm": "p1_upperarm_0",
-				"weapon": "p1_sword_long"
-			},
-			"rig_scale": 0.68
-		},
-		"plague_executioner": {
-			"display_name": "Plague Executioner",
-			"hand_baked": false,
-			"id": "plague_executioner",
-			"parts": {
-				"boot": "p3_boot_clean",
-				"couter": "p1_elbow_cap",
-				"forearm": "p3_forearm_0",
-				"hand_l": "p3_hand_fist",
-				"hand_r": "p3_hand_fist",
-				"hat": "",
-				"head": "p3_head_mask",
-				"pauldron": "p3_pauldron",
-				"pelvis": "p3_pelvis_front",
-				"poleyn": "p3_poleyn",
-				"scabbard": "p1_scabbard",
-				"shin": "p3_shin_0",
-				"slash_fx": "p1_slash",
-				"thigh": "p3_thigh_0",
-				"torso": "p3_torso_front",
-				"upperarm": "p3_upperarm_0",
-				"weapon": "p3_sword_exec"
-			},
-			"rig_scale": 0.68
-		},
-		"venetian_bravo": {
-			"display_name": "Venetian Bravo",
-			"hand_baked": false,
-			"id": "venetian_bravo",
-			"parts": {
-				"boot": "p5_boot_clean",
-				"couter": "p1_elbow_cap",
-				"forearm": "p5_forearm_0",
-				"hand_l": "p5_hand_fist",
-				"hand_r": "p5_hand_fist",
-				"hat": "p5_hat_cavalier",
-				"head": "p5_head_calm",
-				"pauldron": "p5_pauldron",
-				"pelvis": "p5_pelvis_front",
-				"poleyn": "",
-				"scabbard": "p1_scabbard",
-				"shin": "p5_shin_0",
-				"slash_fx": "p1_slash",
-				"thigh": "p5_thigh_0",
-				"torso": "p5_torso_front",
-				"upperarm": "p5_upperarm_0",
-				"weapon": "p5_sword_rapier"
-			},
-			"rig_scale": 0.68
-		}
-	},
-	"parts": {
-		"p1_boot_0": {
-			"category": "boot",
-			"char": "p1",
-			"file": "parts_v2/p1_boot_0.png",
-			"height": 55.0,
-			"id": "p1_boot_0",
-			"label": "Leather Shoe",
-			"pivot": [
-				28.0,
-				14.0
-			],
-			"scale": 0.78,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p1_boot_0.png",
-			"width": 85.0
-		},
-		"p1_boot_1": {
-			"category": "boot",
-			"char": "p1",
-			"file": "parts_v2/p1_boot_1.png",
-			"height": 61.0,
-			"id": "p1_boot_1",
-			"label": "Buckled Boot",
-			"pivot": [
-				24.0,
-				18.0
-			],
-			"scale": 0.78,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p1_boot_1.png",
-			"width": 72.0
-		},
-		"p1_elbow_cap": {
-			"category": "couter",
-			"char": "p1",
-			"file": "parts_v2/p1_elbow_cap.png",
-			"height": 20.0,
-			"id": "p1_elbow_cap",
-			"label": "Elbow Ball Cap",
-			"pivot": [
-				10.0,
-				10.0
-			],
-			"scale": 1.05,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p1_elbow_cap.png",
-			"width": 20.0
-		},
-		"p1_forearm_bare": {
-			"category": "forearm",
-			"char": "p1",
-			"file": "parts_v2/p1_forearm_bare.png",
-			"height": 104.0,
-			"id": "p1_forearm_bare",
-			"label": "Forearm (Severed Hand)",
-			"pivot": [
-				22.0,
-				11.7
-			],
-			"scale": 1.1,
-			"sockets": {
-				"end": [
-					22.0,
-					100.2
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_forearm_bare.png",
-			"width": 43.0
-		},
-		"p1_forearm_fist": {
-			"category": "forearm",
-			"char": "p1",
-			"file": "parts_v2/p1_forearm_fist.png",
-			"height": 142.0,
-			"id": "p1_forearm_fist",
-			"label": "Forearm + Fist",
-			"pivot": [
-				22.0,
-				11.7
-			],
-			"scale": 1.1,
-			"sockets": {
-				"end": [
-					22.0,
-					119.2
-				],
-				"grip": [
-					22.0,
-					119.2
-				],
-				"wrist": [
-					21.7,
-					100.2
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_forearm_fist.png",
-			"width": 43.0
-		},
-		"p1_forearm_fist_clean": {
-			"category": "forearm",
-			"char": "p1",
-			"file": "parts_v2/p1_forearm_fist_clean.png",
-			"height": 142.0,
-			"id": "p1_forearm_fist_clean",
-			"label": "Forearm + Fist",
-			"pivot": [
-				22.0,
-				16.0
-			],
-			"scale": 1.1,
-			"sockets": {
-				"end": [
-					22.0,
-					119.2
-				],
-				"grip": [
-					22.0,
-					119.2
-				],
-				"wrist": [
-					21.7,
-					100.2
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_forearm_fist_clean.png",
-			"width": 43.0
-		},
-		"p1_gore_0": {
-			"category": "gore",
-			"char": "p1",
-			"file": "parts_v2/p1_gore_0.png",
-			"height": 65.0,
-			"id": "p1_gore_0",
-			"label": "Bone Stump 1",
-			"pivot": [
-				17.0,
-				32.0
-			],
-			"scale": 0.85,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p1_gore_0.png",
-			"width": 34.0
-		},
-		"p1_gore_1": {
-			"category": "gore",
-			"char": "p1",
-			"file": "parts_v2/p1_gore_1.png",
-			"height": 73.0,
-			"id": "p1_gore_1",
-			"label": "Bone Stump 2",
-			"pivot": [
-				16.0,
-				36.0
-			],
-			"scale": 0.85,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p1_gore_1.png",
-			"width": 33.0
-		},
-		"p1_hand_fist": {
-			"category": "hand",
-			"char": "p1",
-			"file": "parts_v2/p1_hand_fist.png",
-			"height": 67.0,
-			"id": "p1_hand_fist",
-			"label": "Clenched Fist",
-			"pivot": [
-				24.0,
-				56.0
-			],
-			"scale": 0.68,
-			"sockets": {
-				"grip": [
-					26.0,
-					30.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_hand_fist.png",
-			"width": 51.0
-		},
-		"p1_hand_grip": {
-			"category": "hand",
-			"char": "p1",
-			"file": "parts_v2/p1_hand_grip.png",
-			"height": 87.0,
-			"id": "p1_hand_grip",
-			"label": "Sword Grip",
-			"pivot": [
-				20.0,
-				18.0
-			],
-			"scale": 0.68,
-			"sockets": {
-				"grip": [
-					20.0,
-					42.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_hand_grip.png",
-			"width": 43.0
-		},
-		"p1_hand_open": {
-			"category": "hand",
-			"char": "p1",
-			"file": "parts_v2/p1_hand_open.png",
-			"height": 92.0,
-			"id": "p1_hand_open",
-			"label": "Open Palm",
-			"pivot": [
-				26.0,
-				80.0
-			],
-			"scale": 0.68,
-			"sockets": {
-				"grip": [
-					32.0,
-					42.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_hand_open.png",
-			"width": 64.0
-		},
-		"p1_hand_pommel": {
-			"category": "hand",
-			"char": "p1",
-			"file": "parts_v2/p1_hand_pommel.png",
-			"height": 53.0,
-			"id": "p1_hand_pommel",
-			"label": "Pommel Grip",
-			"pivot": [
-				64.0,
-				24.0
-			],
-			"scale": 0.68,
-			"sockets": {
-				"grip": [
-					34.0,
-					24.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_hand_pommel.png",
-			"width": 75.0
-		},
-		"p1_hat_feather": {
-			"category": "hat",
-			"char": "p1",
-			"file": "parts_v2/p1_hat_feather.png",
-			"height": 122.0,
-			"id": "p1_hat_feather",
-			"label": "Feathered Cap",
-			"pivot": [
-				108.0,
-				94.0
-			],
-			"scale": 0.58,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p1_hat_feather.png",
-			"width": 217.0
-		},
-		"p1_hat_sallet": {
-			"category": "hat",
-			"char": "p1",
-			"file": "parts_v2/p1_hat_sallet.png",
-			"height": 118.0,
-			"id": "p1_hat_sallet",
-			"label": "Steel Sallet",
-			"pivot": [
-				68.0,
-				82.0
-			],
-			"scale": 0.66,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p1_hat_sallet.png",
-			"width": 135.0
-		},
-		"p1_head_bloody": {
-			"category": "head",
-			"char": "p1",
-			"file": "parts_v2/p1_head_bloody.png",
-			"height": 133.0,
-			"id": "p1_head_bloody",
-			"label": "Bloodied",
-			"pivot": [
-				36.0,
-				118.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					42.0,
-					22.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_head_bloody.png",
-			"width": 84.0
-		},
-		"p1_head_calm": {
-			"category": "head",
-			"char": "p1",
-			"file": "parts_v2/p1_head_calm.png",
-			"height": 133.0,
-			"id": "p1_head_calm",
-			"label": "Calm Focused",
-			"pivot": [
-				36.0,
-				118.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					42.0,
-					22.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_head_calm.png",
-			"width": 85.0
-		},
-		"p1_head_dead": {
-			"category": "head",
-			"char": "p1",
-			"file": "parts_v2/p1_head_dead.png",
-			"height": 133.0,
-			"id": "p1_head_dead",
-			"label": "Dead",
-			"pivot": [
-				36.0,
-				118.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					42.0,
-					22.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_head_dead.png",
-			"width": 85.0
-		},
-		"p1_head_grimace": {
-			"category": "head",
-			"char": "p1",
-			"file": "parts_v2/p1_head_grimace.png",
-			"height": 134.0,
-			"id": "p1_head_grimace",
-			"label": "Grimace",
-			"pivot": [
-				36.0,
-				118.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					42.0,
-					22.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_head_grimace.png",
-			"width": 85.0
-		},
-		"p1_head_yell": {
-			"category": "head",
-			"char": "p1",
-			"file": "parts_v2/p1_head_yell.png",
-			"height": 133.0,
-			"id": "p1_head_yell",
-			"label": "Battle Cry",
-			"pivot": [
-				36.0,
-				118.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					42.0,
-					22.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_head_yell.png",
-			"width": 85.0
-		},
-		"p1_pauldron": {
-			"category": "pauldron",
-			"char": "p1",
-			"file": "parts_v2/p1_pauldron.png",
-			"height": 66.0,
-			"id": "p1_pauldron",
-			"label": "Shoulder Cap",
-			"pivot": [
-				40.0,
-				26.0
-			],
-			"scale": 0.74,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p1_pauldron.png",
-			"width": 80.0
-		},
-		"p1_pelvis_front": {
-			"category": "pants",
-			"char": "p1",
-			"file": "parts_v2/p1_pelvis_front.png",
-			"height": 193.0,
-			"id": "p1_pelvis_front",
-			"label": "Front Breeches",
-			"pivot": [
-				82.0,
-				56.0
-			],
-			"scale": 0.96,
-			"sockets": {
-				"belt": [
-					44.0,
-					48.0
-				],
-				"hipL": [
-					42.0,
-					118.0
-				],
-				"hipR": [
-					122.0,
-					118.0
-				],
-				"waist": [
-					82.0,
-					22.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_pelvis_front.png",
-			"width": 162.0
-		},
-		"p1_pelvis_side": {
-			"category": "pants",
-			"char": "p1",
-			"file": "parts_v2/p1_pelvis_side.png",
-			"height": 194.0,
-			"id": "p1_pelvis_side",
-			"label": "Side Breeches",
-			"pivot": [
-				50.0,
-				56.0
-			],
-			"scale": 0.96,
-			"sockets": {
-				"belt": [
-					36.0,
-					48.0
-				],
-				"hipL": [
-					38.0,
-					118.0
-				],
-				"hipR": [
-					64.0,
-					118.0
-				],
-				"waist": [
-					50.0,
-					22.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_pelvis_side.png",
-			"width": 101.0
-		},
-		"p1_scabbard": {
-			"category": "extra",
-			"char": "p1",
-			"file": "parts_v2/p1_scabbard.png",
-			"height": 36.0,
-			"id": "p1_scabbard",
-			"label": "Scabbard",
-			"pivot": [
-				60.0,
-				18.0
-			],
-			"scale": 0.85,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p1_scabbard.png",
-			"width": 268.0
-		},
-		"p1_shin_0": {
-			"category": "shin",
-			"char": "p1",
-			"file": "parts_v2/p1_shin_0.png",
-			"height": 178.0,
-			"id": "p1_shin_0",
-			"label": "Yellow Shin",
-			"pivot": [
-				26.0,
-				22.0
-			],
-			"scale": 0.76,
-			"sockets": {
-				"end": [
-					26.0,
-					152.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_shin_0.png",
-			"width": 52.0
-		},
-		"p1_shin_1": {
-			"category": "shin",
-			"char": "p1",
-			"file": "parts_v2/p1_shin_1.png",
-			"height": 176.0,
-			"id": "p1_shin_1",
-			"label": "Shin Alt",
-			"pivot": [
-				28.0,
-				22.0
-			],
-			"scale": 0.76,
-			"sockets": {
-				"end": [
-					26.0,
-					160.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_shin_1.png",
-			"width": 56.0
-		},
-		"p1_slash": {
-			"category": "fx",
-			"char": "p1",
-			"file": "parts_v2/p1_slash.png",
-			"height": 120.0,
-			"id": "p1_slash",
-			"label": "Slash Crescent",
-			"pivot": [
-				117.0,
-				60.0
-			],
-			"scale": 1.15,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p1_slash.png",
-			"width": 234.0
-		},
-		"p1_sword_katz": {
-			"category": "weapon",
-			"char": "p1",
-			"file": "parts_v2/p1_sword_katz.png",
-			"height": 94.0,
-			"id": "p1_sword_katz",
-			"label": "Katzbalger",
-			"pivot": [
-				48.0,
-				46.0
-			],
-			"scale": 0.88,
-			"sockets": {
-				"guard": [
-					48.0,
-					46.0
-				],
-				"pommel": [
-					18.0,
-					46.0
-				],
-				"tip": [
-					294.0,
-					46.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_sword_katz.png",
-			"width": 297.0
-		},
-		"p1_sword_long": {
-			"category": "weapon",
-			"char": "p1",
-			"file": "parts_v2/p1_sword_long.png",
-			"height": 105.0,
-			"id": "p1_sword_long",
-			"label": "Longsword",
-			"pivot": [
-				62.0,
-				52.0
-			],
-			"scale": 0.88,
-			"sockets": {
-				"gripBack": [
-					43.0,
-					52.0
-				],
-				"gripFront": [
-					83.0,
-					52.0
-				],
-				"guard": [
-					108.0,
-					52.0
-				],
-				"pommel": [
-					12.0,
-					52.0
-				],
-				"tip": [
-					428.0,
-					52.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_sword_long.png",
-			"width": 432.0
-		},
-		"p1_thigh_0": {
-			"category": "thigh",
-			"char": "p1",
-			"file": "parts_v2/p1_thigh_0.png",
-			"height": 219.0,
-			"id": "p1_thigh_0",
-			"label": "Yellow Thigh",
-			"pivot": [
-				42.0,
-				24.0
-			],
-			"scale": 0.76,
-			"sockets": {
-				"end": [
-					42.0,
-					194.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_thigh_0.png",
-			"width": 81.0
-		},
-		"p1_thigh_0_clean": {
-			"category": "thigh",
-			"char": "p1",
-			"file": "parts_v2/p1_thigh_0_clean.png",
-			"height": 219.0,
-			"id": "p1_thigh_0_clean",
-			"label": "Yellow Thigh",
-			"pivot": [
-				40.0,
-				32.0
-			],
-			"scale": 0.76,
-			"sockets": {
-				"end": [
-					42.0,
-					194.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_thigh_0_clean.png",
-			"width": 81.0
-		},
-		"p1_thigh_1": {
-			"category": "thigh",
-			"char": "p1",
-			"file": "parts_v2/p1_thigh_1.png",
-			"height": 218.0,
-			"id": "p1_thigh_1",
-			"label": "Thigh Alt",
-			"pivot": [
-				44.0,
-				24.0
-			],
-			"scale": 0.76,
-			"sockets": {
-				"end": [
-					44.0,
-					194.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_thigh_1.png",
-			"width": 87.0
-		},
-		"p1_torso_front": {
-			"category": "torso",
-			"char": "p1",
-			"file": "parts_v2/p1_torso_front.png",
-			"height": 210.0,
-			"id": "p1_torso_front",
-			"label": "3/4 Doublet",
-			"pivot": [
-				52.0,
-				178.0
-			],
-			"scale": 0.98,
-			"sockets": {
-				"neck": [
-					48.0,
-					22.0
-				],
-				"shFar": [
-					92.0,
-					50.0
-				],
-				"shNear": [
-					18.0,
-					54.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_torso_front.png",
-			"width": 110.0
-		},
-		"p1_torso_front_clean": {
-			"category": "torso",
-			"char": "p1",
-			"file": "parts_v2/p1_torso_front_clean.png",
-			"height": 216.0,
-			"id": "p1_torso_front_clean",
-			"label": "3/4 Doublet Clean",
-			"pivot": [
-				76.0,
-				174.0
-			],
-			"scale": 0.94,
-			"sockets": {
-				"neck": [
-					70.0,
-					28.0
-				],
-				"shFar": [
-					118.0,
-					56.0
-				],
-				"shNear": [
-					24.0,
-					66.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_torso_front_clean.png",
-			"width": 136.0
-		},
-		"p1_torso_side": {
-			"category": "torso",
-			"char": "p1",
-			"file": "parts_v2/p1_torso_side.png",
-			"height": 208.0,
-			"id": "p1_torso_side",
-			"label": "Side Doublet",
-			"pivot": [
-				52.0,
-				178.0
-			],
-			"scale": 0.98,
-			"sockets": {
-				"neck": [
-					36.0,
-					20.0
-				],
-				"shFar": [
-					74.0,
-					50.0
-				],
-				"shNear": [
-					42.0,
-					54.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_torso_side.png",
-			"width": 117.0
-		},
-		"p1_upperarm_0": {
-			"category": "upperarm",
-			"char": "p1",
-			"file": "parts_v2/p1_upperarm_0.png",
-			"height": 99.0,
-			"id": "p1_upperarm_0",
-			"label": "Upper Sleeve",
-			"pivot": [
-				20.3,
-				10.0
-			],
-			"scale": 1.1,
-			"sockets": {
-				"end": [
-					20.3,
-					86.7
-				]
-			},
-			"texture": "res://assets/parts_v2/p1_upperarm_0.png",
-			"width": 45.0
-		},
-		"p2_boot_0": {
-			"category": "boot",
-			"char": "p2",
-			"file": "parts_v2/p2_boot_0.png",
-			"height": 125.0,
-			"id": "p2_boot_0",
-			"label": "Armored Sabaton",
-			"pivot": [
-				38.0,
-				24.0
-			],
-			"scale": 0.88,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p2_boot_0.png",
-			"width": 91.0
-		},
-		"p2_boot_1": {
-			"category": "boot",
-			"char": "p2",
-			"file": "parts_v2/p2_boot_1.png",
-			"height": 133.0,
-			"id": "p2_boot_1",
-			"label": "Leather Boot",
-			"pivot": [
-				38.0,
-				24.0
-			],
-			"scale": 0.88,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p2_boot_1.png",
-			"width": 73.0
-		},
-		"p2_buckler": {
-			"category": "extra",
-			"char": "p2",
-			"file": "parts_v2/p2_buckler.png",
-			"height": 123.0,
-			"id": "p2_buckler",
-			"label": "Buckler",
-			"pivot": [
-				60.0,
-				60.0
-			],
-			"scale": 0.72,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p2_buckler.png",
-			"width": 134.0
-		},
-		"p2_couter": {
-			"category": "couter",
-			"char": "p2",
-			"file": "parts_v2/p2_couter.png",
-			"height": 53.0,
-			"id": "p2_couter",
-			"label": "Elbow Couter",
-			"pivot": [
-				32.0,
-				26.0
-			],
-			"scale": 0.72,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p2_couter.png",
-			"width": 64.0
-		},
-		"p2_forearm_0": {
-			"category": "forearm",
-			"char": "p2",
-			"file": "parts_v2/p2_forearm_0.png",
-			"height": 109.0,
-			"id": "p2_forearm_0",
-			"label": "Steel Vambrace",
-			"pivot": [
-				28.0,
-				14.0
-			],
-			"scale": 0.86,
-			"sockets": {
-				"end": [
-					28.0,
-					104.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_forearm_0.png",
-			"width": 55.0
-		},
-		"p2_forearm_1": {
-			"category": "forearm",
-			"char": "p2",
-			"file": "parts_v2/p2_forearm_1.png",
-			"height": 102.0,
-			"id": "p2_forearm_1",
-			"label": "Leather Bracer",
-			"pivot": [
-				24.0,
-				14.0
-			],
-			"scale": 0.86,
-			"sockets": {
-				"end": [
-					24.0,
-					96.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_forearm_1.png",
-			"width": 49.0
-		},
-		"p2_gore_0": {
-			"category": "gore",
-			"char": "p2",
-			"file": "parts_v2/p2_gore_0.png",
-			"height": 101.0,
-			"id": "p2_gore_0",
-			"label": "Bloody Bone",
-			"pivot": [
-				42.0,
-				50.0
-			],
-			"scale": 0.75,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p2_gore_0.png",
-			"width": 85.0
-		},
-		"p2_gore_1": {
-			"category": "gore",
-			"char": "p2",
-			"file": "parts_v2/p2_gore_1.png",
-			"height": 117.0,
-			"id": "p2_gore_1",
-			"label": "Bone Splatter",
-			"pivot": [
-				36.0,
-				44.0
-			],
-			"scale": 0.75,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p2_gore_1.png",
-			"width": 72.0
-		},
-		"p2_hand_fist": {
-			"category": "hand",
-			"char": "p2",
-			"file": "parts_v2/p2_hand_fist.png",
-			"height": 101.0,
-			"id": "p2_hand_fist",
-			"label": "Gauntlet Fist",
-			"pivot": [
-				28.0,
-				90.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"grip": [
-					28.0,
-					32.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_hand_fist.png",
-			"width": 57.0
-		},
-		"p2_hand_fist_down": {
-			"category": "hand",
-			"char": "p2",
-			"file": "parts_v2/p2_hand_fist_down.png",
-			"height": 101.0,
-			"id": "p2_hand_fist_down",
-			"label": "Gauntlet Fist Down",
-			"pivot": [
-				28.0,
-				12.0
-			],
-			"scale": 0.68,
-			"sockets": {
-				"grip": [
-					28.0,
-					66.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_hand_fist_down.png",
-			"width": 57.0
-		},
-		"p2_hand_grip": {
-			"category": "hand",
-			"char": "p2",
-			"file": "parts_v2/p2_hand_grip.png",
-			"height": 115.0,
-			"id": "p2_hand_grip",
-			"label": "Gauntlet Grip",
-			"pivot": [
-				34.0,
-				24.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"grip": [
-					34.0,
-					58.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_hand_grip.png",
-			"width": 68.0
-		},
-		"p2_hand_open": {
-			"category": "hand",
-			"char": "p2",
-			"file": "parts_v2/p2_hand_open.png",
-			"height": 120.0,
-			"id": "p2_hand_open",
-			"label": "Gauntlet Open",
-			"pivot": [
-				26.0,
-				104.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"grip": [
-					28.0,
-					52.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_hand_open.png",
-			"width": 53.0
-		},
-		"p2_hand_pommel": {
-			"category": "hand",
-			"char": "p2",
-			"file": "parts_v2/p2_hand_pommel.png",
-			"height": 119.0,
-			"id": "p2_hand_pommel",
-			"label": "Pommel Gauntlet",
-			"pivot": [
-				34.0,
-				20.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"grip": [
-					34.0,
-					56.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_hand_pommel.png",
-			"width": 69.0
-		},
-		"p2_hat_burgonet": {
-			"category": "hat",
-			"char": "p2",
-			"file": "parts_v2/p2_hat_burgonet.png",
-			"height": 136.0,
-			"id": "p2_hat_burgonet",
-			"label": "Feathered Helm",
-			"pivot": [
-				124.0,
-				98.0
-			],
-			"scale": 0.64,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p2_hat_burgonet.png",
-			"width": 199.0
-		},
-		"p2_hat_visor": {
-			"category": "hat",
-			"char": "p2",
-			"file": "parts_v2/p2_hat_visor.png",
-			"height": 136.0,
-			"id": "p2_hat_visor",
-			"label": "Closed Knight Helm",
-			"pivot": [
-				52.0,
-				92.0
-			],
-			"scale": 0.68,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p2_hat_visor.png",
-			"width": 106.0
-		},
-		"p2_head_bloody": {
-			"category": "head",
-			"char": "p2",
-			"file": "parts_v2/p2_head_bloody.png",
-			"height": 132.0,
-			"id": "p2_head_bloody",
-			"label": "Bloodied Veteran",
-			"pivot": [
-				38.0,
-				116.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					44.0,
-					24.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_head_bloody.png",
-			"width": 94.0
-		},
-		"p2_head_calm": {
-			"category": "head",
-			"char": "p2",
-			"file": "parts_v2/p2_head_calm.png",
-			"height": 132.0,
-			"id": "p2_head_calm",
-			"label": "Bearded Veteran",
-			"pivot": [
-				38.0,
-				116.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					44.0,
-					24.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_head_calm.png",
-			"width": 88.0
-		},
-		"p2_head_dead": {
-			"category": "head",
-			"char": "p2",
-			"file": "parts_v2/p2_head_dead.png",
-			"height": 131.0,
-			"id": "p2_head_dead",
-			"label": "Dead Veteran",
-			"pivot": [
-				38.0,
-				116.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					44.0,
-					24.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_head_dead.png",
-			"width": 100.0
-		},
-		"p2_head_pain": {
-			"category": "head",
-			"char": "p2",
-			"file": "parts_v2/p2_head_pain.png",
-			"height": 132.0,
-			"id": "p2_head_pain",
-			"label": "Wincing Pain",
-			"pivot": [
-				38.0,
-				116.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					44.0,
-					24.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_head_pain.png",
-			"width": 91.0
-		},
-		"p2_head_yell": {
-			"category": "head",
-			"char": "p2",
-			"file": "parts_v2/p2_head_yell.png",
-			"height": 131.0,
-			"id": "p2_head_yell",
-			"label": "Battle Roar",
-			"pivot": [
-				38.0,
-				116.0
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					44.0,
-					24.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_head_yell.png",
-			"width": 88.0
-		},
-		"p2_pauldron": {
-			"category": "pauldron",
-			"char": "p2",
-			"file": "parts_v2/p2_pauldron.png",
-			"height": 114.0,
-			"id": "p2_pauldron",
-			"label": "Steel Pauldron",
-			"pivot": [
-				48.0,
-				36.0
-			],
-			"scale": 0.66,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p2_pauldron.png",
-			"width": 102.0
-		},
-		"p2_pelvis_front": {
-			"category": "pants",
-			"char": "p2",
-			"file": "parts_v2/p2_pelvis_front.png",
-			"height": 131.0,
-			"id": "p2_pelvis_front",
-			"label": "Crimson Breeches",
-			"pivot": [
-				85.0,
-				42.0
-			],
-			"scale": 0.98,
-			"sockets": {
-				"belt": [
-					46.0,
-					36.0
-				],
-				"hipL": [
-					46.0,
-					98.0
-				],
-				"hipR": [
-					126.0,
-					98.0
-				],
-				"waist": [
-					85.0,
-					16.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_pelvis_front.png",
-			"width": 170.0
-		},
-		"p2_pelvis_tasset": {
-			"category": "pants",
-			"char": "p2",
-			"file": "parts_v2/p2_pelvis_tasset.png",
-			"height": 130.0,
-			"id": "p2_pelvis_tasset",
-			"label": "Tasset Breeches",
-			"pivot": [
-				84.0,
-				42.0
-			],
-			"scale": 0.98,
-			"sockets": {
-				"belt": [
-					46.0,
-					36.0
-				],
-				"hipL": [
-					46.0,
-					114.0
-				],
-				"hipR": [
-					126.0,
-					114.0
-				],
-				"waist": [
-					84.0,
-					16.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_pelvis_tasset.png",
-			"width": 168.0
-		},
-		"p2_poleyn": {
-			"category": "poleyn",
-			"char": "p2",
-			"file": "parts_v2/p2_poleyn.png",
-			"height": 71.0,
-			"id": "p2_poleyn",
-			"label": "Steel Poleyn",
-			"pivot": [
-				34.0,
-				35.0
-			],
-			"scale": 0.68,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p2_poleyn.png",
-			"width": 69.0
-		},
-		"p2_pollaxe": {
-			"category": "weapon",
-			"char": "p2",
-			"file": "parts_v2/p2_pollaxe.png",
-			"height": 92.0,
-			"id": "p2_pollaxe",
-			"label": "Pollaxe",
-			"pivot": [
-				66.0,
-				46.0
-			],
-			"scale": 0.88,
-			"sockets": {
-				"gripBack": [
-					34.0,
-					46.0
-				],
-				"gripFront": [
-					98.0,
-					46.0
-				],
-				"guard": [
-					150.0,
-					46.0
-				],
-				"pommel": [
-					2.0,
-					46.0
-				],
-				"tip": [
-					240.0,
-					46.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_pollaxe.png",
-			"width": 242.0
-		},
-		"p2_sabaton_clean": {
-			"category": "boot",
-			"char": "p2",
-			"file": "parts_v2/p2_sabaton_clean.png",
-			"height": 59.0,
-			"id": "p2_sabaton_clean",
-			"label": "Armored Sabaton Clean",
-			"pivot": [
-				24.0,
-				14.0
-			],
-			"scale": 0.88,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p2_sabaton_clean.png",
-			"width": 91.0
-		},
-		"p2_shin_0": {
-			"category": "shin",
-			"char": "p2",
-			"file": "parts_v2/p2_shin_0.png",
-			"height": 125.0,
-			"id": "p2_shin_0",
-			"label": "Steel Greave",
-			"pivot": [
-				26.0,
-				16.0
-			],
-			"scale": 0.94,
-			"sockets": {
-				"end": [
-					26.0,
-					108.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_shin_0.png",
-			"width": 51.0
-		},
-		"p2_sword_flam": {
-			"category": "weapon",
-			"char": "p2",
-			"file": "parts_v2/p2_sword_flam.png",
-			"height": 105.0,
-			"id": "p2_sword_flam",
-			"label": "Flamberge",
-			"pivot": [
-				57.0,
-				52.0
-			],
-			"scale": 0.82,
-			"sockets": {
-				"gripBack": [
-					34.0,
-					52.0
-				],
-				"gripFront": [
-					82.0,
-					52.0
-				],
-				"guard": [
-					112.0,
-					52.0
-				],
-				"pommel": [
-					8.0,
-					52.0
-				],
-				"tip": [
-					402.0,
-					52.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_sword_flam.png",
-			"width": 407.0
-		},
-		"p2_thigh_0": {
-			"category": "thigh",
-			"char": "p2",
-			"file": "parts_v2/p2_thigh_0.png",
-			"height": 144.0,
-			"id": "p2_thigh_0",
-			"label": "Crimson Thigh",
-			"pivot": [
-				44.0,
-				24.0
-			],
-			"scale": 0.92,
-			"sockets": {
-				"end": [
-					56.0,
-					128.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_thigh_0.png",
-			"width": 104.0
-		},
-		"p2_torso_front": {
-			"category": "torso",
-			"char": "p2",
-			"file": "parts_v2/p2_torso_front.png",
-			"height": 166.0,
-			"id": "p2_torso_front",
-			"label": "Steel Cuirass",
-			"pivot": [
-				58.0,
-				150.0
-			],
-			"scale": 1.04,
-			"sockets": {
-				"neck": [
-					52.0,
-					16.0
-				],
-				"shFar": [
-					104.0,
-					42.0
-				],
-				"shNear": [
-					18.0,
-					42.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_torso_front.png",
-			"width": 120.0
-		},
-		"p2_torso_side": {
-			"category": "torso",
-			"char": "p2",
-			"file": "parts_v2/p2_torso_side.png",
-			"height": 162.0,
-			"id": "p2_torso_side",
-			"label": "Side Cuirass",
-			"pivot": [
-				54.0,
-				150.0
-			],
-			"scale": 1.04,
-			"sockets": {
-				"neck": [
-					36.0,
-					16.0
-				],
-				"shFar": [
-					76.0,
-					40.0
-				],
-				"shNear": [
-					42.0,
-					42.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_torso_side.png",
-			"width": 111.0
-		},
-		"p2_upperarm_0": {
-			"category": "upperarm",
-			"char": "p2",
-			"file": "parts_v2/p2_upperarm_0.png",
-			"height": 72.0,
-			"id": "p2_upperarm_0",
-			"label": "Crimson Bicep",
-			"pivot": [
-				26.0,
-				14.0
-			],
-			"scale": 1.35,
-			"sockets": {
-				"end": [
-					26.0,
-					70.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p2_upperarm_0.png",
-			"width": 52.0
-		},
-		"p3_boot_clean": {
-			"category": "boot",
-			"char": "p3",
-			"file": "parts_v2/p3_boot_clean.png",
-			"height": 58,
-			"id": "p3_boot_clean",
-			"label": "Executioner Boot",
-			"pivot": [
-				28,
-				12
-			],
-			"scale": 0.88,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p3_boot_clean.png",
-			"width": 94
-		},
-		"p3_forearm_0": {
-			"category": "forearm",
-			"char": "p3",
-			"file": "parts_v2/p3_forearm_0.png",
-			"height": 112,
-			"id": "p3_forearm_0",
-			"label": "Leather Vambrace",
-			"pivot": [
-				34,
-				14
-			],
-			"scale": 0.86,
-			"sockets": {
-				"end": [
-					34,
-					100
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_forearm_0.png",
-			"width": 67
-		},
-		"p3_hand_fist": {
-			"category": "hand",
-			"char": "p3",
-			"file": "parts_v2/p3_hand_fist.png",
-			"height": 92,
-			"id": "p3_hand_fist",
-			"label": "Studded Gauntlet",
-			"pivot": [
-				30,
-				12
-			],
-			"scale": 0.68,
-			"sockets": {
-				"grip": [
-					30,
-					62
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_hand_fist.png",
-			"width": 60
-		},
-		"p3_head_bloody": {
-			"category": "head",
-			"char": "p3",
-			"file": "parts_v2/p3_head_bloody.png",
-			"height": 140,
-			"id": "p3_head_bloody",
-			"label": "Bloodied Mask",
-			"pivot": [
-				58,
-				122
-			],
-			"scale": 0.78,
-			"sockets": {
-				"hat": [
-					58,
-					22
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_head_bloody.png",
-			"width": 156
-		},
-		"p3_head_dead": {
-			"category": "head",
-			"char": "p3",
-			"file": "parts_v2/p3_head_dead.png",
-			"height": 140,
-			"id": "p3_head_dead",
-			"label": "Dead Mask",
-			"pivot": [
-				58,
-				122
-			],
-			"scale": 0.78,
-			"sockets": {
-				"hat": [
-					58,
-					22
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_head_dead.png",
-			"width": 156
-		},
-		"p3_head_mask": {
-			"category": "head",
-			"char": "p3",
-			"file": "parts_v2/p3_head_mask.png",
-			"height": 140,
-			"id": "p3_head_mask",
-			"label": "Plague Mask Hood",
-			"pivot": [
-				58,
-				122
-			],
-			"scale": 0.78,
-			"sockets": {
-				"hat": [
-					58,
-					22
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_head_mask.png",
-			"width": 156
-		},
-		"p3_head_yell": {
-			"category": "head",
-			"char": "p3",
-			"file": "parts_v2/p3_head_yell.png",
-			"height": 134,
-			"id": "p3_head_yell",
-			"label": "Scarred Inquisitor",
-			"pivot": [
-				42,
-				118
-			],
-			"scale": 0.68,
-			"sockets": {
-				"hat": [
-					46,
-					22
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_head_yell.png",
-			"width": 93
-		},
-		"p3_pauldron": {
-			"category": "pauldron",
-			"char": "p3",
-			"file": "parts_v2/p3_pauldron.png",
-			"height": 108,
-			"id": "p3_pauldron",
-			"label": "Spiked Pauldron",
-			"pivot": [
-				47,
-				46
-			],
-			"scale": 0.68,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p3_pauldron.png",
-			"width": 94
-		},
-		"p3_pelvis_front": {
-			"category": "pants",
-			"char": "p3",
-			"file": "parts_v2/p3_pelvis_front.png",
-			"height": 182,
-			"id": "p3_pelvis_front",
-			"label": "Executioner Tassets",
-			"pivot": [
-				73,
-				46
-			],
-			"scale": 0.95,
-			"sockets": {
-				"belt": [
-					40,
-					40
-				],
-				"hipL": [
-					42,
-					120
-				],
-				"hipR": [
-					108,
-					120
-				],
-				"waist": [
-					73,
-					18
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_pelvis_front.png",
-			"width": 146
-		},
-		"p3_poleyn": {
-			"category": "poleyn",
-			"char": "p3",
-			"file": "parts_v2/p3_poleyn.png",
-			"height": 72,
-			"id": "p3_poleyn",
-			"label": "Skull Knee Guard",
-			"pivot": [
-				35,
-				36
-			],
-			"scale": 0.68,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p3_poleyn.png",
-			"width": 70
-		},
-		"p3_shin_0": {
-			"category": "shin",
-			"char": "p3",
-			"file": "parts_v2/p3_shin_0.png",
-			"height": 146,
-			"id": "p3_shin_0",
-			"label": "Strapped Iron Greave",
-			"pivot": [
-				40,
-				18
-			],
-			"scale": 0.76,
-			"sockets": {
-				"end": [
-					40,
-					132
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_shin_0.png",
-			"width": 81
-		},
-		"p3_sword_exec": {
-			"category": "weapon",
-			"char": "p3",
-			"file": "parts_v2/p3_sword_exec.png",
-			"height": 93,
-			"id": "p3_sword_exec",
-			"label": "Richtschwert",
-			"pivot": [
-				82,
-				47
-			],
-			"scale": 0.86,
-			"sockets": {
-				"gripBack": [
-					42,
-					47
-				],
-				"gripFront": [
-					108,
-					47
-				],
-				"guard": [
-					142,
-					47
-				],
-				"pommel": [
-					12,
-					47
-				],
-				"tip": [
-					422,
-					47
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_sword_exec.png",
-			"width": 428
-		},
-		"p3_thigh_0": {
-			"category": "thigh",
-			"char": "p3",
-			"file": "parts_v2/p3_thigh_0.png",
-			"height": 196,
-			"id": "p3_thigh_0",
-			"label": "Quilted Black Thigh",
-			"pivot": [
-				47,
-				20
-			],
-			"scale": 0.62,
-			"sockets": {
-				"end": [
-					47,
-					176
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_thigh_0.png",
-			"width": 94
-		},
-		"p3_torso_front": {
-			"category": "torso",
-			"char": "p3",
-			"file": "parts_v2/p3_torso_front.png",
-			"height": 206,
-			"id": "p3_torso_front",
-			"label": "Inquisitor Brigandine",
-			"pivot": [
-				70,
-				174
-			],
-			"scale": 0.94,
-			"sockets": {
-				"neck": [
-					64,
-					24
-				],
-				"shFar": [
-					116,
-					54
-				],
-				"shNear": [
-					24,
-					58
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_torso_front.png",
-			"width": 139
-		},
-		"p3_upperarm_0": {
-			"category": "upperarm",
-			"char": "p3",
-			"file": "parts_v2/p3_upperarm_0.png",
-			"height": 108,
-			"id": "p3_upperarm_0",
-			"label": "Quilted Crimson Bicep",
-			"pivot": [
-				18,
-				12
-			],
-			"scale": 0.94,
-			"sockets": {
-				"end": [
-					18,
-					96
-				]
-			},
-			"texture": "res://assets/parts_v2/p3_upperarm_0.png",
-			"width": 36
-		},
-		"p4_boot_clean": {
-			"category": "boot",
-			"char": "p4",
-			"file": "parts_v2/p4_boot_clean.png",
-			"height": 50,
-			"id": "p4_boot_clean",
-			"label": "Clawed Sabaton",
-			"pivot": [
-				32,
-				10
-			],
-			"scale": 0.88,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p4_boot_clean.png",
-			"width": 106
-		},
-		"p4_forearm_0": {
-			"category": "forearm",
-			"char": "p4",
-			"file": "parts_v2/p4_forearm_0.png",
-			"height": 92,
-			"id": "p4_forearm_0",
-			"label": "Winged Vambrace",
-			"pivot": [
-				26,
-				16
-			],
-			"scale": 0.96,
-			"sockets": {
-				"end": [
-					26,
-					86
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_forearm_0.png",
-			"width": 52
-		},
-		"p4_hand_fist": {
-			"category": "hand",
-			"char": "p4",
-			"file": "parts_v2/p4_hand_fist.png",
-			"height": 92,
-			"id": "p4_hand_fist",
-			"label": "Gothic Gauntlet",
-			"pivot": [
-				25,
-				12
-			],
-			"scale": 0.68,
-			"sockets": {
-				"grip": [
-					25,
-					62
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_hand_fist.png",
-			"width": 51
-		},
-		"p4_head_bloody": {
-			"category": "head",
-			"char": "p4",
-			"file": "parts_v2/p4_head_bloody.png",
-			"height": 151,
-			"id": "p4_head_bloody",
-			"label": "Bloodied Gothic Helm",
-			"pivot": [
-				134,
-				134
-			],
-			"scale": 0.78,
-			"sockets": {
-				"hat": [
-					134,
-					34
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_head_bloody.png",
-			"width": 190
-		},
-		"p4_head_calm": {
-			"category": "head",
-			"char": "p4",
-			"file": "parts_v2/p4_head_calm.png",
-			"height": 132,
-			"id": "p4_head_calm",
-			"label": "Scarred Knight",
-			"pivot": [
-				42,
-				116
-			],
-			"scale": 0.68,
-			"sockets": {
-				"hat": [
-					46,
-					24
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_head_calm.png",
-			"width": 90
-		},
-		"p4_head_dead": {
-			"category": "head",
-			"char": "p4",
-			"file": "parts_v2/p4_head_dead.png",
-			"height": 151,
-			"id": "p4_head_dead",
-			"label": "Dead Gothic Helm",
-			"pivot": [
-				134,
-				134
-			],
-			"scale": 0.78,
-			"sockets": {
-				"hat": [
-					134,
-					34
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_head_dead.png",
-			"width": 190
-		},
-		"p4_head_helm": {
-			"category": "head",
-			"char": "p4",
-			"file": "parts_v2/p4_head_helm.png",
-			"height": 151,
-			"id": "p4_head_helm",
-			"label": "Plumed Gothic Helm",
-			"pivot": [
-				134,
-				134
-			],
-			"scale": 0.78,
-			"sockets": {
-				"hat": [
-					134,
-					34
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_head_helm.png",
-			"width": 190
-		},
-		"p4_pauldron": {
-			"category": "pauldron",
-			"char": "p4",
-			"file": "parts_v2/p4_pauldron.png",
-			"height": 114,
-			"id": "p4_pauldron",
-			"label": "Fluted Gothic Pauldron",
-			"pivot": [
-				50,
-				42
-			],
-			"scale": 0.66,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p4_pauldron.png",
-			"width": 101
-		},
-		"p4_pelvis_front": {
-			"category": "pants",
-			"char": "p4",
-			"file": "parts_v2/p4_pelvis_front.png",
-			"height": 168,
-			"id": "p4_pelvis_front",
-			"label": "Gothic Fauld & Tassets",
-			"pivot": [
-				80,
-				44
-			],
-			"scale": 0.96,
-			"sockets": {
-				"belt": [
-					44,
-					38
-				],
-				"hipL": [
-					44,
-					118
-				],
-				"hipR": [
-					118,
-					118
-				],
-				"waist": [
-					80,
-					18
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_pelvis_front.png",
-			"width": 160
-		},
-		"p4_poleyn": {
-			"category": "poleyn",
-			"char": "p4",
-			"file": "parts_v2/p4_poleyn.png",
-			"height": 76,
-			"id": "p4_poleyn",
-			"label": "Winged Poleyn",
-			"pivot": [
-				38,
-				38
-			],
-			"scale": 0.68,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p4_poleyn.png",
-			"width": 70
-		},
-		"p4_shin_0": {
-			"category": "shin",
-			"char": "p4",
-			"file": "parts_v2/p4_shin_0.png",
-			"height": 138,
-			"id": "p4_shin_0",
-			"label": "Fluted Greave",
-			"pivot": [
-				39,
-				16
-			],
-			"scale": 0.82,
-			"sockets": {
-				"end": [
-					39,
-					122
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_shin_0.png",
-			"width": 78
-		},
-		"p4_sword_flam": {
-			"category": "weapon",
-			"char": "p4",
-			"file": "parts_v2/p4_sword_flam.png",
-			"height": 111,
-			"id": "p4_sword_flam",
-			"label": "Gothic Flamberge",
-			"pivot": [
-				78,
-				55
-			],
-			"scale": 0.86,
-			"sockets": {
-				"gripBack": [
-					42,
-					55
-				],
-				"gripFront": [
-					102,
-					55
-				],
-				"guard": [
-					126,
-					55
-				],
-				"pommel": [
-					12,
-					55
-				],
-				"tip": [
-					430,
-					55
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_sword_flam.png",
-			"width": 436
-		},
-		"p4_thigh_0": {
-			"category": "thigh",
-			"char": "p4",
-			"file": "parts_v2/p4_thigh_0.png",
-			"height": 168,
-			"id": "p4_thigh_0",
-			"label": "Gothic Cuisse",
-			"pivot": [
-				44,
-				18
-			],
-			"scale": 0.74,
-			"sockets": {
-				"end": [
-					44,
-					148
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_thigh_0.png",
-			"width": 89
-		},
-		"p4_torso_front": {
-			"category": "torso",
-			"char": "p4",
-			"file": "parts_v2/p4_torso_front.png",
-			"height": 192,
-			"id": "p4_torso_front",
-			"label": "Black Gothic Cuirass",
-			"pivot": [
-				72,
-				166
-			],
-			"scale": 0.96,
-			"sockets": {
-				"neck": [
-					66,
-					20
-				],
-				"shFar": [
-					122,
-					48
-				],
-				"shNear": [
-					24,
-					52
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_torso_front.png",
-			"width": 145
-		},
-		"p4_upperarm_0": {
-			"category": "upperarm",
-			"char": "p4",
-			"file": "parts_v2/p4_upperarm_0.png",
-			"height": 108,
-			"id": "p4_upperarm_0",
-			"label": "Fluted Rerebrace",
-			"pivot": [
-				22,
-				14
-			],
-			"scale": 0.94,
-			"sockets": {
-				"end": [
-					22,
-					95
-				]
-			},
-			"texture": "res://assets/parts_v2/p4_upperarm_0.png",
-			"width": 44
-		},
-		"p5_boot_clean": {
-			"category": "boot",
-			"char": "p5",
-			"file": "parts_v2/p5_boot_clean.png",
-			"height": 54,
-			"id": "p5_boot_clean",
-			"label": "Spurred Cavalier Boot",
-			"pivot": [
-				36,
-				10
-			],
-			"scale": 0.88,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p5_boot_clean.png",
-			"width": 102
-		},
-		"p5_forearm_0": {
-			"category": "forearm",
-			"char": "p5",
-			"file": "parts_v2/p5_forearm_0.png",
-			"height": 93,
-			"id": "p5_forearm_0",
-			"label": "Lace Cuff Forearm",
-			"pivot": [
-				25,
-				10
-			],
-			"scale": 0.96,
-			"sockets": {
-				"end": [
-					25,
-					86
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_forearm_0.png",
-			"width": 50
-		},
-		"p5_hand_fist": {
-			"category": "hand",
-			"char": "p5",
-			"file": "parts_v2/p5_hand_fist.png",
-			"height": 74,
-			"id": "p5_hand_fist",
-			"label": "Dueling Glove Fist",
-			"pivot": [
-				29,
-				10
-			],
-			"scale": 0.68,
-			"sockets": {
-				"grip": [
-					29,
-					48
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_hand_fist.png",
-			"width": 58
-		},
-		"p5_hat_cavalier": {
-			"category": "hat",
-			"char": "p5",
-			"file": "parts_v2/p5_hat_cavalier.png",
-			"height": 108,
-			"id": "p5_hat_cavalier",
-			"label": "Plumed Cavalier Hat",
-			"pivot": [
-				128,
-				84
-			],
-			"scale": 0.64,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p5_hat_cavalier.png",
-			"width": 224
-		},
-		"p5_head_bloody": {
-			"category": "head",
-			"char": "p5",
-			"file": "parts_v2/p5_head_bloody.png",
-			"height": 134,
-			"id": "p5_head_bloody",
-			"label": "Bloodied Bravo",
-			"pivot": [
-				44,
-				118
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					46,
-					30
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_head_bloody.png",
-			"width": 95
-		},
-		"p5_head_calm": {
-			"category": "head",
-			"char": "p5",
-			"file": "parts_v2/p5_head_calm.png",
-			"height": 134,
-			"id": "p5_head_calm",
-			"label": "Venetian Smirk",
-			"pivot": [
-				44,
-				118
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					46,
-					30
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_head_calm.png",
-			"width": 95
-		},
-		"p5_head_dead": {
-			"category": "head",
-			"char": "p5",
-			"file": "parts_v2/p5_head_dead.png",
-			"height": 134,
-			"id": "p5_head_dead",
-			"label": "Dead Bravo",
-			"pivot": [
-				44,
-				118
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					46,
-					30
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_head_dead.png",
-			"width": 95
-		},
-		"p5_head_yell": {
-			"category": "head",
-			"char": "p5",
-			"file": "parts_v2/p5_head_yell.png",
-			"height": 134,
-			"id": "p5_head_yell",
-			"label": "Bravo Shout",
-			"pivot": [
-				42,
-				118
-			],
-			"scale": 0.66,
-			"sockets": {
-				"hat": [
-					44,
-					30
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_head_yell.png",
-			"width": 89
-		},
-		"p5_pauldron": {
-			"category": "pauldron",
-			"char": "p5",
-			"file": "parts_v2/p5_pauldron.png",
-			"height": 56,
-			"id": "p5_pauldron",
-			"label": "Emerald Shoulder Wing",
-			"pivot": [
-				31,
-				24
-			],
-			"scale": 0.78,
-			"sockets": {},
-			"texture": "res://assets/parts_v2/p5_pauldron.png",
-			"width": 62
-		},
-		"p5_pelvis_front": {
-			"category": "pants",
-			"char": "p5",
-			"file": "parts_v2/p5_pelvis_front.png",
-			"height": 184,
-			"id": "p5_pelvis_front",
-			"label": "Paned Emerald Breeches",
-			"pivot": [
-				76,
-				48
-			],
-			"scale": 0.95,
-			"sockets": {
-				"belt": [
-					42,
-					42
-				],
-				"hipL": [
-					42,
-					122
-				],
-				"hipR": [
-					112,
-					122
-				],
-				"waist": [
-					76,
-					18
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_pelvis_front.png",
-			"width": 153
-		},
-		"p5_shin_0": {
-			"category": "shin",
-			"char": "p5",
-			"file": "parts_v2/p5_shin_0.png",
-			"height": 151,
-			"id": "p5_shin_0",
-			"label": "Cavalier Boot Shaft",
-			"pivot": [
-				43,
-				18
-			],
-			"scale": 0.76,
-			"sockets": {
-				"end": [
-					43,
-					134
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_shin_0.png",
-			"width": 87
-		},
-		"p5_sword_rapier": {
-			"category": "weapon",
-			"char": "p5",
-			"file": "parts_v2/p5_sword_rapier.png",
-			"height": 103,
-			"id": "p5_sword_rapier",
-			"label": "Swept-Hilt Rapier",
-			"pivot": [
-				58,
-				49
-			],
-			"scale": 0.86,
-			"sockets": {
-				"gripBack": [
-					32,
-					49
-				],
-				"gripFront": [
-					74,
-					49
-				],
-				"guard": [
-					112,
-					49
-				],
-				"pommel": [
-					12,
-					49
-				],
-				"tip": [
-					442,
-					49
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_sword_rapier.png",
-			"width": 448
-		},
-		"p5_thigh_0": {
-			"category": "thigh",
-			"char": "p5",
-			"file": "parts_v2/p5_thigh_0.png",
-			"height": 185,
-			"id": "p5_thigh_0",
-			"label": "Silk Stocking Thigh",
-			"pivot": [
-				33,
-				18
-			],
-			"scale": 0.64,
-			"sockets": {
-				"end": [
-					33,
-					168
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_thigh_0.png",
-			"width": 66
-		},
-		"p5_torso_front": {
-			"category": "torso",
-			"char": "p5",
-			"file": "parts_v2/p5_torso_front.png",
-			"height": 212,
-			"id": "p5_torso_front",
-			"label": "Emerald Velvet Doublet",
-			"pivot": [
-				65,
-				176
-			],
-			"scale": 0.94,
-			"sockets": {
-				"neck": [
-					62,
-					26
-				],
-				"shFar": [
-					112,
-					56
-				],
-				"shNear": [
-					22,
-					62
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_torso_front.png",
-			"width": 130
-		},
-		"p5_upperarm_0": {
-			"category": "upperarm",
-			"char": "p5",
-			"file": "parts_v2/p5_upperarm_0.png",
-			"height": 112,
-			"id": "p5_upperarm_0",
-			"label": "Slashed Emerald Sleeve",
-			"pivot": [
-				20,
-				12
-			],
-			"scale": 0.92,
-			"sockets": {
-				"end": [
-					20,
-					100
-				]
-			},
-			"texture": "res://assets/parts_v2/p5_upperarm_0.png",
-			"width": 40
-		},
-		"p_weapon_halberd": {
-			"category": "weapon",
-			"char": "p1",
-			"file": "parts_v2/p_weapon_halberd.png",
-			"height": 103.0,
-			"id": "p_weapon_halberd",
-			"label": "Crimson Halberd",
-			"pivot": [
-				90.0,
-				51.0
-			],
-			"scale": 0.88,
-			"sockets": {
-				"gripBack": [
-					44.0,
-					51.0
-				],
-				"gripFront": [
-					132.0,
-					51.0
-				],
-				"guard": [
-					210.0,
-					51.0
-				],
-				"pommel": [
-					12.0,
-					51.0
-				],
-				"tip": [
-					440.0,
-					51.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p_weapon_halberd.png",
-			"width": 444.0
-		},
-		"p_weapon_warhammer": {
-			"category": "weapon",
-			"char": "p4",
-			"file": "parts_v2/p_weapon_warhammer.png",
-			"height": 104.0,
-			"id": "p_weapon_warhammer",
-			"label": "Bec de Corbin",
-			"pivot": [
-				78.0,
-				44.0
-			],
-			"scale": 0.88,
-			"sockets": {
-				"gripBack": [
-					38.0,
-					44.0
-				],
-				"gripFront": [
-					112.0,
-					44.0
-				],
-				"guard": [
-					175.0,
-					44.0
-				],
-				"pommel": [
-					10.0,
-					44.0
-				],
-				"tip": [
-					348.0,
-					44.0
-				]
-			},
-			"texture": "res://assets/parts_v2/p_weapon_warhammer.png",
-			"width": 352.0
-		}
-	},
-	"version": 2.0
+  "fighters": {
+    "black_knight": {
+      "display_name": "Black Gothic Knight",
+      "hand_baked": false,
+      "id": "black_knight",
+      "parts": {
+        "boot": "p4_boot_clean",
+        "couter": "",
+        "forearm": "p4_forearm_0",
+        "hand_l": "p4_hand_fist",
+        "hand_r": "p4_hand_fist",
+        "hat": "",
+        "head": "p4_head_helm",
+        "pauldron": "p4_pauldron",
+        "pelvis": "p4_pelvis_front",
+        "poleyn": "p4_poleyn",
+        "scabbard": "p1_scabbard",
+        "shin": "p4_shin_0",
+        "slash_fx": "p1_slash",
+        "thigh": "p4_thigh_0",
+        "torso": "p4_torso_front",
+        "upperarm": "p4_upperarm_0",
+        "weapon": "p4_sword_flam"
+      },
+      "rig_scale": 0.68
+    },
+    "fechtmeister": {
+      "display_name": "Crimson Fechtmeister",
+      "hand_baked": false,
+      "id": "fechtmeister",
+      "parts": {
+        "boot": "p2_sabaton_clean",
+        "couter": "p2_couter",
+        "forearm": "p2_forearm_0",
+        "hand_l": "p2_hand_fist_down",
+        "hand_r": "p2_hand_fist_down",
+        "hat": "p2_hat_burgonet",
+        "head": "p2_head_calm",
+        "pauldron": "p2_pauldron",
+        "pelvis": "p2_pelvis_tasset",
+        "poleyn": "p2_poleyn",
+        "scabbard": "p1_scabbard",
+        "shin": "p2_shin_0",
+        "slash_fx": "p1_slash",
+        "thigh": "p2_thigh_0",
+        "torso": "p2_torso_front",
+        "upperarm": "p2_upperarm_0",
+        "weapon": "p2_sword_flam"
+      },
+      "rig_scale": 0.68
+    },
+    "landsknecht": {
+      "display_name": "Landsknecht Duelist",
+      "hand_baked": true,
+      "id": "landsknecht",
+      "parts": {
+        "boot": "p1_boot_0",
+        "couter": "",
+        "forearm": "p1_forearm_fist_clean",
+        "hand_l": "",
+        "hand_r": "",
+        "hat": "p1_hat_feather",
+        "head": "p1_head_calm",
+        "pauldron": "p1_pauldron",
+        "pelvis": "p1_pelvis_front",
+        "poleyn": "",
+        "scabbard": "p1_scabbard",
+        "shin": "p1_shin_0",
+        "slash_fx": "p1_slash",
+        "thigh": "p1_thigh_0_clean",
+        "torso": "p1_torso_front_clean",
+        "upperarm": "p1_upperarm_0",
+        "weapon": "p1_sword_long"
+      },
+      "rig_scale": 0.68
+    },
+    "plague_executioner": {
+      "display_name": "Plague Executioner",
+      "hand_baked": false,
+      "id": "plague_executioner",
+      "parts": {
+        "boot": "p3_boot_clean",
+        "couter": "",
+        "forearm": "p3_forearm_0",
+        "hand_l": "p3_hand_fist",
+        "hand_r": "p3_hand_fist",
+        "hat": "",
+        "head": "p3_head_mask",
+        "pauldron": "p3_pauldron",
+        "pelvis": "p3_pelvis_front",
+        "poleyn": "p3_poleyn",
+        "scabbard": "p1_scabbard",
+        "shin": "p3_shin_0",
+        "slash_fx": "p1_slash",
+        "thigh": "p3_thigh_0",
+        "torso": "p3_torso_front",
+        "upperarm": "p3_upperarm_0",
+        "weapon": "p3_sword_exec"
+      },
+      "rig_scale": 0.68
+    },
+    "venetian_bravo": {
+      "display_name": "Venetian Bravo",
+      "hand_baked": false,
+      "id": "venetian_bravo",
+      "parts": {
+        "boot": "p5_boot_clean",
+        "couter": "",
+        "forearm": "p5_forearm_0",
+        "hand_l": "p5_hand_fist",
+        "hand_open": "p5_hand_open",
+        "hand_r": "p5_hand_fist",
+        "hat": "p5_hat_cavalier",
+        "head": "p5_head_calm",
+        "pauldron": "p5_pauldron",
+        "pelvis": "p5_pelvis_front",
+        "poleyn": "",
+        "scabbard": "p1_scabbard",
+        "shin": "p5_shin_0",
+        "slash_fx": "p1_slash",
+        "thigh": "p5_thigh_0",
+        "torso": "p5_torso_front",
+        "upperarm": "p5_upperarm_0",
+        "weapon": "p5_sword_rapier"
+      },
+      "rig_scale": 0.68
+    }
+  },
+  "parts": {
+    "p1_boot_0": {
+      "category": "boot",
+      "char": "p1",
+      "file": "parts_v2/p1_boot_0.png",
+      "height": 55.0,
+      "id": "p1_boot_0",
+      "label": "Leather Shoe",
+      "pivot": [
+        28.0,
+        14.0
+      ],
+      "scale": 0.78,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p1_boot_0.png",
+      "width": 85.0
+    },
+    "p1_boot_1": {
+      "category": "boot",
+      "char": "p1",
+      "file": "parts_v2/p1_boot_1.png",
+      "height": 61.0,
+      "id": "p1_boot_1",
+      "label": "Buckled Boot",
+      "pivot": [
+        24.0,
+        18.0
+      ],
+      "scale": 0.78,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p1_boot_1.png",
+      "width": 72.0
+    },
+    "p1_elbow_cap": {
+      "category": "couter",
+      "char": "p1",
+      "file": "parts_v2/p1_elbow_cap.png",
+      "height": 20.0,
+      "id": "p1_elbow_cap",
+      "label": "Elbow Ball Cap",
+      "pivot": [
+        10.0,
+        10.0
+      ],
+      "scale": 1.05,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p1_elbow_cap.png",
+      "width": 20.0
+    },
+    "p1_forearm_bare": {
+      "category": "forearm",
+      "char": "p1",
+      "file": "parts_v2/p1_forearm_bare.png",
+      "height": 104.0,
+      "id": "p1_forearm_bare",
+      "label": "Forearm (Severed Hand)",
+      "pivot": [
+        22.0,
+        11.7
+      ],
+      "scale": 1.1,
+      "sockets": {
+        "end": [
+          22.0,
+          100.2
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_forearm_bare.png",
+      "width": 43.0
+    },
+    "p1_forearm_fist": {
+      "category": "forearm",
+      "char": "p1",
+      "file": "parts_v2/p1_forearm_fist.png",
+      "height": 142.0,
+      "id": "p1_forearm_fist",
+      "label": "Forearm + Fist",
+      "pivot": [
+        22.0,
+        11.7
+      ],
+      "scale": 1.1,
+      "sockets": {
+        "end": [
+          22.0,
+          119.2
+        ],
+        "grip": [
+          22.0,
+          119.2
+        ],
+        "wrist": [
+          21.7,
+          100.2
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_forearm_fist.png",
+      "width": 43.0
+    },
+    "p1_forearm_fist_clean": {
+      "category": "forearm",
+      "char": "p1",
+      "file": "parts_v2/p1_forearm_fist_clean.png",
+      "height": 142.0,
+      "id": "p1_forearm_fist_clean",
+      "label": "Forearm + Fist",
+      "pivot": [
+        22.0,
+        16.0
+      ],
+      "scale": 1.1,
+      "sockets": {
+        "end": [
+          22.0,
+          119.2
+        ],
+        "grip": [
+          22.0,
+          119.2
+        ],
+        "wrist": [
+          21.7,
+          100.2
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_forearm_fist_clean.png",
+      "width": 43.0
+    },
+    "p1_gore_0": {
+      "category": "gore",
+      "char": "p1",
+      "file": "parts_v2/p1_gore_0.png",
+      "height": 65.0,
+      "id": "p1_gore_0",
+      "label": "Bone Stump 1",
+      "pivot": [
+        17.0,
+        32.0
+      ],
+      "scale": 0.85,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p1_gore_0.png",
+      "width": 34.0
+    },
+    "p1_gore_1": {
+      "category": "gore",
+      "char": "p1",
+      "file": "parts_v2/p1_gore_1.png",
+      "height": 73.0,
+      "id": "p1_gore_1",
+      "label": "Bone Stump 2",
+      "pivot": [
+        16.0,
+        36.0
+      ],
+      "scale": 0.85,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p1_gore_1.png",
+      "width": 33.0
+    },
+    "p1_hand_fist": {
+      "category": "hand",
+      "char": "p1",
+      "file": "parts_v2/p1_hand_fist.png",
+      "height": 67.0,
+      "id": "p1_hand_fist",
+      "label": "Clenched Fist",
+      "pivot": [
+        24.0,
+        56.0
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "grip": [
+          26.0,
+          30.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_hand_fist.png",
+      "width": 51.0
+    },
+    "p1_hand_grip": {
+      "category": "hand",
+      "char": "p1",
+      "file": "parts_v2/p1_hand_grip.png",
+      "height": 87.0,
+      "id": "p1_hand_grip",
+      "label": "Sword Grip",
+      "pivot": [
+        20.0,
+        18.0
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "grip": [
+          20.0,
+          42.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_hand_grip.png",
+      "width": 43.0
+    },
+    "p1_hand_open": {
+      "category": "hand",
+      "char": "p1",
+      "file": "parts_v2/p1_hand_open.png",
+      "height": 92.0,
+      "id": "p1_hand_open",
+      "label": "Open Palm",
+      "pivot": [
+        26.0,
+        80.0
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "grip": [
+          32.0,
+          42.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_hand_open.png",
+      "width": 64.0
+    },
+    "p1_hand_pommel": {
+      "category": "hand",
+      "char": "p1",
+      "file": "parts_v2/p1_hand_pommel.png",
+      "height": 53.0,
+      "id": "p1_hand_pommel",
+      "label": "Pommel Grip",
+      "pivot": [
+        64.0,
+        24.0
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "grip": [
+          34.0,
+          24.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_hand_pommel.png",
+      "width": 75.0
+    },
+    "p1_hat_feather": {
+      "category": "hat",
+      "char": "p1",
+      "file": "parts_v2/p1_hat_feather.png",
+      "height": 122.0,
+      "id": "p1_hat_feather",
+      "label": "Feathered Cap",
+      "pivot": [
+        108.0,
+        94.0
+      ],
+      "scale": 0.58,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p1_hat_feather.png",
+      "width": 217.0
+    },
+    "p1_hat_sallet": {
+      "category": "hat",
+      "char": "p1",
+      "file": "parts_v2/p1_hat_sallet.png",
+      "height": 118.0,
+      "id": "p1_hat_sallet",
+      "label": "Steel Sallet",
+      "pivot": [
+        68.0,
+        82.0
+      ],
+      "scale": 0.66,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p1_hat_sallet.png",
+      "width": 135.0
+    },
+    "p1_head_bloody": {
+      "category": "head",
+      "char": "p1",
+      "file": "parts_v2/p1_head_bloody.png",
+      "height": 133.0,
+      "id": "p1_head_bloody",
+      "label": "Bloodied",
+      "pivot": [
+        36.0,
+        118.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          42.0,
+          22.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_head_bloody.png",
+      "width": 84.0
+    },
+    "p1_head_calm": {
+      "category": "head",
+      "char": "p1",
+      "file": "parts_v2/p1_head_calm.png",
+      "height": 133.0,
+      "id": "p1_head_calm",
+      "label": "Calm Focused",
+      "pivot": [
+        36.0,
+        118.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          42.0,
+          22.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_head_calm.png",
+      "width": 85.0
+    },
+    "p1_head_dead": {
+      "category": "head",
+      "char": "p1",
+      "file": "parts_v2/p1_head_dead.png",
+      "height": 133.0,
+      "id": "p1_head_dead",
+      "label": "Dead",
+      "pivot": [
+        36.0,
+        118.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          42.0,
+          22.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_head_dead.png",
+      "width": 85.0
+    },
+    "p1_head_grimace": {
+      "category": "head",
+      "char": "p1",
+      "file": "parts_v2/p1_head_grimace.png",
+      "height": 134.0,
+      "id": "p1_head_grimace",
+      "label": "Grimace",
+      "pivot": [
+        36.0,
+        118.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          42.0,
+          22.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_head_grimace.png",
+      "width": 85.0
+    },
+    "p1_head_yell": {
+      "category": "head",
+      "char": "p1",
+      "file": "parts_v2/p1_head_yell.png",
+      "height": 133.0,
+      "id": "p1_head_yell",
+      "label": "Battle Cry",
+      "pivot": [
+        36.0,
+        118.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          42.0,
+          22.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_head_yell.png",
+      "width": 85.0
+    },
+    "p1_pauldron": {
+      "category": "pauldron",
+      "char": "p1",
+      "file": "parts_v2/p1_pauldron.png",
+      "height": 66.0,
+      "id": "p1_pauldron",
+      "label": "Shoulder Cap",
+      "pivot": [
+        40.0,
+        26.0
+      ],
+      "scale": 0.74,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p1_pauldron.png",
+      "width": 80.0
+    },
+    "p1_pelvis_front": {
+      "category": "pants",
+      "char": "p1",
+      "file": "parts_v2/p1_pelvis_front.png",
+      "height": 193.0,
+      "id": "p1_pelvis_front",
+      "label": "Front Breeches",
+      "pivot": [
+        82.0,
+        56.0
+      ],
+      "scale": 0.96,
+      "sockets": {
+        "belt": [
+          44.0,
+          48.0
+        ],
+        "hipL": [
+          42.0,
+          118.0
+        ],
+        "hipR": [
+          122.0,
+          118.0
+        ],
+        "waist": [
+          82.0,
+          22.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_pelvis_front.png",
+      "width": 162.0
+    },
+    "p1_pelvis_side": {
+      "category": "pants",
+      "char": "p1",
+      "file": "parts_v2/p1_pelvis_side.png",
+      "height": 194.0,
+      "id": "p1_pelvis_side",
+      "label": "Side Breeches",
+      "pivot": [
+        50.0,
+        56.0
+      ],
+      "scale": 0.96,
+      "sockets": {
+        "belt": [
+          36.0,
+          48.0
+        ],
+        "hipL": [
+          38.0,
+          118.0
+        ],
+        "hipR": [
+          64.0,
+          118.0
+        ],
+        "waist": [
+          50.0,
+          22.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_pelvis_side.png",
+      "width": 101.0
+    },
+    "p1_scabbard": {
+      "category": "extra",
+      "char": "p1",
+      "file": "parts_v2/p1_scabbard.png",
+      "height": 36.0,
+      "id": "p1_scabbard",
+      "label": "Scabbard",
+      "pivot": [
+        60.0,
+        18.0
+      ],
+      "scale": 0.85,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p1_scabbard.png",
+      "width": 268.0
+    },
+    "p1_shin_0": {
+      "category": "shin",
+      "char": "p1",
+      "file": "parts_v2/p1_shin_0.png",
+      "height": 178.0,
+      "id": "p1_shin_0",
+      "label": "Yellow Shin",
+      "pivot": [
+        26.0,
+        22.0
+      ],
+      "scale": 0.76,
+      "sockets": {
+        "end": [
+          26.0,
+          152.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_shin_0.png",
+      "width": 52.0
+    },
+    "p1_shin_1": {
+      "category": "shin",
+      "char": "p1",
+      "file": "parts_v2/p1_shin_1.png",
+      "height": 176.0,
+      "id": "p1_shin_1",
+      "label": "Shin Alt",
+      "pivot": [
+        28.0,
+        22.0
+      ],
+      "scale": 0.76,
+      "sockets": {
+        "end": [
+          26.0,
+          160.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_shin_1.png",
+      "width": 56.0
+    },
+    "p1_slash": {
+      "category": "fx",
+      "char": "p1",
+      "file": "parts_v2/p1_slash.png",
+      "height": 120.0,
+      "id": "p1_slash",
+      "label": "Slash Crescent",
+      "pivot": [
+        117.0,
+        60.0
+      ],
+      "scale": 1.15,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p1_slash.png",
+      "width": 234.0
+    },
+    "p1_sword_katz": {
+      "category": "weapon",
+      "char": "p1",
+      "file": "parts_v2/p1_sword_katz.png",
+      "guardOverlayRect": [
+        66,
+        0,
+        26,
+        94
+      ],
+      "height": 94.0,
+      "id": "p1_sword_katz",
+      "label": "Katzbalger",
+      "pivot": [
+        54.0,
+        46.0
+      ],
+      "scale": 0.88,
+      "sockets": {
+        "gripBack": [
+          26.0,
+          46.0
+        ],
+        "gripFront": [
+          54.0,
+          46.0
+        ],
+        "guard": [
+          82.0,
+          46.0
+        ],
+        "pommel": [
+          10.0,
+          46.0
+        ],
+        "tip": [
+          356.0,
+          46.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_sword_katz.png",
+      "width": 361.0
+    },
+    "p1_sword_long": {
+      "category": "weapon",
+      "char": "p1",
+      "file": "parts_v2/p1_sword_long.png",
+      "guardOverlayRect": [
+        96,
+        0,
+        26,
+        105
+      ],
+      "height": 105.0,
+      "id": "p1_sword_long",
+      "label": "Longsword",
+      "pivot": [
+        62.0,
+        52.0
+      ],
+      "scale": 0.88,
+      "sockets": {
+        "gripBack": [
+          43.0,
+          52.0
+        ],
+        "gripFront": [
+          78.0,
+          52.0
+        ],
+        "guard": [
+          108.0,
+          52.0
+        ],
+        "pommel": [
+          12.0,
+          52.0
+        ],
+        "tip": [
+          428.0,
+          52.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_sword_long.png",
+      "width": 432.0
+    },
+    "p1_thigh_0": {
+      "category": "thigh",
+      "char": "p1",
+      "file": "parts_v2/p1_thigh_0.png",
+      "height": 219.0,
+      "id": "p1_thigh_0",
+      "label": "Yellow Thigh",
+      "pivot": [
+        42.0,
+        24.0
+      ],
+      "scale": 0.76,
+      "sockets": {
+        "end": [
+          42.0,
+          194.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_thigh_0.png",
+      "width": 81.0
+    },
+    "p1_thigh_0_clean": {
+      "category": "thigh",
+      "char": "p1",
+      "file": "parts_v2/p1_thigh_0_clean.png",
+      "height": 219.0,
+      "id": "p1_thigh_0_clean",
+      "label": "Yellow Thigh",
+      "pivot": [
+        40.0,
+        32.0
+      ],
+      "scale": 0.76,
+      "sockets": {
+        "end": [
+          42.0,
+          194.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_thigh_0_clean.png",
+      "width": 81.0
+    },
+    "p1_thigh_1": {
+      "category": "thigh",
+      "char": "p1",
+      "file": "parts_v2/p1_thigh_1.png",
+      "height": 218.0,
+      "id": "p1_thigh_1",
+      "label": "Thigh Alt",
+      "pivot": [
+        44.0,
+        24.0
+      ],
+      "scale": 0.76,
+      "sockets": {
+        "end": [
+          44.0,
+          194.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_thigh_1.png",
+      "width": 87.0
+    },
+    "p1_torso_front": {
+      "category": "torso",
+      "char": "p1",
+      "file": "parts_v2/p1_torso_front.png",
+      "height": 210.0,
+      "id": "p1_torso_front",
+      "label": "3/4 Doublet",
+      "pivot": [
+        52.0,
+        178.0
+      ],
+      "scale": 0.98,
+      "sockets": {
+        "neck": [
+          48.0,
+          22.0
+        ],
+        "shFar": [
+          92.0,
+          50.0
+        ],
+        "shNear": [
+          18.0,
+          54.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_torso_front.png",
+      "width": 110.0
+    },
+    "p1_torso_front_clean": {
+      "category": "torso",
+      "char": "p1",
+      "file": "parts_v2/p1_torso_front_clean.png",
+      "height": 216.0,
+      "id": "p1_torso_front_clean",
+      "label": "3/4 Doublet Clean",
+      "pivot": [
+        76.0,
+        174.0
+      ],
+      "scale": 0.94,
+      "sockets": {
+        "neck": [
+          70.0,
+          28.0
+        ],
+        "shFar": [
+          98.0,
+          58.0
+        ],
+        "shNear": [
+          24.0,
+          66.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_torso_front_clean.png",
+      "width": 136.0
+    },
+    "p1_torso_side": {
+      "category": "torso",
+      "char": "p1",
+      "file": "parts_v2/p1_torso_side.png",
+      "height": 208.0,
+      "id": "p1_torso_side",
+      "label": "Side Doublet",
+      "pivot": [
+        52.0,
+        178.0
+      ],
+      "scale": 0.98,
+      "sockets": {
+        "neck": [
+          36.0,
+          20.0
+        ],
+        "shFar": [
+          74.0,
+          50.0
+        ],
+        "shNear": [
+          42.0,
+          54.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_torso_side.png",
+      "width": 117.0
+    },
+    "p1_upperarm_0": {
+      "category": "upperarm",
+      "char": "p1",
+      "file": "parts_v2/p1_upperarm_0.png",
+      "height": 99.0,
+      "id": "p1_upperarm_0",
+      "label": "Upper Sleeve",
+      "pivot": [
+        20.3,
+        10.0
+      ],
+      "scale": 1.1,
+      "sockets": {
+        "end": [
+          20.3,
+          79.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p1_upperarm_0.png",
+      "width": 45.0
+    },
+    "p2_boot_0": {
+      "category": "boot",
+      "char": "p2",
+      "file": "parts_v2/p2_boot_0.png",
+      "height": 125.0,
+      "id": "p2_boot_0",
+      "label": "Armored Sabaton",
+      "pivot": [
+        38.0,
+        24.0
+      ],
+      "scale": 0.88,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p2_boot_0.png",
+      "width": 91.0
+    },
+    "p2_boot_1": {
+      "category": "boot",
+      "char": "p2",
+      "file": "parts_v2/p2_boot_1.png",
+      "height": 133.0,
+      "id": "p2_boot_1",
+      "label": "Leather Boot",
+      "pivot": [
+        38.0,
+        24.0
+      ],
+      "scale": 0.88,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p2_boot_1.png",
+      "width": 73.0
+    },
+    "p2_buckler": {
+      "category": "extra",
+      "char": "p2",
+      "file": "parts_v2/p2_buckler.png",
+      "height": 123.0,
+      "id": "p2_buckler",
+      "label": "Buckler",
+      "pivot": [
+        60.0,
+        60.0
+      ],
+      "scale": 0.72,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p2_buckler.png",
+      "width": 134.0
+    },
+    "p2_couter": {
+      "category": "couter",
+      "char": "p2",
+      "file": "parts_v2/p2_couter.png",
+      "height": 53.0,
+      "id": "p2_couter",
+      "label": "Elbow Couter",
+      "pivot": [
+        32.0,
+        26.0
+      ],
+      "scale": 0.72,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p2_couter.png",
+      "width": 64.0
+    },
+    "p2_forearm_0": {
+      "category": "forearm",
+      "char": "p2",
+      "file": "parts_v2/p2_forearm_0.png",
+      "height": 109.0,
+      "id": "p2_forearm_0",
+      "label": "Steel Vambrace",
+      "pivot": [
+        28.0,
+        14.0
+      ],
+      "scale": 0.86,
+      "sockets": {
+        "end": [
+          28.0,
+          104.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_forearm_0.png",
+      "width": 55.0
+    },
+    "p2_forearm_1": {
+      "category": "forearm",
+      "char": "p2",
+      "file": "parts_v2/p2_forearm_1.png",
+      "height": 102.0,
+      "id": "p2_forearm_1",
+      "label": "Leather Bracer",
+      "pivot": [
+        24.0,
+        14.0
+      ],
+      "scale": 0.86,
+      "sockets": {
+        "end": [
+          24.0,
+          96.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_forearm_1.png",
+      "width": 49.0
+    },
+    "p2_gore_0": {
+      "category": "gore",
+      "char": "p2",
+      "file": "parts_v2/p2_gore_0.png",
+      "height": 101.0,
+      "id": "p2_gore_0",
+      "label": "Bloody Bone",
+      "pivot": [
+        42.0,
+        50.0
+      ],
+      "scale": 0.75,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p2_gore_0.png",
+      "width": 85.0
+    },
+    "p2_gore_1": {
+      "category": "gore",
+      "char": "p2",
+      "file": "parts_v2/p2_gore_1.png",
+      "height": 117.0,
+      "id": "p2_gore_1",
+      "label": "Bone Splatter",
+      "pivot": [
+        36.0,
+        44.0
+      ],
+      "scale": 0.75,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p2_gore_1.png",
+      "width": 72.0
+    },
+    "p2_hand_fist": {
+      "category": "hand",
+      "char": "p2",
+      "file": "parts_v2/p2_hand_fist.png",
+      "height": 101.0,
+      "id": "p2_hand_fist",
+      "label": "Gauntlet Fist",
+      "pivot": [
+        28.0,
+        90.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "grip": [
+          28.0,
+          32.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_hand_fist.png",
+      "width": 57.0
+    },
+    "p2_hand_fist_down": {
+      "category": "hand",
+      "char": "p2",
+      "file": "parts_v2/p2_hand_fist_down.png",
+      "height": 101.0,
+      "id": "p2_hand_fist_down",
+      "label": "Gauntlet Fist Down",
+      "pivot": [
+        28.0,
+        12.0
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "grip": [
+          28.0,
+          66.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_hand_fist_down.png",
+      "width": 57.0
+    },
+    "p2_hand_grip": {
+      "category": "hand",
+      "char": "p2",
+      "file": "parts_v2/p2_hand_grip.png",
+      "height": 115.0,
+      "id": "p2_hand_grip",
+      "label": "Gauntlet Grip",
+      "pivot": [
+        34.0,
+        24.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "grip": [
+          34.0,
+          58.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_hand_grip.png",
+      "width": 68.0
+    },
+    "p2_hand_open": {
+      "category": "hand",
+      "char": "p2",
+      "file": "parts_v2/p2_hand_open.png",
+      "height": 120.0,
+      "id": "p2_hand_open",
+      "label": "Gauntlet Open",
+      "pivot": [
+        26.0,
+        104.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "grip": [
+          28.0,
+          52.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_hand_open.png",
+      "width": 53.0
+    },
+    "p2_hand_pommel": {
+      "category": "hand",
+      "char": "p2",
+      "file": "parts_v2/p2_hand_pommel.png",
+      "height": 119.0,
+      "id": "p2_hand_pommel",
+      "label": "Pommel Gauntlet",
+      "pivot": [
+        34.0,
+        20.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "grip": [
+          34.0,
+          56.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_hand_pommel.png",
+      "width": 69.0
+    },
+    "p2_hat_burgonet": {
+      "category": "hat",
+      "char": "p2",
+      "file": "parts_v2/p2_hat_burgonet.png",
+      "height": 136.0,
+      "id": "p2_hat_burgonet",
+      "label": "Feathered Helm",
+      "pivot": [
+        124.0,
+        98.0
+      ],
+      "scale": 0.64,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p2_hat_burgonet.png",
+      "width": 199.0
+    },
+    "p2_hat_visor": {
+      "category": "hat",
+      "char": "p2",
+      "file": "parts_v2/p2_hat_visor.png",
+      "height": 136.0,
+      "id": "p2_hat_visor",
+      "label": "Closed Knight Helm",
+      "pivot": [
+        52.0,
+        92.0
+      ],
+      "scale": 0.68,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p2_hat_visor.png",
+      "width": 106.0
+    },
+    "p2_head_bloody": {
+      "category": "head",
+      "char": "p2",
+      "file": "parts_v2/p2_head_bloody.png",
+      "height": 132.0,
+      "id": "p2_head_bloody",
+      "label": "Bloodied Veteran",
+      "pivot": [
+        38.0,
+        116.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          45.0,
+          27.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_head_bloody.png",
+      "width": 94.0
+    },
+    "p2_head_calm": {
+      "category": "head",
+      "char": "p2",
+      "file": "parts_v2/p2_head_calm.png",
+      "height": 132.0,
+      "id": "p2_head_calm",
+      "label": "Bearded Veteran",
+      "pivot": [
+        38.0,
+        116.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          45.0,
+          27.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_head_calm.png",
+      "width": 88.0
+    },
+    "p2_head_dead": {
+      "category": "head",
+      "char": "p2",
+      "file": "parts_v2/p2_head_dead.png",
+      "height": 131.0,
+      "id": "p2_head_dead",
+      "label": "Dead Veteran",
+      "pivot": [
+        38.0,
+        116.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          45.0,
+          27.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_head_dead.png",
+      "width": 100.0
+    },
+    "p2_head_pain": {
+      "category": "head",
+      "char": "p2",
+      "file": "parts_v2/p2_head_pain.png",
+      "height": 132.0,
+      "id": "p2_head_pain",
+      "label": "Wincing Pain",
+      "pivot": [
+        38.0,
+        116.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          44.0,
+          24.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_head_pain.png",
+      "width": 91.0
+    },
+    "p2_head_yell": {
+      "category": "head",
+      "char": "p2",
+      "file": "parts_v2/p2_head_yell.png",
+      "height": 131.0,
+      "id": "p2_head_yell",
+      "label": "Battle Roar",
+      "pivot": [
+        38.0,
+        116.0
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          45.0,
+          27.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_head_yell.png",
+      "width": 88.0
+    },
+    "p2_pauldron": {
+      "category": "pauldron",
+      "char": "p2",
+      "file": "parts_v2/p2_pauldron.png",
+      "height": 114.0,
+      "id": "p2_pauldron",
+      "label": "Steel Pauldron",
+      "pivot": [
+        48.0,
+        36.0
+      ],
+      "scale": 0.66,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p2_pauldron.png",
+      "width": 102.0
+    },
+    "p2_pelvis_front": {
+      "category": "pants",
+      "char": "p2",
+      "file": "parts_v2/p2_pelvis_front.png",
+      "height": 131.0,
+      "id": "p2_pelvis_front",
+      "label": "Crimson Breeches",
+      "pivot": [
+        85.0,
+        42.0
+      ],
+      "scale": 0.98,
+      "sockets": {
+        "belt": [
+          46.0,
+          36.0
+        ],
+        "hipL": [
+          46.0,
+          98.0
+        ],
+        "hipR": [
+          126.0,
+          98.0
+        ],
+        "waist": [
+          85.0,
+          16.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_pelvis_front.png",
+      "width": 170.0
+    },
+    "p2_pelvis_tasset": {
+      "category": "pants",
+      "char": "p2",
+      "file": "parts_v2/p2_pelvis_tasset.png",
+      "height": 130.0,
+      "id": "p2_pelvis_tasset",
+      "label": "Tasset Breeches",
+      "pivot": [
+        84.0,
+        42.0
+      ],
+      "scale": 0.98,
+      "sockets": {
+        "belt": [
+          46.0,
+          36.0
+        ],
+        "hipL": [
+          46.0,
+          114.0
+        ],
+        "hipR": [
+          126.0,
+          114.0
+        ],
+        "waist": [
+          84.0,
+          16.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_pelvis_tasset.png",
+      "width": 168.0
+    },
+    "p2_poleyn": {
+      "category": "poleyn",
+      "char": "p2",
+      "file": "parts_v2/p2_poleyn.png",
+      "height": 71.0,
+      "id": "p2_poleyn",
+      "label": "Steel Poleyn",
+      "pivot": [
+        34.0,
+        35.0
+      ],
+      "scale": 0.68,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p2_poleyn.png",
+      "width": 69.0
+    },
+    "p2_pollaxe": {
+      "category": "weapon",
+      "char": "p2",
+      "file": "parts_v2/p2_pollaxe.png",
+      "height": 92.0,
+      "id": "p2_pollaxe",
+      "label": "Pollaxe",
+      "pivot": [
+        66.0,
+        46.0
+      ],
+      "scale": 0.88,
+      "sockets": {
+        "gripBack": [
+          34.0,
+          46.0
+        ],
+        "gripFront": [
+          98.0,
+          46.0
+        ],
+        "guard": [
+          150.0,
+          46.0
+        ],
+        "pommel": [
+          2.0,
+          46.0
+        ],
+        "tip": [
+          240.0,
+          46.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_pollaxe.png",
+      "width": 242.0
+    },
+    "p2_sabaton_clean": {
+      "category": "boot",
+      "char": "p2",
+      "file": "parts_v2/p2_sabaton_clean.png",
+      "height": 59.0,
+      "id": "p2_sabaton_clean",
+      "label": "Armored Sabaton Clean",
+      "pivot": [
+        24.0,
+        14.0
+      ],
+      "scale": 0.88,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p2_sabaton_clean.png",
+      "width": 91.0
+    },
+    "p2_shin_0": {
+      "category": "shin",
+      "char": "p2",
+      "file": "parts_v2/p2_shin_0.png",
+      "height": 125.0,
+      "id": "p2_shin_0",
+      "label": "Steel Greave",
+      "pivot": [
+        26.0,
+        16.0
+      ],
+      "scale": 0.94,
+      "sockets": {
+        "end": [
+          26.0,
+          108.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_shin_0.png",
+      "width": 51.0
+    },
+    "p2_sword_flam": {
+      "category": "weapon",
+      "char": "p2",
+      "file": "parts_v2/p2_sword_flam.png",
+      "guardOverlayRect": [
+        96,
+        0,
+        34,
+        105
+      ],
+      "height": 105.0,
+      "id": "p2_sword_flam",
+      "label": "Flamberge",
+      "pivot": [
+        57.0,
+        52.0
+      ],
+      "scale": 0.82,
+      "sockets": {
+        "gripBack": [
+          34.0,
+          52.0
+        ],
+        "gripFront": [
+          78.0,
+          52.0
+        ],
+        "guard": [
+          112.0,
+          52.0
+        ],
+        "pommel": [
+          8.0,
+          52.0
+        ],
+        "tip": [
+          402.0,
+          52.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_sword_flam.png",
+      "width": 407.0
+    },
+    "p2_thigh_0": {
+      "category": "thigh",
+      "char": "p2",
+      "file": "parts_v2/p2_thigh_0.png",
+      "height": 144.0,
+      "id": "p2_thigh_0",
+      "label": "Crimson Thigh",
+      "pivot": [
+        44.0,
+        24.0
+      ],
+      "scale": 0.92,
+      "sockets": {
+        "end": [
+          56.0,
+          128.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_thigh_0.png",
+      "width": 104.0
+    },
+    "p2_torso_front": {
+      "category": "torso",
+      "char": "p2",
+      "file": "parts_v2/p2_torso_front.png",
+      "height": 166.0,
+      "id": "p2_torso_front",
+      "label": "Steel Cuirass",
+      "pivot": [
+        58.0,
+        150.0
+      ],
+      "scale": 1.04,
+      "sockets": {
+        "neck": [
+          52.0,
+          16.0
+        ],
+        "shFar": [
+          88.0,
+          44.0
+        ],
+        "shNear": [
+          18.0,
+          42.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_torso_front.png",
+      "width": 120.0
+    },
+    "p2_torso_side": {
+      "category": "torso",
+      "char": "p2",
+      "file": "parts_v2/p2_torso_side.png",
+      "height": 162.0,
+      "id": "p2_torso_side",
+      "label": "Side Cuirass",
+      "pivot": [
+        54.0,
+        150.0
+      ],
+      "scale": 1.04,
+      "sockets": {
+        "neck": [
+          36.0,
+          16.0
+        ],
+        "shFar": [
+          76.0,
+          40.0
+        ],
+        "shNear": [
+          42.0,
+          42.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_torso_side.png",
+      "width": 111.0
+    },
+    "p2_upperarm_0": {
+      "category": "upperarm",
+      "char": "p2",
+      "file": "parts_v2/p2_upperarm_0.png",
+      "height": 72.0,
+      "id": "p2_upperarm_0",
+      "label": "Crimson Bicep",
+      "pivot": [
+        26.0,
+        14.0
+      ],
+      "scale": 1.35,
+      "sockets": {
+        "end": [
+          26.0,
+          70.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p2_upperarm_0.png",
+      "width": 52.0
+    },
+    "p3_boot_clean": {
+      "category": "boot",
+      "char": "p3",
+      "file": "parts_v2/p3_boot_clean.png",
+      "height": 58,
+      "id": "p3_boot_clean",
+      "label": "Executioner Boot",
+      "pivot": [
+        28,
+        12
+      ],
+      "scale": 0.88,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p3_boot_clean.png",
+      "width": 94
+    },
+    "p3_forearm_0": {
+      "category": "forearm",
+      "char": "p3",
+      "file": "parts_v2/p3_forearm_0.png",
+      "height": 112,
+      "id": "p3_forearm_0",
+      "label": "Leather Vambrace",
+      "pivot": [
+        34,
+        14
+      ],
+      "scale": 0.86,
+      "sockets": {
+        "end": [
+          34,
+          100
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_forearm_0.png",
+      "width": 67
+    },
+    "p3_hand_fist": {
+      "category": "hand",
+      "char": "p3",
+      "file": "parts_v2/p3_hand_fist.png",
+      "height": 92,
+      "id": "p3_hand_fist",
+      "label": "Studded Gauntlet",
+      "pivot": [
+        30,
+        12
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "grip": [
+          30,
+          62
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_hand_fist.png",
+      "width": 60
+    },
+    "p3_head_bloody": {
+      "category": "head",
+      "char": "p3",
+      "file": "parts_v2/p3_head_bloody.png",
+      "height": 140,
+      "id": "p3_head_bloody",
+      "label": "Bloodied Mask",
+      "pivot": [
+        58,
+        122
+      ],
+      "scale": 0.78,
+      "sockets": {
+        "hat": [
+          58,
+          22
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_head_bloody.png",
+      "width": 156
+    },
+    "p3_head_dead": {
+      "category": "head",
+      "char": "p3",
+      "file": "parts_v2/p3_head_dead.png",
+      "height": 140,
+      "id": "p3_head_dead",
+      "label": "Dead Mask",
+      "pivot": [
+        58,
+        122
+      ],
+      "scale": 0.78,
+      "sockets": {
+        "hat": [
+          58,
+          22
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_head_dead.png",
+      "width": 156
+    },
+    "p3_head_mask": {
+      "category": "head",
+      "char": "p3",
+      "file": "parts_v2/p3_head_mask.png",
+      "height": 140,
+      "id": "p3_head_mask",
+      "label": "Plague Mask Hood",
+      "pivot": [
+        58,
+        122
+      ],
+      "scale": 0.78,
+      "sockets": {
+        "hat": [
+          58,
+          22
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_head_mask.png",
+      "width": 156
+    },
+    "p3_head_yell": {
+      "category": "head",
+      "char": "p3",
+      "file": "parts_v2/p3_head_yell.png",
+      "height": 134,
+      "id": "p3_head_yell",
+      "label": "Scarred Inquisitor",
+      "pivot": [
+        42,
+        118
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "hat": [
+          46,
+          22
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_head_yell.png",
+      "width": 93
+    },
+    "p3_pauldron": {
+      "category": "pauldron",
+      "char": "p3",
+      "file": "parts_v2/p3_pauldron.png",
+      "height": 108,
+      "id": "p3_pauldron",
+      "label": "Spiked Pauldron",
+      "pivot": [
+        47,
+        46
+      ],
+      "scale": 0.68,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p3_pauldron.png",
+      "width": 94
+    },
+    "p3_pelvis_front": {
+      "category": "pants",
+      "char": "p3",
+      "file": "parts_v2/p3_pelvis_front.png",
+      "height": 182,
+      "id": "p3_pelvis_front",
+      "label": "Executioner Tassets",
+      "pivot": [
+        73,
+        46
+      ],
+      "scale": 0.95,
+      "sockets": {
+        "belt": [
+          40,
+          40
+        ],
+        "hipL": [
+          42,
+          120
+        ],
+        "hipR": [
+          108,
+          120
+        ],
+        "waist": [
+          73,
+          18
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_pelvis_front.png",
+      "width": 146
+    },
+    "p3_poleyn": {
+      "category": "poleyn",
+      "char": "p3",
+      "file": "parts_v2/p3_poleyn.png",
+      "height": 72,
+      "id": "p3_poleyn",
+      "label": "Skull Knee Guard",
+      "pivot": [
+        35,
+        36
+      ],
+      "scale": 0.68,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p3_poleyn.png",
+      "width": 70
+    },
+    "p3_shin_0": {
+      "category": "shin",
+      "char": "p3",
+      "file": "parts_v2/p3_shin_0.png",
+      "height": 146,
+      "id": "p3_shin_0",
+      "label": "Strapped Iron Greave",
+      "pivot": [
+        40,
+        18
+      ],
+      "scale": 0.76,
+      "sockets": {
+        "end": [
+          40,
+          132
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_shin_0.png",
+      "width": 81
+    },
+    "p3_sword_exec": {
+      "category": "weapon",
+      "char": "p3",
+      "file": "parts_v2/p3_sword_exec.png",
+      "guardOverlayRect": [
+        122,
+        0,
+        28,
+        93
+      ],
+      "height": 93,
+      "id": "p3_sword_exec",
+      "label": "Richtschwert",
+      "pivot": [
+        82,
+        47
+      ],
+      "scale": 0.86,
+      "sockets": {
+        "gripBack": [
+          42,
+          47
+        ],
+        "gripFront": [
+          104,
+          47
+        ],
+        "guard": [
+          142,
+          47
+        ],
+        "pommel": [
+          12,
+          47
+        ],
+        "tip": [
+          422,
+          47
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_sword_exec.png",
+      "width": 428
+    },
+    "p3_thigh_0": {
+      "category": "thigh",
+      "char": "p3",
+      "file": "parts_v2/p3_thigh_0.png",
+      "height": 196,
+      "id": "p3_thigh_0",
+      "label": "Quilted Black Thigh",
+      "pivot": [
+        47,
+        20
+      ],
+      "scale": 0.62,
+      "sockets": {
+        "end": [
+          47,
+          176
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_thigh_0.png",
+      "width": 94
+    },
+    "p3_torso_front": {
+      "category": "torso",
+      "char": "p3",
+      "file": "parts_v2/p3_torso_front.png",
+      "height": 206,
+      "id": "p3_torso_front",
+      "label": "Inquisitor Brigandine",
+      "pivot": [
+        70,
+        174
+      ],
+      "scale": 0.94,
+      "sockets": {
+        "neck": [
+          64,
+          24
+        ],
+        "shFar": [
+          96,
+          56
+        ],
+        "shNear": [
+          24,
+          58
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_torso_front.png",
+      "width": 139
+    },
+    "p3_upperarm_0": {
+      "category": "upperarm",
+      "char": "p3",
+      "file": "parts_v2/p3_upperarm_0.png",
+      "height": 108,
+      "id": "p3_upperarm_0",
+      "label": "Quilted Crimson Bicep",
+      "pivot": [
+        18,
+        12
+      ],
+      "scale": 0.94,
+      "sockets": {
+        "end": [
+          18,
+          96
+        ]
+      },
+      "texture": "res://assets/parts_v2/p3_upperarm_0.png",
+      "width": 36
+    },
+    "p4_boot_clean": {
+      "category": "boot",
+      "char": "p4",
+      "file": "parts_v2/p4_boot_clean.png",
+      "height": 50,
+      "id": "p4_boot_clean",
+      "label": "Clawed Sabaton",
+      "pivot": [
+        32,
+        10
+      ],
+      "scale": 0.88,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p4_boot_clean.png",
+      "width": 106
+    },
+    "p4_forearm_0": {
+      "category": "forearm",
+      "char": "p4",
+      "file": "parts_v2/p4_forearm_0.png",
+      "height": 92,
+      "id": "p4_forearm_0",
+      "label": "Winged Vambrace",
+      "pivot": [
+        26,
+        16
+      ],
+      "scale": 0.96,
+      "sockets": {
+        "end": [
+          26,
+          86
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_forearm_0.png",
+      "width": 52
+    },
+    "p4_hand_fist": {
+      "category": "hand",
+      "char": "p4",
+      "file": "parts_v2/p4_hand_fist.png",
+      "height": 92,
+      "id": "p4_hand_fist",
+      "label": "Gothic Gauntlet",
+      "pivot": [
+        25,
+        12
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "grip": [
+          25,
+          62
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_hand_fist.png",
+      "width": 51
+    },
+    "p4_head_bloody": {
+      "category": "head",
+      "char": "p4",
+      "file": "parts_v2/p4_head_bloody.png",
+      "height": 151,
+      "id": "p4_head_bloody",
+      "label": "Bloodied Gothic Helm",
+      "pivot": [
+        134,
+        134
+      ],
+      "scale": 0.78,
+      "sockets": {
+        "hat": [
+          134,
+          34
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_head_bloody.png",
+      "width": 190
+    },
+    "p4_head_calm": {
+      "category": "head",
+      "char": "p4",
+      "file": "parts_v2/p4_head_calm.png",
+      "height": 132,
+      "id": "p4_head_calm",
+      "label": "Scarred Knight",
+      "pivot": [
+        42,
+        116
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "hat": [
+          46,
+          24
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_head_calm.png",
+      "width": 90
+    },
+    "p4_head_dead": {
+      "category": "head",
+      "char": "p4",
+      "file": "parts_v2/p4_head_dead.png",
+      "height": 151,
+      "id": "p4_head_dead",
+      "label": "Dead Gothic Helm",
+      "pivot": [
+        134,
+        134
+      ],
+      "scale": 0.78,
+      "sockets": {
+        "hat": [
+          134,
+          34
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_head_dead.png",
+      "width": 190
+    },
+    "p4_head_helm": {
+      "category": "head",
+      "char": "p4",
+      "file": "parts_v2/p4_head_helm.png",
+      "height": 151,
+      "id": "p4_head_helm",
+      "label": "Plumed Gothic Helm",
+      "pivot": [
+        134,
+        134
+      ],
+      "scale": 0.78,
+      "sockets": {
+        "hat": [
+          134,
+          34
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_head_helm.png",
+      "width": 190
+    },
+    "p4_pauldron": {
+      "category": "pauldron",
+      "char": "p4",
+      "file": "parts_v2/p4_pauldron.png",
+      "height": 114,
+      "id": "p4_pauldron",
+      "label": "Fluted Gothic Pauldron",
+      "pivot": [
+        50,
+        42
+      ],
+      "scale": 0.66,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p4_pauldron.png",
+      "width": 101
+    },
+    "p4_pelvis_front": {
+      "category": "pants",
+      "char": "p4",
+      "file": "parts_v2/p4_pelvis_front.png",
+      "height": 168,
+      "id": "p4_pelvis_front",
+      "label": "Gothic Fauld & Tassets",
+      "pivot": [
+        80,
+        44
+      ],
+      "scale": 0.96,
+      "sockets": {
+        "belt": [
+          44,
+          38
+        ],
+        "hipL": [
+          44,
+          118
+        ],
+        "hipR": [
+          118,
+          118
+        ],
+        "waist": [
+          80,
+          18
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_pelvis_front.png",
+      "width": 160
+    },
+    "p4_poleyn": {
+      "category": "poleyn",
+      "char": "p4",
+      "file": "parts_v2/p4_poleyn.png",
+      "height": 76,
+      "id": "p4_poleyn",
+      "label": "Winged Poleyn",
+      "pivot": [
+        38,
+        38
+      ],
+      "scale": 0.68,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p4_poleyn.png",
+      "width": 70
+    },
+    "p4_shin_0": {
+      "category": "shin",
+      "char": "p4",
+      "file": "parts_v2/p4_shin_0.png",
+      "height": 138,
+      "id": "p4_shin_0",
+      "label": "Fluted Greave",
+      "pivot": [
+        39,
+        16
+      ],
+      "scale": 0.82,
+      "sockets": {
+        "end": [
+          39,
+          122
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_shin_0.png",
+      "width": 78
+    },
+    "p4_sword_flam": {
+      "category": "weapon",
+      "char": "p4",
+      "file": "parts_v2/p4_sword_flam.png",
+      "guardOverlayRect": [
+        108,
+        0,
+        34,
+        111
+      ],
+      "height": 111,
+      "id": "p4_sword_flam",
+      "label": "Gothic Flamberge",
+      "pivot": [
+        78,
+        55
+      ],
+      "scale": 0.86,
+      "sockets": {
+        "gripBack": [
+          42,
+          55
+        ],
+        "gripFront": [
+          92,
+          55
+        ],
+        "guard": [
+          126,
+          55
+        ],
+        "pommel": [
+          12,
+          55
+        ],
+        "tip": [
+          430,
+          55
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_sword_flam.png",
+      "width": 436
+    },
+    "p4_thigh_0": {
+      "category": "thigh",
+      "char": "p4",
+      "file": "parts_v2/p4_thigh_0.png",
+      "height": 168,
+      "id": "p4_thigh_0",
+      "label": "Gothic Cuisse",
+      "pivot": [
+        44,
+        18
+      ],
+      "scale": 0.74,
+      "sockets": {
+        "end": [
+          44,
+          148
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_thigh_0.png",
+      "width": 89
+    },
+    "p4_torso_front": {
+      "category": "torso",
+      "char": "p4",
+      "file": "parts_v2/p4_torso_front.png",
+      "height": 192,
+      "id": "p4_torso_front",
+      "label": "Black Gothic Cuirass",
+      "pivot": [
+        72,
+        166
+      ],
+      "scale": 0.96,
+      "sockets": {
+        "neck": [
+          66,
+          20
+        ],
+        "shFar": [
+          96,
+          52
+        ],
+        "shNear": [
+          24,
+          52
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_torso_front.png",
+      "width": 145
+    },
+    "p4_upperarm_0": {
+      "category": "upperarm",
+      "char": "p4",
+      "file": "parts_v2/p4_upperarm_0.png",
+      "height": 108,
+      "id": "p4_upperarm_0",
+      "label": "Fluted Rerebrace",
+      "pivot": [
+        22,
+        14
+      ],
+      "scale": 0.94,
+      "sockets": {
+        "end": [
+          22,
+          86
+        ]
+      },
+      "texture": "res://assets/parts_v2/p4_upperarm_0.png",
+      "width": 44
+    },
+    "p5_boot_clean": {
+      "category": "boot",
+      "char": "p5",
+      "file": "parts_v2/p5_boot_clean.png",
+      "height": 54,
+      "id": "p5_boot_clean",
+      "label": "Spurred Cavalier Boot",
+      "pivot": [
+        36,
+        10
+      ],
+      "scale": 0.88,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p5_boot_clean.png",
+      "width": 102
+    },
+    "p5_forearm_0": {
+      "category": "forearm",
+      "char": "p5",
+      "file": "parts_v2/p5_forearm_0.png",
+      "height": 93,
+      "id": "p5_forearm_0",
+      "label": "Lace Cuff Forearm",
+      "pivot": [
+        25,
+        10
+      ],
+      "scale": 0.96,
+      "sockets": {
+        "end": [
+          25,
+          86
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_forearm_0.png",
+      "width": 50
+    },
+    "p5_hand_fist": {
+      "category": "hand",
+      "char": "p5",
+      "file": "parts_v2/p5_hand_fist.png",
+      "height": 74,
+      "id": "p5_hand_fist",
+      "label": "Dueling Glove Fist",
+      "pivot": [
+        29,
+        10
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "grip": [
+          29,
+          48
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_hand_fist.png",
+      "width": 58
+    },
+    "p5_hand_grip": {
+      "category": "hand",
+      "char": "p5",
+      "file": "parts_v2/p5_hand_grip.png",
+      "height": 76,
+      "id": "p5_hand_grip",
+      "label": "Dueling Glove Grip",
+      "pivot": [
+        28,
+        10
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "grip": [
+          29,
+          48
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_hand_grip.png",
+      "width": 57
+    },
+    "p5_hand_open": {
+      "category": "hand",
+      "char": "p5",
+      "file": "parts_v2/p5_hand_open.png",
+      "height": 88,
+      "id": "p5_hand_open",
+      "label": "Dueling Glove Open",
+      "pivot": [
+        35,
+        12
+      ],
+      "scale": 0.68,
+      "sockets": {
+        "grip": [
+          33,
+          48
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_hand_open.png",
+      "width": 60
+    },
+    "p5_hat_cavalier": {
+      "category": "hat",
+      "char": "p5",
+      "file": "parts_v2/p5_hat_cavalier.png",
+      "height": 108,
+      "id": "p5_hat_cavalier",
+      "label": "Plumed Cavalier Hat",
+      "pivot": [
+        128,
+        84
+      ],
+      "scale": 0.64,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p5_hat_cavalier.png",
+      "width": 224
+    },
+    "p5_head_bloody": {
+      "category": "head",
+      "char": "p5",
+      "file": "parts_v2/p5_head_bloody.png",
+      "height": 134,
+      "id": "p5_head_bloody",
+      "label": "Bloodied Bravo",
+      "pivot": [
+        44,
+        118
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          46,
+          30
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_head_bloody.png",
+      "width": 95
+    },
+    "p5_head_calm": {
+      "category": "head",
+      "char": "p5",
+      "file": "parts_v2/p5_head_calm.png",
+      "height": 134,
+      "id": "p5_head_calm",
+      "label": "Venetian Smirk",
+      "pivot": [
+        44,
+        118
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          46,
+          30
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_head_calm.png",
+      "width": 95
+    },
+    "p5_head_dead": {
+      "category": "head",
+      "char": "p5",
+      "file": "parts_v2/p5_head_dead.png",
+      "height": 134,
+      "id": "p5_head_dead",
+      "label": "Dead Bravo",
+      "pivot": [
+        44,
+        118
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          46,
+          30
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_head_dead.png",
+      "width": 95
+    },
+    "p5_head_yell": {
+      "category": "head",
+      "char": "p5",
+      "file": "parts_v2/p5_head_yell.png",
+      "height": 134,
+      "id": "p5_head_yell",
+      "label": "Bravo Shout",
+      "pivot": [
+        42,
+        118
+      ],
+      "scale": 0.66,
+      "sockets": {
+        "hat": [
+          44,
+          30
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_head_yell.png",
+      "width": 89
+    },
+    "p5_pauldron": {
+      "category": "pauldron",
+      "char": "p5",
+      "file": "parts_v2/p5_pauldron.png",
+      "height": 56,
+      "id": "p5_pauldron",
+      "label": "Emerald Shoulder Wing",
+      "pivot": [
+        31,
+        24
+      ],
+      "scale": 0.78,
+      "sockets": {},
+      "texture": "res://assets/parts_v2/p5_pauldron.png",
+      "width": 62
+    },
+    "p5_pelvis_front": {
+      "category": "pants",
+      "char": "p5",
+      "file": "parts_v2/p5_pelvis_front.png",
+      "height": 184,
+      "id": "p5_pelvis_front",
+      "label": "Paned Emerald Breeches",
+      "pivot": [
+        76,
+        48
+      ],
+      "scale": 0.95,
+      "sockets": {
+        "belt": [
+          42,
+          42
+        ],
+        "hipL": [
+          42,
+          122
+        ],
+        "hipR": [
+          112,
+          122
+        ],
+        "waist": [
+          76,
+          18
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_pelvis_front.png",
+      "width": 153
+    },
+    "p5_shin_0": {
+      "category": "shin",
+      "char": "p5",
+      "file": "parts_v2/p5_shin_0.png",
+      "height": 151,
+      "id": "p5_shin_0",
+      "label": "Cavalier Boot Shaft",
+      "pivot": [
+        43,
+        18
+      ],
+      "scale": 0.76,
+      "sockets": {
+        "end": [
+          43,
+          134
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_shin_0.png",
+      "width": 87
+    },
+    "p5_sword_rapier": {
+      "category": "weapon",
+      "char": "p5",
+      "file": "parts_v2/p5_sword_rapier.png",
+      "guardOverlayRect": [
+        61,
+        0,
+        58,
+        103
+      ],
+      "height": 103,
+      "id": "p5_sword_rapier",
+      "label": "Swept-Hilt Rapier",
+      "pivot": [
+        58,
+        49
+      ],
+      "scale": 0.86,
+      "sockets": {
+        "gripBack": [
+          30,
+          49
+        ],
+        "gripFront": [
+          55,
+          49
+        ],
+        "guard": [
+          112,
+          49
+        ],
+        "pommel": [
+          12,
+          49
+        ],
+        "tip": [
+          442,
+          49
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_sword_rapier.png",
+      "width": 448
+    },
+    "p5_thigh_0": {
+      "category": "thigh",
+      "char": "p5",
+      "file": "parts_v2/p5_thigh_0.png",
+      "height": 185,
+      "id": "p5_thigh_0",
+      "label": "Silk Stocking Thigh",
+      "pivot": [
+        33,
+        18
+      ],
+      "scale": 0.64,
+      "sockets": {
+        "end": [
+          33,
+          150
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_thigh_0.png",
+      "width": 66
+    },
+    "p5_torso_front": {
+      "category": "torso",
+      "char": "p5",
+      "file": "parts_v2/p5_torso_front.png",
+      "height": 212,
+      "id": "p5_torso_front",
+      "label": "Emerald Velvet Doublet",
+      "pivot": [
+        65,
+        176
+      ],
+      "scale": 0.94,
+      "sockets": {
+        "neck": [
+          62,
+          26
+        ],
+        "shFar": [
+          96,
+          58
+        ],
+        "shNear": [
+          22,
+          62
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_torso_front.png",
+      "width": 130
+    },
+    "p5_upperarm_0": {
+      "category": "upperarm",
+      "char": "p5",
+      "file": "parts_v2/p5_upperarm_0.png",
+      "height": 112,
+      "id": "p5_upperarm_0",
+      "label": "Slashed Emerald Sleeve",
+      "pivot": [
+        20,
+        12
+      ],
+      "scale": 0.92,
+      "sockets": {
+        "end": [
+          20,
+          100
+        ]
+      },
+      "texture": "res://assets/parts_v2/p5_upperarm_0.png",
+      "width": 40
+    },
+    "p_weapon_halberd": {
+      "category": "weapon",
+      "char": "p1",
+      "file": "parts_v2/p_weapon_halberd.png",
+      "height": 103.0,
+      "id": "p_weapon_halberd",
+      "label": "Crimson Halberd",
+      "pivot": [
+        90.0,
+        51.0
+      ],
+      "scale": 0.88,
+      "sockets": {
+        "gripBack": [
+          44.0,
+          51.0
+        ],
+        "gripFront": [
+          132.0,
+          51.0
+        ],
+        "guard": [
+          210.0,
+          51.0
+        ],
+        "pommel": [
+          12.0,
+          51.0
+        ],
+        "tip": [
+          440.0,
+          51.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p_weapon_halberd.png",
+      "width": 444.0
+    },
+    "p_weapon_warhammer": {
+      "category": "weapon",
+      "char": "p4",
+      "file": "parts_v2/p_weapon_warhammer.png",
+      "height": 104.0,
+      "id": "p_weapon_warhammer",
+      "label": "Bec de Corbin",
+      "pivot": [
+        78.0,
+        44.0
+      ],
+      "scale": 0.88,
+      "sockets": {
+        "gripBack": [
+          38.0,
+          44.0
+        ],
+        "gripFront": [
+          112.0,
+          44.0
+        ],
+        "guard": [
+          175.0,
+          44.0
+        ],
+        "pommel": [
+          10.0,
+          44.0
+        ],
+        "tip": [
+          348.0,
+          44.0
+        ]
+      },
+      "texture": "res://assets/parts_v2/p_weapon_warhammer.png",
+      "width": 352.0
+    }
+  },
+  "version": 2.0
 }

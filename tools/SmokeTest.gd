@@ -1000,6 +1000,33 @@ func _run() -> void:
 	arena._go_to_title("select")
 	check(arena.ui.get_title_page() == "select" and arena.ui._select_view.visible, "CHANGE FIGHTERS jumps directly to Character Select screen")
 
+	print("== All-5-Fighter Visual Finishing, Ink Shader, Guard Overlay & Depth Rigging")
+	for f_idx in range(5):
+		arena._set_fighter(true, f_idx)
+		var fc := p1()
+		fc.reset_fighter()
+		fc._process(0.016)
+		var fid_cur := fc.fighter_id
+		check(fc.head_sprite != null and fc.head_sprite.material != null, "%s uses PuppetInk ShaderMaterial on sprites" % fid_cur)
+		check(fc.weapon_guard_sprite != null and fc.weapon_guard_sprite.visible and fc.weapon_guard_sprite.z_index > 46, "%s builds active WeaponGuardSprite crossguard/swept-hilt overlay in front of hand" % fid_cur)
+		check(fc.str_knee_l != null and fc.str_knee_r != null, "%s routes leg marionette strings to dedicated StringKneeL/R markers" % fid_cur)
+		var th_l := fc.get_node_or_null("Skeleton2D/Pelvis/Thigh_L/ThighSprite_L") as Sprite2D
+		var th_r := fc.get_node_or_null("Skeleton2D/Pelvis/Thigh_R/ThighSprite_R") as Sprite2D
+		check(th_l != null and th_r != null and th_l.modulate.r < th_r.modulate.r - 0.10, "%s preserves 2.5D rear-limb shadow tint after reset_fighter()" % fid_cur)
+		if fid_cur in ["venetian_bravo", "plague_executioner", "landsknecht"]:
+			check(fc.get_node_or_null("Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/CouterSprite_R") == null, "%s has no mismatched tan p1_elbow_cap circle" % fid_cur)
+		if fid_cur == "venetian_bravo":
+			check(fc.hand_l_sprite != null and fc.hand_l_sprite.texture == fc._hand_l_open_tex and fc.hand_l_sprite.z_index == 25, "Venetian Bravo uses bespoke open duelist off-hand (p5_hand_open) behind waist on 1H Rapier")
+			fc.apply_loadout("halberd")
+			fc._process(0.016)
+			check(fc.hand_l_sprite.texture == fc._hand_l_grip_tex and fc.hand_l_sprite.z_index == 46, "Venetian Bravo swaps off-hand back to grip fist when wielding a 2H weapon")
+			fc.apply_loadout("signature")
+		if fid_cur == "plague_executioner":
+			fc.set_half_sword(true, false)
+			fc._process(0.016)
+			check(fc.forearm_l_sprite != null and fc.forearm_l_sprite.z_index == 34, "Plague Executioner half-swording layers Forearm_L above torso (30) and behind plague mask (36)")
+			fc.set_half_sword(false, false)
+
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SETTINGS))
 	print("")
 	print("SMOKE TEST: %d passed, %d failed" % [passes, failures.size()])

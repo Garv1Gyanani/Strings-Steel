@@ -5,30 +5,30 @@
 [ext_resource type="Script" path="res://scripts/FighterController.gd" id="3_ghy8g"]
 [ext_resource type="PackedScene" path="res://scenes/fighters/Fechtmeister.tscn" id="4_4mhah"]
 
-[node name="Arena" type="Node2D" unique_id=263231921]
+[node name="Arena" type="Node2D" unique_id=778646428]
 script = ExtResource("1_uch3s")
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=1532712650]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=811721873]
 position = Vector2(640, 360)
 
-[node name="StageBackdrop" type="ColorRect" parent="." unique_id=930857947]
+[node name="StageBackdrop" type="ColorRect" parent="." unique_id=1704896363]
 z_index = -50
 offset_right = 1280.0
 offset_bottom = 720.0
 color = Color(0.08, 0.06, 0.07, 1)
 
-[node name="StageFloor" type="ColorRect" parent="." unique_id=1928232325]
+[node name="StageFloor" type="ColorRect" parent="." unique_id=1103232407]
 z_index = -40
 offset_top = 560.0
 offset_right = 1280.0
 offset_bottom = 720.0
 color = Color(0.18, 0.13, 0.1, 1)
 
-[node name="Landsknecht" type="Node2D" parent="." unique_id=533600056 instance=ExtResource("2_bw14y")]
+[node name="Landsknecht" type="Node2D" parent="." unique_id=1018601867 instance=ExtResource("2_bw14y")]
 position = Vector2(440, 445)
 script = ExtResource("3_ghy8g")
 
-[node name="Fechtmeister" type="Node2D" parent="." unique_id=1217767981 instance=ExtResource("4_4mhah")]
+[node name="Fechtmeister" type="Node2D" parent="." unique_id=1180347756 instance=ExtResource("4_4mhah")]
 position = Vector2(840, 445)
 script = ExtResource("3_ghy8g")
 fighter_id = "fechtmeister"

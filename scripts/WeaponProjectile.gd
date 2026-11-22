@@ -30,6 +30,7 @@ func setup_visual(tex: Texture2D, spr_scale: Vector2, spr_offset: Vector2, half_
 	_sprite.centered = false
 	_sprite.scale = spr_scale
 	_sprite.offset = spr_offset
+	PuppetVisuals.apply_ink_material(_sprite)
 	add_child(_sprite)
 
 

@@ -1,23 +1,29 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/FighterController.gd" id="1_v1aof"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_pelvis_tasset.png" id="2_larrd"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p1_scabbard.png" id="3_qi2rg"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_thigh_0.png" id="4_6m3px"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_shin_0.png" id="5_gm87x"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_poleyn.png" id="6_ahopk"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_sabaton_clean.png" id="7_pvs34"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_torso_front.png" id="8_1x02a"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_head_calm.png" id="9_rnoel"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_hat_burgonet.png" id="10_5p0c5"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_upperarm_0.png" id="11_57q3s"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_forearm_0.png" id="12_4v13g"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_couter.png" id="13_kmyaj"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_hand_fist_down.png" id="14_6nck4"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_pauldron.png" id="15_pqc5e"]
-[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_sword_flam.png" id="16_u3cgx"]
+[ext_resource type="Script" path="res://scripts/FighterController.gd" id="1_larrd"]
+[ext_resource type="Shader" path="res://scripts/PuppetInk.gdshader" id="2_qi2rg"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_pelvis_tasset.png" id="3_6m3px"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p1_scabbard.png" id="4_gm87x"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_thigh_0.png" id="5_ahopk"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_shin_0.png" id="6_pvs34"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_poleyn.png" id="7_1x02a"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_sabaton_clean.png" id="8_rnoel"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_torso_front.png" id="9_5p0c5"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_head_calm.png" id="10_57q3s"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_hat_burgonet.png" id="11_4v13g"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_upperarm_0.png" id="12_kmyaj"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_forearm_0.png" id="13_6nck4"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_couter.png" id="14_pqc5e"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_hand_fist_down.png" id="15_u3cgx"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_pauldron.png" id="16_031oi"]
+[ext_resource type="Texture2D" path="res://assets/parts_v2/p2_sword_flam.png" id="17_xs8pr"]
 
-[sub_resource type="Animation" id="Animation_031oi"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_op66a"]
+shader = ExtResource("2_qi2rg")
+shader_parameter/ink_color = null
+shader_parameter/edge_ink_strength = null
+
+[sub_resource type="Animation" id="Animation_prqo4"]
 length = 0.42
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -200,7 +206,7 @@ tracks/14/keys = {
 "values": [-0.8377580409572782, 0.8377580409572782, 0.6283185307179586, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_xs8pr"]
+[sub_resource type="Animation" id="Animation_tc2cq"]
 length = 0.2
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -383,7 +389,7 @@ tracks/14/keys = {
 "values": [0.17453292519943295, 0.3839724354387525, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_prqo4"]
+[sub_resource type="Animation" id="Animation_626wj"]
 length = 0.2
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -566,7 +572,7 @@ tracks/14/keys = {
 "values": [-0.5934119456780721, -0.7330382858376184, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_tc2cq"]
+[sub_resource type="Animation" id="Animation_edn6r"]
 length = 0.85
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -773,7 +779,7 @@ tracks/16/keys = {
 "values": [-0.8377580409572782, -0.5235987755982988, 0.3141592653589793]
 }
 
-[sub_resource type="Animation" id="Animation_626wj"]
+[sub_resource type="Animation" id="Animation_kctii"]
 length = 0.28
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -956,7 +962,7 @@ tracks/14/keys = {
 "values": [-0.4886921905584123, -1.0821041362364843, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_edn6r"]
+[sub_resource type="Animation" id="Animation_bwbei"]
 length = 1.2
 loop_mode = 1
 tracks/0/type = "value"
@@ -1140,7 +1146,7 @@ tracks/14/keys = {
 "values": [-0.4886921905584123, -0.4188790204786391, -0.3490658503988659, -0.4537856055185257, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_kctii"]
+[sub_resource type="Animation" id="Animation_cran8"]
 length = 0.52
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -1323,7 +1329,7 @@ tracks/14/keys = {
 "values": [-0.8377580409572782, -1.1519173063162575, 1.0821041362364843, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_bwbei"]
+[sub_resource type="Animation" id="Animation_yp06d"]
 length = 0.38
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -1482,7 +1488,7 @@ tracks/12/keys = {
 "values": [-0.7330382858376184, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_cran8"]
+[sub_resource type="Animation" id="Animation_j7ggk"]
 length = 0.42
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -1653,7 +1659,7 @@ tracks/13/keys = {
 "values": [-0.7853981633974483, -1.1868238913561442, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_yp06d"]
+[sub_resource type="Animation" id="Animation_48sqq"]
 length = 0.46
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -1836,7 +1842,7 @@ tracks/14/keys = {
 "values": [-1.0122909661567112, -1.117010721276371, 1.0471975511965976, 0.7330382858376184, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_j7ggk"]
+[sub_resource type="Animation" id="Animation_jg5o0"]
 length = 0.4
 loop_mode = 1
 tracks/0/type = "value"
@@ -2020,7 +2026,7 @@ tracks/14/keys = {
 "values": [0.5934119456780721, 0.6283185307179586, 0.5934119456780721]
 }
 
-[sub_resource type="Animation" id="Animation_48sqq"]
+[sub_resource type="Animation" id="Animation_3ehif"]
 length = 0.4
 loop_mode = 1
 tracks/0/type = "value"
@@ -2204,7 +2210,7 @@ tracks/14/keys = {
 "values": [1.6755160819145565, 1.6755160819145565]
 }
 
-[sub_resource type="Animation" id="Animation_jg5o0"]
+[sub_resource type="Animation" id="Animation_f4d5g"]
 length = 0.55
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -2303,7 +2309,7 @@ tracks/7/keys = {
 "values": [-0.9599310885968813, -1.1868238913561442, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_3ehif"]
+[sub_resource type="Animation" id="Animation_ko4yg"]
 length = 0.32
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -2486,7 +2492,7 @@ tracks/14/keys = {
 "values": [-1.6580627893946132, -1.53588974175501, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_f4d5g"]
+[sub_resource type="Animation" id="Animation_2djld"]
 length = 0.38
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -2669,7 +2675,7 @@ tracks/14/keys = {
 "values": [-0.8028514559173916, 0.4886921905584123, 1.0471975511965976, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_ko4yg"]
+[sub_resource type="Animation" id="Animation_pa6g2"]
 length = 0.4
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -2852,7 +2858,7 @@ tracks/14/keys = {
 "values": [-0.7330382858376184, -0.6283185307179586, -0.5585053606381855, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_2djld"]
+[sub_resource type="Animation" id="Animation_f3f0g"]
 length = 0.44
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -3035,7 +3041,7 @@ tracks/14/keys = {
 "values": [1.53588974175501, 1.53588974175501, 1.3962634015954636, 1.4660765716752369, 1.4311699866353502, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_pa6g2"]
+[sub_resource type="Animation" id="Animation_6j5gd"]
 length = 0.54
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -3218,7 +3224,7 @@ tracks/14/keys = {
 "values": [-0.9424777960769379, -1.2217304763960306, 1.1519173063162575, 0.8377580409572782, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_f3f0g"]
+[sub_resource type="Animation" id="Animation_y3k4u"]
 length = 0.44
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -3401,7 +3407,7 @@ tracks/14/keys = {
 "values": [1.8151424220741028, 2.059488517353309, 1.0122909661567112, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_6j5gd"]
+[sub_resource type="Animation" id="Animation_0rmt7"]
 length = 0.48
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -3584,7 +3590,7 @@ tracks/14/keys = {
 "values": [1.117010721276371, 0.3490658503988659, -1.0471975511965976, 1.0471975511965976, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_y3k4u"]
+[sub_resource type="Animation" id="Animation_dmqbf"]
 length = 0.46
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -3767,7 +3773,7 @@ tracks/14/keys = {
 "values": [-0.4886921905584123, -1.117010721276371, 0.6632251157578453, 1.0122909661567112, 0.6632251157578453, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_0rmt7"]
+[sub_resource type="Animation" id="Animation_33rtl"]
 length = 0.45
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -3950,7 +3956,7 @@ tracks/14/keys = {
 "values": [-0.4886921905584123, 1.0471975511965976, 0.6283185307179586, 0.3141592653589793, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_dmqbf"]
+[sub_resource type="Animation" id="Animation_y36df"]
 length = 0.48
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -4133,7 +4139,7 @@ tracks/14/keys = {
 "values": [-0.9773843811168246, 0.9075712110370514, 1.0122909661567112, 0.3839724354387525, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_33rtl"]
+[sub_resource type="Animation" id="Animation_kab0g"]
 length = 0.42
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -4316,7 +4322,7 @@ tracks/14/keys = {
 "values": [-0.4886921905584123, 1.5707963267948966, 1.3962634015954636, 1.4311699866353502, -0.4886921905584123]
 }
 
-[sub_resource type="Animation" id="Animation_y36df"]
+[sub_resource type="Animation" id="Animation_80it4"]
 length = 0.5
 loop_mode = 1
 tracks/0/type = "value"
@@ -4500,7 +4506,7 @@ tracks/14/keys = {
 "values": [-0.3839724354387525, -0.5235987755982988, -0.3665191429188092, -0.5235987755982988, -0.3839724354387525]
 }
 
-[sub_resource type="Animation" id="Animation_kab0g"]
+[sub_resource type="Animation" id="Animation_56uq5"]
 length = 0.5
 loop_mode = 1
 tracks/0/type = "value"
@@ -4684,352 +4690,412 @@ tracks/14/keys = {
 "values": [-0.3141592653589793, -0.4014257279586958, -0.47123889803846897, -0.3665191429188092, -0.3141592653589793]
 }
 
-[sub_resource type="AnimationLibrary" id="AnimationLibrary_80it4"]
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_0paf7"]
 _data = {
-&"backstep_cut": SubResource("Animation_031oi"),
-&"dash_back": SubResource("Animation_xs8pr"),
-&"dash_fwd": SubResource("Animation_prqo4"),
-&"death": SubResource("Animation_tc2cq"),
-&"hurt": SubResource("Animation_626wj"),
-&"idle": SubResource("Animation_edn6r"),
-&"jump_slash": SubResource("Animation_kctii"),
-&"kick": SubResource("Animation_bwbei"),
-&"leg_sweep": SubResource("Animation_cran8"),
-&"mordhau_smash": SubResource("Animation_yp06d"),
-&"parry": SubResource("Animation_j7ggk"),
-&"parry_low": SubResource("Animation_48sqq"),
-&"parry_recoil": SubResource("Animation_jg5o0"),
-&"pommel_strike": SubResource("Animation_3ehif"),
-&"riposte_cleave": SubResource("Animation_f4d5g"),
-&"sig_black_knight": SubResource("Animation_ko4yg"),
-&"sig_bravo": SubResource("Animation_2djld"),
-&"sig_executioner": SubResource("Animation_pa6g2"),
-&"sig_fechtmeister": SubResource("Animation_f3f0g"),
-&"sig_landsknecht": SubResource("Animation_6j5gd"),
-&"slash_high": SubResource("Animation_y3k4u"),
-&"slash_low": SubResource("Animation_0rmt7"),
-&"spin_slash": SubResource("Animation_dmqbf"),
-&"thrust": SubResource("Animation_33rtl"),
-&"walk": SubResource("Animation_y36df"),
-&"walk_back": SubResource("Animation_kab0g")
+&"backstep_cut": SubResource("Animation_prqo4"),
+&"dash_back": SubResource("Animation_tc2cq"),
+&"dash_fwd": SubResource("Animation_626wj"),
+&"death": SubResource("Animation_edn6r"),
+&"hurt": SubResource("Animation_kctii"),
+&"idle": SubResource("Animation_bwbei"),
+&"jump_slash": SubResource("Animation_cran8"),
+&"kick": SubResource("Animation_yp06d"),
+&"leg_sweep": SubResource("Animation_j7ggk"),
+&"mordhau_smash": SubResource("Animation_48sqq"),
+&"parry": SubResource("Animation_jg5o0"),
+&"parry_low": SubResource("Animation_3ehif"),
+&"parry_recoil": SubResource("Animation_f4d5g"),
+&"pommel_strike": SubResource("Animation_ko4yg"),
+&"riposte_cleave": SubResource("Animation_2djld"),
+&"sig_black_knight": SubResource("Animation_pa6g2"),
+&"sig_bravo": SubResource("Animation_f3f0g"),
+&"sig_executioner": SubResource("Animation_6j5gd"),
+&"sig_fechtmeister": SubResource("Animation_y3k4u"),
+&"sig_landsknecht": SubResource("Animation_0rmt7"),
+&"slash_high": SubResource("Animation_dmqbf"),
+&"slash_low": SubResource("Animation_33rtl"),
+&"spin_slash": SubResource("Animation_y36df"),
+&"thrust": SubResource("Animation_kab0g"),
+&"walk": SubResource("Animation_80it4"),
+&"walk_back": SubResource("Animation_56uq5")
 }
 
-[node name="Fechtmeister" type="Node2D" unique_id=1217767981]
-script = ExtResource("1_v1aof")
+[node name="Fechtmeister" type="Node2D" unique_id=1180347756]
+script = ExtResource("1_larrd")
 fighter_id = "fechtmeister"
 
-[node name="Skeleton2D" type="Skeleton2D" parent="." unique_id=898036756]
+[node name="Skeleton2D" type="Skeleton2D" parent="." unique_id=1924286468]
 scale = Vector2(0.68, 0.68)
 
-[node name="Pelvis" type="Bone2D" parent="Skeleton2D" unique_id=994968749]
+[node name="Pelvis" type="Bone2D" parent="Skeleton2D" unique_id=416424899]
 rest = Transform2D(1, 0, 0, 1, 0, 0)
 auto_calculate_length_and_angle = false
 length = 25.48
 bone_angle = -90.0
 
-[node name="PelvisSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=800376178]
+[node name="PelvisSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=707729742]
 z_index = 28
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.98, 0.98)
-texture = ExtResource("2_larrd")
+texture = ExtResource("3_6m3px")
 centered = false
 offset = Vector2(-84, -42)
 
-[node name="ScabbardSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=1958239251]
+[node name="ScabbardSprite" type="Sprite2D" parent="Skeleton2D/Pelvis" unique_id=1969817298]
+modulate = Color(0.78, 0.75, 0.8, 1)
 z_index = 20
-position = Vector2(-37.24, -5.88)
-rotation = 0.31415927
+material = SubResource("ShaderMaterial_op66a")
+position = Vector2(-39.24, -7.88)
+rotation = 0.4886922
 scale = Vector2(0.85, 0.85)
-texture = ExtResource("3_qi2rg")
+texture = ExtResource("4_gm87x")
 centered = false
 offset = Vector2(-60, -18)
+metadata/base_tint = Color(0.78, 0.75, 0.8, 1)
 
-[node name="Thigh_L" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=1280896408]
+[node name="Thigh_L" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=612878178]
 position = Vector2(-37.24, 70.56)
 rest = Transform2D(1, 0, 0, 1, -37.24, 70.56)
 auto_calculate_length_and_angle = false
 length = 96.31482
 bone_angle = 83.41805
 
-[node name="ThighSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=1452484334]
+[node name="ThighSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=266814598]
+modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 10
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.92, 0.92)
-texture = ExtResource("4_6m3px")
+texture = ExtResource("5_ahopk")
 centered = false
 offset = Vector2(-44, -24)
+metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="Shin_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=478274121]
+[node name="Shin_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L" unique_id=922977970]
 position = Vector2(11.04, 95.68)
 rest = Transform2D(1, 0, 0, 1, 11.04, 95.68)
 auto_calculate_length_and_angle = false
 length = 86.48
 bone_angle = 90.0
 
-[node name="ShinSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=362147579]
+[node name="ShinSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=898269373]
+modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 12
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.94, 0.94)
-texture = ExtResource("5_gm87x")
+texture = ExtResource("6_pvs34")
 centered = false
 offset = Vector2(-26, -16)
+metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="PoleynSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=1242942455]
+[node name="PoleynSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=1031851751]
+modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 13
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.68, 0.68)
-texture = ExtResource("6_ahopk")
+texture = ExtResource("7_1x02a")
 centered = false
 offset = Vector2(-34, -35)
+metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="Boot_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=743236379]
+[node name="StringKneeL" type="Marker2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=1668773047]
+position = Vector2(0, 10)
+
+[node name="Boot_L" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L" unique_id=2126422015]
 position = Vector2(0, 86.48)
 rest = Transform2D(1, 0, 0, 1, 0, 86.48)
 auto_calculate_length_and_angle = false
 length = 28.0
 bone_angle = 0.0
 
-[node name="BootSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L/Boot_L" unique_id=391687287]
+[node name="BootSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_L/Shin_L/Boot_L" unique_id=1888435735]
+modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 11
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.88, 0.88)
-texture = ExtResource("7_pvs34")
+texture = ExtResource("8_rnoel")
 centered = false
 offset = Vector2(-24, -14)
+metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="Thigh_R" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=466030612]
+[node name="Thigh_R" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=1306363613]
 position = Vector2(41.16, 70.56)
 rest = Transform2D(1, 0, 0, 1, 41.16, 70.56)
 auto_calculate_length_and_angle = false
 length = 96.31482
 bone_angle = 83.41805
 
-[node name="ThighSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=2066276721]
+[node name="ThighSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=1427888098]
 z_index = 14
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.92, 0.92)
-texture = ExtResource("4_6m3px")
+texture = ExtResource("5_ahopk")
 centered = false
 offset = Vector2(-44, -24)
 
-[node name="Shin_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=535945201]
+[node name="Shin_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R" unique_id=268312057]
 position = Vector2(11.04, 95.68)
 rest = Transform2D(1, 0, 0, 1, 11.04, 95.68)
 auto_calculate_length_and_angle = false
 length = 86.48
 bone_angle = 90.0
 
-[node name="ShinSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=1119631089]
+[node name="ShinSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=2067603757]
 z_index = 16
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.94, 0.94)
-texture = ExtResource("5_gm87x")
+texture = ExtResource("6_pvs34")
 centered = false
 offset = Vector2(-26, -16)
 
-[node name="PoleynSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=1399155082]
+[node name="PoleynSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=1403700524]
 z_index = 17
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.68, 0.68)
-texture = ExtResource("6_ahopk")
+texture = ExtResource("7_1x02a")
 centered = false
 offset = Vector2(-34, -35)
 
-[node name="Boot_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=741544860]
+[node name="StringKneeR" type="Marker2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=123724367]
+position = Vector2(0, 10)
+
+[node name="Boot_R" type="Bone2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R" unique_id=1189006288]
 position = Vector2(0, 86.48)
 rest = Transform2D(1, 0, 0, 1, 0, 86.48)
 auto_calculate_length_and_angle = false
 length = 28.0
 bone_angle = 0.0
 
-[node name="BootSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R/Boot_R" unique_id=1917144286]
+[node name="BootSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Thigh_R/Shin_R/Boot_R" unique_id=155476239]
 z_index = 15
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.88, 0.88)
-texture = ExtResource("7_pvs34")
+texture = ExtResource("8_rnoel")
 centered = false
 offset = Vector2(-24, -14)
 
-[node name="Torso" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=1877131718]
+[node name="Torso" type="Bone2D" parent="Skeleton2D/Pelvis" unique_id=1216635713]
 position = Vector2(0, -25.48)
 rest = Transform2D(1, 0, 0, 1, 0, -25.48)
 auto_calculate_length_and_angle = false
 length = 139.49963
 bone_angle = -92.56377
 
-[node name="TorsoSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1370334294]
+[node name="TorsoSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1096727344]
 z_index = 30
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(1.04, 1.04)
-texture = ExtResource("8_1x02a")
+texture = ExtResource("9_5p0c5")
 centered = false
 offset = Vector2(-58, -150)
 
-[node name="Head" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1635749826]
+[node name="Head" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1187723500]
 position = Vector2(-6.24, -139.36)
 rest = Transform2D(1, 0, 0, 1, -6.24, -139.36)
 auto_calculate_length_and_angle = false
-length = 60.848995
-bone_angle = -86.2686
+length = 58.921406
+bone_angle = -85.502846
 
-[node name="HeadSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=500517117]
+[node name="HeadSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=878955798]
 z_index = 36
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.66, 0.66)
-texture = ExtResource("9_rnoel")
+texture = ExtResource("10_57q3s")
 centered = false
 offset = Vector2(-38, -116)
 
-[node name="Hat" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=774594438]
-position = Vector2(3.96, -60.72)
-rest = Transform2D(1, 0, 0, 1, 3.96, -60.72)
+[node name="Hat" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=1507841899]
+position = Vector2(4.6200004, -58.74)
+rest = Transform2D(1, 0, 0, 1, 4.6200004, -58.74)
 auto_calculate_length_and_angle = false
 length = 32.0
 bone_angle = -90.0
 
-[node name="HatSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/Head/Hat" unique_id=1459123447]
+[node name="HatSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/Head/Hat" unique_id=1342725976]
 z_index = 37
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.64, 0.64)
-texture = ExtResource("10_5p0c5")
+texture = ExtResource("11_4v13g")
 centered = false
 offset = Vector2(-124, -98)
 
-[node name="StringHead" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=15174435]
+[node name="StringHead" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/Head" unique_id=1333411337]
 position = Vector2(0, -45)
 
-[node name="UpperArm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1779351795]
-position = Vector2(47.839996, -112.31999)
-rest = Transform2D(1, 0, 0, 1, 47.839996, -112.31999)
+[node name="UpperArm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1446830335]
+position = Vector2(31.199999, -110.24)
+rest = Transform2D(1, 0, 0, 1, 31.199999, -110.24)
 auto_calculate_length_and_angle = false
 length = 75.6
 bone_angle = 90.0
 
-[node name="UpperArmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=847276382]
+[node name="UpperArmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=159423298]
+modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 22
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(1.35, 1.35)
-texture = ExtResource("11_57q3s")
+texture = ExtResource("12_kmyaj")
 centered = false
 offset = Vector2(-26, -14)
+metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="Forearm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=1443603640]
+[node name="Forearm_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L" unique_id=428821333]
 position = Vector2(0, 75.6)
 rest = Transform2D(1, 0, 0, 1, 0, 75.6)
 auto_calculate_length_and_angle = false
 length = 77.4
 bone_angle = 90.0
 
-[node name="ForearmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1612304591]
+[node name="ForearmSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=456507175]
+modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 24
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.86, 0.86)
-texture = ExtResource("12_4v13g")
+texture = ExtResource("13_6nck4")
 centered = false
 offset = Vector2(-28, -14)
+metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="CouterSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1960696036]
+[node name="CouterSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=927988471]
+modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 25
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.72, 0.72)
-texture = ExtResource("13_kmyaj")
+texture = ExtResource("14_pqc5e")
 centered = false
 offset = Vector2(-32, -26)
+metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="Hand_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1786888523]
+[node name="Hand_L" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=203699763]
 position = Vector2(0, 77.4)
 rest = Transform2D(1, 0, 0, 1, 0, 77.4)
 auto_calculate_length_and_angle = false
 length = 36.72
 bone_angle = 90.0
 
-[node name="HandSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=158941008]
+[node name="HandSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=1835953936]
+modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 46
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.68, 0.68)
-texture = ExtResource("14_6nck4")
+texture = ExtResource("15_u3cgx")
 centered = false
 offset = Vector2(-28, -12)
+metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="GripCenter" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=1588833817]
+[node name="GripCenter" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L/Hand_L" unique_id=1372457937]
 position = Vector2(0, 36.72)
 
-[node name="StringHandL" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=1656652195]
+[node name="StringHandL" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_L/Forearm_L" unique_id=338433103]
 position = Vector2(0, 77.4)
 
-[node name="PauldronSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=839137632]
+[node name="PauldronSprite_L" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=240021637]
+modulate = Color(0.79, 0.77, 0.84, 1)
 z_index = 23
-position = Vector2(47.839996, -112.31999)
+material = SubResource("ShaderMaterial_op66a")
+position = Vector2(31.199999, -110.24)
 scale = Vector2(0.66, 0.66)
-texture = ExtResource("15_pqc5e")
+texture = ExtResource("16_031oi")
 centered = false
 offset = Vector2(-48, -36)
+metadata/base_tint = Color(0.79, 0.77, 0.84, 1)
 
-[node name="UpperArm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=972815229]
+[node name="UpperArm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso" unique_id=840036781]
 position = Vector2(-41.6, -112.31999)
 rest = Transform2D(1, 0, 0, 1, -41.6, -112.31999)
 auto_calculate_length_and_angle = false
 length = 75.6
 bone_angle = 90.0
 
-[node name="UpperArmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=1573502236]
+[node name="UpperArmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=323829996]
 z_index = 40
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(1.35, 1.35)
-texture = ExtResource("11_57q3s")
+texture = ExtResource("12_kmyaj")
 centered = false
 offset = Vector2(-26, -14)
 
-[node name="Forearm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=1027539734]
+[node name="Forearm_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R" unique_id=1462875557]
 position = Vector2(0, 75.6)
 rest = Transform2D(1, 0, 0, 1, 0, 75.6)
 auto_calculate_length_and_angle = false
 length = 77.4
 bone_angle = 90.0
 
-[node name="ForearmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=412004878]
-z_index = 47
+[node name="ForearmSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=528885121]
+z_index = 48
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.86, 0.86)
-texture = ExtResource("12_4v13g")
+texture = ExtResource("13_6nck4")
 centered = false
 offset = Vector2(-28, -14)
 
-[node name="CouterSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=1996780730]
-z_index = 48
+[node name="CouterSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=900885798]
+z_index = 50
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.72, 0.72)
-texture = ExtResource("13_kmyaj")
+texture = ExtResource("14_pqc5e")
 centered = false
 offset = Vector2(-32, -26)
 
-[node name="Hand_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=638543266]
+[node name="Hand_R" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R" unique_id=865451439]
 position = Vector2(0, 77.4)
 rest = Transform2D(1, 0, 0, 1, 0, 77.4)
 auto_calculate_length_and_angle = false
 length = 36.72
 bone_angle = 90.0
 
-[node name="HandSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=1113720620]
+[node name="HandSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=1543462123]
 z_index = 46
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.68, 0.68)
-texture = ExtResource("14_6nck4")
+texture = ExtResource("15_u3cgx")
 centered = false
 offset = Vector2(-28, -12)
 
-[node name="WeaponBone" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=839223637]
+[node name="WeaponBone" type="Bone2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=1336195838]
 position = Vector2(0, 36.72)
 rest = Transform2D(1, 0, 0, 1, 0, 36.72)
 auto_calculate_length_and_angle = false
-length = 262.4
+length = 265.68
 bone_angle = 0.0
 
-[node name="WeaponSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=1659333907]
+[node name="WeaponSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=205289295]
 z_index = 45
+material = SubResource("ShaderMaterial_op66a")
 scale = Vector2(0.82, 0.82)
-texture = ExtResource("16_u3cgx")
+texture = ExtResource("17_xs8pr")
 centered = false
-offset = Vector2(-82, -52)
+offset = Vector2(-78, -52)
 
-[node name="PommelGripTarget" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=234899719]
-position = Vector2(-39.36, 0)
+[node name="WeaponGuardSprite" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=412244871]
+z_index = 49
+material = SubResource("ShaderMaterial_op66a")
+scale = Vector2(0.82, 0.82)
+texture = ExtResource("17_xs8pr")
+centered = false
+offset = Vector2(18, -52)
+region_enabled = true
+region_rect = Rect2(96, 0, 34, 105)
 
-[node name="BladeGuardMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=523133978]
-position = Vector2(24.6, 0)
+[node name="PommelGripTarget" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=1702543067]
+position = Vector2(-36.079998, 0)
 
-[node name="BladeTipMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=1043303798]
-position = Vector2(262.4, 0)
+[node name="BladeGuardMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=995115142]
+position = Vector2(27.88, 0)
 
-[node name="StringHandR" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=600387082]
+[node name="BladeTipMarker" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R/WeaponBone" unique_id=161145032]
+position = Vector2(265.68, 0)
 
-[node name="PauldronSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=1866050767]
+[node name="StringHandR" type="Marker2D" parent="Skeleton2D/Pelvis/Torso/UpperArm_R/Forearm_R/Hand_R" unique_id=1952153424]
+
+[node name="PauldronSprite_R" type="Sprite2D" parent="Skeleton2D/Pelvis/Torso" unique_id=491621479]
 z_index = 43
+material = SubResource("ShaderMaterial_op66a")
 position = Vector2(-41.6, -112.31999)
 scale = Vector2(0.66, 0.66)
-texture = ExtResource("15_pqc5e")
+texture = ExtResource("16_031oi")
 centered = false
 offset = Vector2(-48, -36)
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1705047773]
-libraries/ = SubResource("AnimationLibrary_80it4")
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1425842099]
+libraries/ = SubResource("AnimationLibrary_0paf7")

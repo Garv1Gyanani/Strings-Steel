@@ -98,8 +98,9 @@ static func build_fighter_node(fighter_key: String, cfg: Dictionary, parts: Dict
 		var scabbard_spec := _spec(parts, scabbard_id)
 		var scabbard_sp := _attach_sprite(root, bone_pelvis, "ScabbardSprite", scabbard_spec, 20)
 		if scabbard_sp != null:
-			scabbard_sp.position = belt_vec
-			scabbard_sp.rotation = deg_to_rad(18.0)
+			scabbard_sp.position = belt_vec + Vector2(-2.0, -2.0)
+			scabbard_sp.rotation = deg_to_rad(28.0)
+			PuppetVisuals.set_base_tint(scabbard_sp, PuppetVisuals.SCABBARD_TINT)
 
 	# ------------------------------------------------------------------
 	# 2. LEGS (Thigh -> Shin -> Boot + Knee Cap)
@@ -119,17 +120,29 @@ static func build_fighter_node(fighter_key: String, cfg: Dictionary, parts: Dict
 	]:
 		var suf: String = side_cfg["suffix"]
 		var zb: int = int(side_cfg["z_base"])
+		var is_rear := suf == "L"
 		var b_thigh := _create_bone(root, bone_pelvis, "Thigh_" + suf, side_cfg["hip"], thigh_end)
-		_attach_sprite(root, b_thigh, "ThighSprite_" + suf, thigh_spec, zb)
+		var sp_th := _attach_sprite(root, b_thigh, "ThighSprite_" + suf, thigh_spec, zb)
 
 		var b_shin := _create_bone(root, b_thigh, "Shin_" + suf, thigh_end, shin_end)
-		_attach_sprite(root, b_shin, "ShinSprite_" + suf, shin_spec, zb + 2)
+		var sp_sh := _attach_sprite(root, b_shin, "ShinSprite_" + suf, shin_spec, zb + 2)
 
+		var sp_pol: Sprite2D = null
 		if not poleyn_spec.is_empty():
-			_attach_sprite(root, b_shin, "PoleynSprite_" + suf, poleyn_spec, zb + 3)
+			sp_pol = _attach_sprite(root, b_shin, "PoleynSprite_" + suf, poleyn_spec, zb + 3)
+
+		var knee_m := Marker2D.new()
+		knee_m.name = "StringKnee" + suf
+		knee_m.position = Vector2(0.0, 10.0)
+		b_shin.add_child(knee_m)
+		knee_m.owner = root
 
 		var b_boot := _create_bone(root, b_shin, "Boot_" + suf, shin_end, Vector2(28.0, 0.0))
-		_attach_sprite(root, b_boot, "BootSprite_" + suf, boot_spec, zb + 1)
+		var sp_bt := _attach_sprite(root, b_boot, "BootSprite_" + suf, boot_spec, zb + 1)
+
+		if is_rear:
+			for rsp in [sp_th, sp_sh, sp_pol, sp_bt]:
+				PuppetVisuals.set_base_tint(rsp, PuppetVisuals.REAR_LIMB_TINT)
 
 	# ------------------------------------------------------------------
 	# 3. TORSO & HEAD & HAT
@@ -167,16 +180,20 @@ static func build_fighter_node(fighter_key: String, cfg: Dictionary, parts: Dict
 
 	# Left Arm (far shoulder, behind torso & pelvis so elbow never pokes through stomach)
 	var b_ua_l := _create_bone(root, bone_torso, "UpperArm_L", sh_far_vec, ua_end)
-	_attach_sprite(root, b_ua_l, "UpperArmSprite_L", ua_spec, 22)
+	var sp_ual := _attach_sprite(root, b_ua_l, "UpperArmSprite_L", ua_spec, 22)
+	PuppetVisuals.set_base_tint(sp_ual, PuppetVisuals.REAR_LIMB_TINT)
 	if not pauldron_spec.is_empty():
 		var p_l := _attach_sprite(root, bone_torso, "PauldronSprite_L", pauldron_spec, 23)
 		if p_l != null:
 			p_l.position = sh_far_vec
+			PuppetVisuals.set_base_tint(p_l, PuppetVisuals.REAR_LIMB_TINT)
 
 	var b_fa_l := _create_bone(root, b_ua_l, "Forearm_L", ua_end, fa_end)
-	_attach_sprite(root, b_fa_l, "ForearmSprite_L", fa_spec, 24)
+	var sp_fal := _attach_sprite(root, b_fa_l, "ForearmSprite_L", fa_spec, 24)
+	PuppetVisuals.set_base_tint(sp_fal, PuppetVisuals.REAR_LIMB_TINT)
 	if not couter_spec.is_empty():
-		_attach_sprite(root, b_fa_l, "CouterSprite_L", couter_spec, 25)
+		var sp_cl := _attach_sprite(root, b_fa_l, "CouterSprite_L", couter_spec, 25)
+		PuppetVisuals.set_base_tint(sp_cl, PuppetVisuals.REAR_LIMB_TINT)
 
 	var hand_l_id: String = part_ids.get("hand_l", "")
 	var hand_l_len := 24.0
@@ -186,7 +203,8 @@ static func build_fighter_node(fighter_key: String, cfg: Dictionary, parts: Dict
 		var g_off := _socket_offset(h_l_spec, "grip")
 		hand_l_len = maxf(16.0, g_off.length())
 		b_hand_l = _create_bone(root, b_fa_l, "Hand_L", fa_end, g_off)
-		_attach_sprite(root, b_hand_l, "HandSprite_L", h_l_spec, 46)
+		var sp_hl := _attach_sprite(root, b_hand_l, "HandSprite_L", h_l_spec, 46)
+		PuppetVisuals.set_base_tint(sp_hl, PuppetVisuals.REAR_LIMB_TINT)
 		var grip_m := Marker2D.new()
 		grip_m.name = "GripCenter"
 		grip_m.position = g_off
@@ -194,9 +212,15 @@ static func build_fighter_node(fighter_key: String, cfg: Dictionary, parts: Dict
 		grip_m.owner = root
 	else:
 		b_hand_l = _create_bone(root, b_fa_l, "Hand_L", fa_end, Vector2(0.0, hand_l_len))
-		if parts.has("p1_hand_grip"):
-			var h_fallback := _spec(parts, "p1_hand_grip")
-			_attach_sprite(root, b_hand_l, "HandSprite_L", h_fallback, 46)
+		if hand_baked and not fa_spec.is_empty():
+			# Crop just the cuff + fist region of the baked forearm sprite so the left fist wraps
+			# cleanly over the pommel/blade (z=46) without duplicating a second bare hand or fake hilt!
+			var fa_grip := _vec2(fa_spec.get("sockets", {}).get("grip", [22.0, 119.2]))
+			var sp_hl_crop := _attach_sprite_with_pivot(root, b_hand_l, "HandSprite_L", fa_spec, 46, Vector2(fa_grip.x, fa_grip.y - 92.0))
+			if sp_hl_crop != null:
+				sp_hl_crop.region_enabled = true
+				sp_hl_crop.region_rect = Rect2(0.0, 92.0, 43.0, 50.0)
+				PuppetVisuals.set_base_tint(sp_hl_crop, PuppetVisuals.REAR_LIMB_TINT)
 		var grip_m := Marker2D.new()
 		grip_m.name = "GripCenter"
 		grip_m.position = Vector2(0.0, 4.0)
@@ -212,9 +236,9 @@ static func build_fighter_node(fighter_key: String, cfg: Dictionary, parts: Dict
 			p_r.position = sh_near_vec
 
 	var b_fa_r := _create_bone(root, b_ua_r, "Forearm_R", ua_end, fa_end)
-	_attach_sprite(root, b_fa_r, "ForearmSprite_R", fa_spec, 47)
+	_attach_sprite(root, b_fa_r, "ForearmSprite_R", fa_spec, 48)
 	if not couter_spec.is_empty():
-		_attach_sprite(root, b_fa_r, "CouterSprite_R", couter_spec, 48)
+		_attach_sprite(root, b_fa_r, "CouterSprite_R", couter_spec, 50)
 
 	var hand_r_id: String = part_ids.get("hand_r", "")
 	var weapon_mount_pos := Vector2.ZERO
@@ -230,13 +254,12 @@ static func build_fighter_node(fighter_key: String, cfg: Dictionary, parts: Dict
 		weapon_mount_pos = Vector2.ZERO
 
 	# ------------------------------------------------------------------
-	# 5. WEAPON & POMMEL TARGET SOCKET
+	# 5. WEAPON, SWEPT-HILT / CROSSGUARD OVERLAY & POMMEL TARGET SOCKET
 	# ------------------------------------------------------------------
 	var sword_id: String = part_ids.get("weapon", "")
 	if sword_id != "" and parts.has(sword_id):
 		var sw_spec := _spec(parts, sword_id)
 		var sw_sockets: Dictionary = sw_spec.get("sockets", {})
-		var sw_pivot := _vec2(sw_spec.get("pivot", [0, 0]))
 		var sw_scale := float(sw_spec.get("scale", 1.0))
 		var sw_grip_front := _vec2(sw_sockets.get("gripFront", sw_spec.get("pivot", [0, 0])))
 		var sw_grip_back := _vec2(sw_sockets.get("gripBack", sw_sockets.get("pommel", [0, 0])))
@@ -248,6 +271,19 @@ static func build_fighter_node(fighter_key: String, cfg: Dictionary, parts: Dict
 
 		var sw_sprite := _attach_sprite_with_pivot(root, bone_weapon, "WeaponSprite", sw_spec, 45, sw_grip_front)
 		if sw_sprite != null:
+			var guard_sp := _attach_sprite_with_pivot(root, bone_weapon, "WeaponGuardSprite", sw_spec, 49, sw_grip_front)
+			if guard_sp != null:
+				var grect: Array = sw_spec.get("guardOverlayRect", [])
+				if grect.size() >= 4:
+					var rx := float(grect[0])
+					var ry := float(grect[1])
+					guard_sp.region_enabled = true
+					guard_sp.region_rect = Rect2(rx, ry, float(grect[2]), float(grect[3]))
+					guard_sp.offset = Vector2(rx, ry) - sw_grip_front
+					guard_sp.visible = true
+				else:
+					guard_sp.visible = false
+
 			var pommel_marker := Marker2D.new()
 			pommel_marker.name = "PommelGripTarget"
 			pommel_marker.position = (sw_grip_back - sw_grip_front) * sw_scale
@@ -332,6 +368,7 @@ static func _attach_sprite_with_pivot(owner_root: Node, parent: Node, node_name:
 	var s := float(spec.get("scale", 1.0))
 	sp.scale = Vector2(s, s)
 	sp.z_index = z_idx
+	PuppetVisuals.apply_ink_material(sp)
 	parent.add_child(sp)
 	sp.owner = owner_root
 	return sp
