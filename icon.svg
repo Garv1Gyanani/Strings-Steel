@@ -1,1 +1,58 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="124" height="124" x="2" y="2" fill="#363d52" stroke="#212532" stroke-width="4" rx="14"/><g fill="#fff" transform="translate(12.322 12.322)scale(.101)"><path d="M105 673v33q407 354 814 0v-33z"/><path fill="#478cbf" d="m105 673 152 14q12 1 15 14l4 67 132 10 8-61q2-11 15-15h162q13 4 15 15l8 61 132-10 4-67q3-13 15-14l152-14V427q30-39 56-81-35-59-83-108-43 20-82 47-40-37-88-64 7-51 8-102-59-28-123-42-26 43-46 89-49-7-98 0-20-46-46-89-64 14-123 42 1 51 8 102-48 27-88 64-39-27-82-47-48 49-83 108 26 42 56 81zm0 33v39c0 276 813 276 814 0v-39l-134 12-5 69q-2 10-14 13l-162 11q-12 0-16-11l-10-65H446l-10 65q-4 11-16 11l-162-11q-12-3-14-13l-5-69z"/><path d="M483 600c0 34 58 34 58 0v-86c0-34-58-34-58 0z"/><circle cx="725" cy="526" r="90"/><circle cx="299" cy="526" r="90"/></g><g fill="#414042" transform="translate(12.322 12.322)scale(.101)"><circle cx="307" cy="532" r="60"/><circle cx="717" cy="532" r="60"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="68%">
+      <stop offset="0%" stop-color="#2b1317"/>
+      <stop offset="65%" stop-color="#14090b"/>
+      <stop offset="100%" stop-color="#090405"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5dc93"/>
+      <stop offset="50%" stop-color="#c9973b"/>
+      <stop offset="100%" stop-color="#7d5618"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9aa4b0"/>
+      <stop offset="48%" stop-color="#f2f6fa"/>
+      <stop offset="55%" stop-color="#7a838f"/>
+      <stop offset="100%" stop-color="#cfd6df"/>
+    </linearGradient>
+  </defs>
+  <rect x="14" y="14" width="484" height="484" rx="96" fill="url(#bg)" stroke="url(#gold)" stroke-width="14"/>
+  <rect x="32" y="32" width="448" height="448" rx="80" fill="none" stroke="#5e4019" stroke-width="3" opacity="0.75"/>
+  <!-- Marionette Strings -->
+  <g stroke="#e0c88d" stroke-width="3.5" opacity="0.58">
+    <line x1="256" y1="36" x2="256" y2="96"/>
+    <line x1="138" y1="104" x2="158" y2="352"/>
+    <line x1="206" y1="104" x2="216" y2="290"/>
+    <line x1="306" y1="104" x2="296" y2="290"/>
+    <line x1="374" y1="104" x2="354" y2="352"/>
+  </g>
+  <!-- Carved Oak Marionette Crossbar -->
+  <rect x="108" y="88" width="296" height="24" rx="10" fill="#59371c" stroke="#1a0d08" stroke-width="5"/>
+  <line x1="122" y1="95" x2="390" y2="95" stroke="#8f5d34" stroke-width="3"/>
+  <circle cx="124" cy="100" r="8" fill="url(#gold)" stroke="#1a0d08" stroke-width="3"/>
+  <circle cx="256" cy="100" r="9" fill="url(#gold)" stroke="#1a0d08" stroke-width="3"/>
+  <circle cx="388" cy="100" r="8" fill="url(#gold)" stroke="#1a0d08" stroke-width="3"/>
+  <!-- Crimson Banner Crest -->
+  <path d="M196 150 H316 V295 L256 342 L196 295 Z" fill="#6e141c" stroke="#1a080a" stroke-width="6"/>
+  <path d="M208 162 H304 V288 L256 326 L208 288 Z" fill="none" stroke="url(#gold)" stroke-width="3" opacity="0.8"/>
+  <!-- Left-to-Right Crossed Greatsword -->
+  <g transform="translate(256 278) rotate(-42)">
+    <polygon points="0,-178 13,-142 10,56 -10,56 -13,-142" fill="url(#steel)" stroke="#141013" stroke-width="6" stroke-linejoin="round"/>
+    <line x1="0" y1="-152" x2="0" y2="46" stroke="#474e57" stroke-width="3"/>
+    <path d="M-54,56 Q0,46 54,56 L50,68 Q0,58 -50,68 Z" fill="url(#gold)" stroke="#141013" stroke-width="5"/>
+    <rect x="-8" y="66" width="16" height="58" rx="4" fill="#4f2d1d" stroke="#141013" stroke-width="5"/>
+    <circle cx="0" cy="134" r="14" fill="url(#gold)" stroke="#141013" stroke-width="5"/>
+  </g>
+  <!-- Right-to-Left Crossed Swept-Hilt Rapier / Longsword -->
+  <g transform="translate(256 278) rotate(42)">
+    <polygon points="0,-182 11,-144 9,56 -9,56 -11,-144" fill="url(#steel)" stroke="#141013" stroke-width="6" stroke-linejoin="round"/>
+    <line x1="0" y1="-155" x2="0" y2="46" stroke="#474e57" stroke-width="3"/>
+    <ellipse cx="0" cy="52" rx="26" ry="15" fill="none" stroke="url(#gold)" stroke-width="6"/>
+    <path d="M-52,58 L52,58" stroke="url(#gold)" stroke-width="8" stroke-linecap="round"/>
+    <rect x="-7" y="64" width="14" height="56" rx="4" fill="#5c3522" stroke="#141013" stroke-width="5"/>
+    <circle cx="0" cy="132" r="13" fill="url(#gold)" stroke="#141013" stroke-width="5"/>
+  </g>
+  <!-- Center Gold Spark -->
+  <polygon points="256,248 264,270 286,278 264,286 256,308 248,286 226,278 248,270" fill="#fff3c4" stroke="#7d5618" stroke-width="2"/>
+</svg>

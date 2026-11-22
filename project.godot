@@ -10,7 +10,8 @@ config_version=5
 
 [application]
 
-config/name="string and steel"
+config/name="Strings & Steel"
+config/version="1.0.0"
 run/main_scene="res://scenes/Arena.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
@@ -19,6 +20,7 @@ config/icon="res://icon.svg"
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/handheld/orientation=4
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 

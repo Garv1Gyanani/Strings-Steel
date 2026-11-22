@@ -119,6 +119,7 @@ var debug_blocks: Array[int] = [0, 0]
 
 
 func _ready() -> void:
+	get_tree().set_quit_on_go_back(false)
 	GameInput.register()
 	_load_settings()
 
@@ -199,14 +200,30 @@ func _ready() -> void:
 # Settings
 # ---------------------------------------------------------------------------
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if phase == Phase.TITLE and ui != null:
+			if ui.get_title_page() != "main":
+				ui.show_title_page("main")
+			else:
+				get_tree().quit()
+		elif phase == Phase.MATCH_END:
+			_go_to_title("main")
+		else:
+			_toggle_pause()
+
+
 func _load_settings() -> void:
-	if OS.get_name() in ["Android", "iOS"] or DisplayServer.is_touchscreen_available():
+	var on_mobile := OS.get_name() in ["Android", "iOS"]
+	if on_mobile or DisplayServer.is_touchscreen_available():
 		settings["touch"] = true
 	var cfg := ConfigFile.new()
 	if cfg.load(settings_path) != OK:
 		return
 	for k in settings.keys():
 		settings[k] = cfg.get_value("game", k, settings[k])
+	if on_mobile:
+		settings["touch"] = true
 	best_wave = int(cfg.get_value("records", "best_wave", 0))
 	p1_roster_idx = clampi(int(cfg.get_value("game", "p1_idx", 0)), 0, FIGHTER_ROSTER.size() - 1)
 	var saved_lo := String(cfg.get_value("game", "p1_loadout", "signature"))

@@ -21,7 +21,7 @@ var player: FighterController
 var enabled: bool = false
 
 const SPLIT_FRAC := 0.45
-const TOP_SAFE_Y := 92.0
+const TOP_SAFE_Y := 118.0
 const LEFT_DEADZONE := 7.0
 const LEFT_FULL_SPAN := 32.0
 const LEFT_FOLLOW_RADIUS := 42.0
