@@ -61,6 +61,7 @@ var _right_parrying: bool = false
 var _right_whip_cd: float = 0.0
 var _right_fired_strike: bool = false
 var _right_trail: Array[Vector2] = []
+var _last_right_tap_ms: int = -9999
 
 # Secondary right finger (2-finger weapon throw or stationary parry hold)
 var _right_alt_idx: int = -1
@@ -289,26 +290,34 @@ func _on_finger_up(idx: int, pos: Vector2) -> void:
 			player.touch_move = 0.0
 			player.touch_low = _right_parrying and player.touch_low
 	elif idx == _right_idx:
-		# Quick Tap on Right Side -> Dash-Cleave / Spin-Slash when dashing, or Instant 3-Hit Combo Slash / Jab!
+		# Quick Tap on Right Side -> Double-tap fires Fighter Signature; single tap fires Slash / Dash-Cleave / Jab!
 		if not _right_fired_strike and _right_touch_time <= 0.21 and _right_max_travel < 22.0 and _right_alt_idx == -1 and player != null:
+			var now_r_ms := Time.get_ticks_msec()
 			var vp_h := maxf(480.0, get_viewport_rect().size.y)
-			if player.can_wield():
-				if player.dash_timer > 0.0:
-					player.start_attack("jump_slash" if player.dash_dir * float(player.facing) > 0.0 else "backstep_cut")
-				else:
-					player.start_attack("slash_low" if pos.y > vp_h * 0.65 else "slash_high")
+			if now_r_ms - _last_right_tap_ms <= 265 and player.signature_cd <= 0.0 and player.start_signature(true):
+				_last_right_tap_ms = -9999
 			else:
-				player.start_jab()
+				_last_right_tap_ms = now_r_ms
+				if player.can_wield():
+					if player.dash_timer > 0.0:
+						player.start_attack("jump_slash" if player.dash_dir * float(player.facing) > 0.0 else "backstep_cut")
+					else:
+						player.start_attack("slash_low" if pos.y > vp_h * 0.65 else "slash_high")
+				else:
+					player.start_jab()
 		_right_idx = -1
 		_right_parrying = false
 		_right_trail.clear()
 		if _right_alt_idx == -1 and player != null:
 			player.touch_parry = false
 	elif idx == _right_alt_idx:
-		if not _right_alt_thrown and (pos - _right_alt_origin).length() < 24.0 and _right_parrying and player != null and player.can_wield():
-			player.touch_parry = false
-			_right_parrying = false
-			player.start_attack("mordhau_smash" if player.half_swording else "pommel_strike")
+		if not _right_alt_thrown and (pos - _right_alt_origin).length() < 24.0 and player != null:
+			if _right_parrying and player.can_wield():
+				player.touch_parry = false
+				_right_parrying = false
+				player.start_attack("mordhau_smash" if player.half_swording else "pommel_strike")
+			else:
+				player.start_signature(true)
 		_right_alt_idx = -1
 		if not _right_parrying and player != null:
 			player.touch_parry = false

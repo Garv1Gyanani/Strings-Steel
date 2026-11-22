@@ -139,7 +139,7 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 	_redecide_timer = maxf(0.0, _redecide_timer - delta)
 	_stance_cd = maxf(0.0, _stance_cd - delta)
 	_foe_spin_habit = maxf(0.0, _foe_spin_habit - 0.16 * delta)
-	_foe_spinning_multi = foe.current_action == "spin_slash" and not foe._spin_second_armed
+	_foe_spinning_multi = (foe.current_action == "spin_slash" and not foe._spin_second_armed) or (foe.current_action in ["sig_landsknecht", "sig_bravo"] and not foe._sig_second_armed)
 
 	# Drive smooth 2-bone IK guard posture whenever the AI isn't in a committed animation.
 	_update_guard_ik(delta, me, foe, dist, dir_to_foe)
@@ -203,6 +203,16 @@ func step(delta: float, me: FighterController, foe: FighterController) -> void:
 		_episode_decided = true
 		_redecide_timer = 0.24
 		_roll_reaction()
+		# Against Black Knight's unblockable Iron Bull Barge, side/back-dash instead of blocking!
+		if foe.current_action == "sig_black_knight" and me.current_action == "" and me.dash_cooldown <= 0.0 and dist < 240.0 and randf() < clampf(float(_cfg["dash_use"]) + 0.35, 0.35, 0.92):
+			me.start_dash(-dir_to_foe)
+			_pending_attack = "thrust" if me.can_wield() else "kick"
+			_pending_delay = 0.16
+			return
+		# Fechtmeister AI punishes predictable repeated move-spammers by binding & disarming their blade!
+		if me.fighter_id == "fechtmeister" and reading_move_spam and me.current_action == "" and me.signature_cd <= 0.0 and me.can_wield() and dist < 210.0 and randf() < 0.45:
+			if _try_attack(me, "sig_fechtmeister"):
+				return
 		# Back-dash to make a committed spin/swing whiff, then skewer recovery with Lunge Thrust!
 		var bait_chance := bait_p * (0.72 if reading_spin_spam else 0.24)
 		if me.current_action == "" and dist > 158.0 and dist < 248.0 and me.dash_cooldown <= 0.0 and foe.current_action in FighterController.ATTACK_MOVES and randf() < bait_chance:
@@ -445,9 +455,9 @@ func _set_guard_zone(me: FighterController, foe: FighterController) -> void:
 
 
 func _foe_attack_zone(foe: FighterController) -> String:
-	if foe.current_action in ["slash_low", "leg_sweep"]:
+	if foe.current_action in ["slash_low", "leg_sweep"] or (foe.current_action == "sig_landsknecht" and not foe._sig_second_armed):
 		return "low"
-	if foe.current_action in ["slash_high", "thrust", "jump_slash", "mordhau_smash", "spin_slash", "riposte_cleave", "backstep_cut"]:
+	if foe.current_action in ["slash_high", "thrust", "jump_slash", "mordhau_smash", "spin_slash", "riposte_cleave", "backstep_cut", "sig_landsknecht", "sig_fechtmeister", "sig_executioner", "sig_bravo"]:
 		return "high"
 	return _foe_blade_line(foe)
 
@@ -462,6 +472,8 @@ func _foe_blade_line(foe: FighterController) -> String:
 
 func _choose_attack(me: FighterController, foe: FighterController, dist: float) -> String:
 	if not me.can_wield():
+		if me.fighter_id == "black_knight" and me.signature_cd <= 0.0 and me.can_dash() and dist < 215.0:
+			return "sig_black_knight"
 		if me.can_jab() and dist < 145.0 and (not me.can_kick() or randf() < 0.58):
 			return "jab"
 		return "kick" if me.can_kick() and dist < 190.0 else ""
@@ -470,6 +482,15 @@ func _choose_attack(me: FighterController, foe: FighterController, dist: float) 
 	# Instant Zornhau Master-Cut when AI has an active Riposte window!
 	if me.riposte_timer > 0.0 and dist < 210.0 and me.anim_player != null and me.anim_player.has_animation("riposte_cleave") and (not foe.parrying or foe.guard_zone == "low"):
 		return "riposte_cleave"
+	# Fighter-specific Signature Move opportunities!
+	if me.signature_cd <= 0.0 and dist <= 228.0:
+		var sig := me.get_signature_move()
+		if me.fighter_id == "black_knight" and foe.parrying and me.can_dash() and randf() < 0.42:
+			return sig
+		if me.fighter_id == "plague_executioner" and (foe.bleed_rate > 0.1 or foe.hp < 0.65 * foe.max_hp) and randf() < 0.28:
+			return sig
+		if randf() < 0.16:
+			return sig
 	# Close clinch: bash visor with Pommel Strike or Mordhau!
 	if dist < 150.0 and randf() < (0.34 if style in ["bully", "master"] else 0.22):
 		return "mordhau_smash" if me.half_swording else "pommel_strike"

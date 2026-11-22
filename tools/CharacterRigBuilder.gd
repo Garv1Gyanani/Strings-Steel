@@ -998,6 +998,188 @@ static func _build_animation_library(anim_player: AnimationPlayer) -> void:
 		}],
 	]))
 
+	# SIG_LANDSKNECHT (Gassenhauer — Low Rising Unterhau Scythe -> Advancing Figure-8 Overhead Cleave!)
+	lib.add_animation("sig_landsknecht", _make_pose_anim(0.48, Animation.LOOP_NONE, [
+		[0.0, {
+			"Pelvis:position:y": 16.0, "Pelvis:rotation": deg_to_rad(-10.0),
+			"Torso:rotation": deg_to_rad(-16.0), "Head:rotation": deg_to_rad(12.0), "Hat:rotation": deg_to_rad(-10.0),
+			"Thigh_L:rotation": deg_to_rad(36.0), "Shin_L:rotation": deg_to_rad(-32.0), "Boot_L:rotation": deg_to_rad(-4.0),
+			"Thigh_R:rotation": deg_to_rad(-30.0), "Shin_R:rotation": deg_to_rad(30.0), "Boot_R:rotation": deg_to_rad(0.0),
+			"UpperArm_R:rotation": deg_to_rad(32.0), "Forearm_R:rotation": deg_to_rad(-22.0), "Hand_R:rotation": deg_to_rad(16.0), "WeaponBone:rotation": deg_to_rad(64.0),
+		}],
+		[0.13, {
+			"Pelvis:position:y": 2.0, "Pelvis:rotation": deg_to_rad(14.0),
+			"Torso:rotation": deg_to_rad(18.0), "Head:rotation": deg_to_rad(-14.0), "Hat:rotation": deg_to_rad(18.0),
+			"Thigh_L:rotation": deg_to_rad(42.0), "Shin_L:rotation": deg_to_rad(-14.0), "Boot_L:rotation": deg_to_rad(-22.0),
+			"Thigh_R:rotation": deg_to_rad(-48.0), "Shin_R:rotation": deg_to_rad(42.0), "Boot_R:rotation": deg_to_rad(4.0),
+			"UpperArm_R:rotation": deg_to_rad(-108.0), "Forearm_R:rotation": deg_to_rad(-18.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(20.0),
+		}],
+		[0.21, {
+			"Pelvis:position:y": -4.0, "Pelvis:rotation": deg_to_rad(-8.0),
+			"Torso:rotation": deg_to_rad(-18.0), "Head:rotation": deg_to_rad(14.0), "Hat:rotation": deg_to_rad(-16.0),
+			"UpperArm_R:rotation": deg_to_rad(-144.0), "Forearm_R:rotation": deg_to_rad(-42.0), "Hand_R:rotation": deg_to_rad(-16.0), "WeaponBone:rotation": deg_to_rad(-60.0),
+		}],
+		[0.31, {
+			"Pelvis:position:y": 24.0, "Pelvis:rotation": deg_to_rad(16.0),
+			"Torso:rotation": deg_to_rad(26.0), "Head:rotation": deg_to_rad(-22.0), "Hat:rotation": deg_to_rad(24.0),
+			"Thigh_L:rotation": deg_to_rad(48.0), "Shin_L:rotation": deg_to_rad(-10.0), "Boot_L:rotation": deg_to_rad(-30.0),
+			"Thigh_R:rotation": deg_to_rad(-56.0), "Shin_R:rotation": deg_to_rad(52.0), "Boot_R:rotation": deg_to_rad(4.0),
+			"UpperArm_R:rotation": deg_to_rad(-30.0), "Forearm_R:rotation": deg_to_rad(-5.0), "Hand_R:rotation": deg_to_rad(20.0), "WeaponBone:rotation": deg_to_rad(60.0),
+		}],
+		[0.48, {
+			"Pelvis:position:y": 2.0, "Pelvis:rotation": deg_to_rad(3.0),
+			"Torso:rotation": deg_to_rad(-5.0), "Head:rotation": deg_to_rad(2.0), "Hat:rotation": deg_to_rad(0.0),
+			"Thigh_L:rotation": deg_to_rad(24.0), "Shin_L:rotation": deg_to_rad(-18.0), "Boot_L:rotation": deg_to_rad(-6.0),
+			"Thigh_R:rotation": deg_to_rad(-24.0), "Shin_R:rotation": deg_to_rad(22.0), "Boot_R:rotation": deg_to_rad(2.0),
+			"UpperArm_R:rotation": deg_to_rad(-52.0), "Forearm_R:rotation": deg_to_rad(-55.0), "Hand_R:rotation": deg_to_rad(10.0), "WeaponBone:rotation": deg_to_rad(-28.0),
+		}],
+	]))
+
+	# SIG_FECHTMEISTER (Meisterhau Bind — High Angled Ochs Crossguard Bind -> Spiral Disarming Cut!)
+	lib.add_animation("sig_fechtmeister", _make_pose_anim(0.44, Animation.LOOP_NONE, [
+		[0.0, {
+			"Pelvis:position:y": 6.0, "Pelvis:rotation": deg_to_rad(-4.0),
+			"Torso:rotation": deg_to_rad(-8.0), "Head:rotation": deg_to_rad(8.0), "Hat:rotation": deg_to_rad(-6.0),
+			"Thigh_L:rotation": deg_to_rad(28.0), "Shin_L:rotation": deg_to_rad(-24.0), "Boot_L:rotation": deg_to_rad(-4.0),
+			"Thigh_R:rotation": deg_to_rad(-26.0), "Shin_R:rotation": deg_to_rad(26.0), "Boot_R:rotation": deg_to_rad(0.0),
+			"UpperArm_R:rotation": deg_to_rad(-112.0), "Forearm_R:rotation": deg_to_rad(-36.0), "Hand_R:rotation": deg_to_rad(8.0), "WeaponBone:rotation": deg_to_rad(104.0),
+		}],
+		[0.14, {
+			"Pelvis:position:y": 10.0, "Pelvis:rotation": deg_to_rad(6.0),
+			"Torso:rotation": deg_to_rad(8.0), "Head:rotation": deg_to_rad(-6.0), "Hat:rotation": deg_to_rad(6.0),
+			"Thigh_L:rotation": deg_to_rad(36.0), "Shin_L:rotation": deg_to_rad(-20.0), "Boot_L:rotation": deg_to_rad(-12.0),
+			"Thigh_R:rotation": deg_to_rad(-38.0), "Shin_R:rotation": deg_to_rad(36.0), "Boot_R:rotation": deg_to_rad(2.0),
+			"UpperArm_R:rotation": deg_to_rad(-122.0), "Forearm_R:rotation": deg_to_rad(-28.0), "Hand_R:rotation": deg_to_rad(14.0), "WeaponBone:rotation": deg_to_rad(118.0),
+		}],
+		[0.24, {
+			"Pelvis:position:y": 22.0, "Pelvis:rotation": deg_to_rad(15.0),
+			"Torso:rotation": deg_to_rad(24.0), "Head:rotation": deg_to_rad(-20.0), "Hat:rotation": deg_to_rad(20.0),
+			"Thigh_L:rotation": deg_to_rad(46.0), "Shin_L:rotation": deg_to_rad(-12.0), "Boot_L:rotation": deg_to_rad(-28.0),
+			"Thigh_R:rotation": deg_to_rad(-54.0), "Shin_R:rotation": deg_to_rad(50.0), "Boot_R:rotation": deg_to_rad(4.0),
+			"UpperArm_R:rotation": deg_to_rad(-34.0), "Forearm_R:rotation": deg_to_rad(-6.0), "Hand_R:rotation": deg_to_rad(20.0), "WeaponBone:rotation": deg_to_rad(58.0),
+		}],
+		[0.44, {
+			"Pelvis:position:y": 2.0, "Pelvis:rotation": deg_to_rad(3.0),
+			"Torso:rotation": deg_to_rad(-5.0), "Head:rotation": deg_to_rad(2.0), "Hat:rotation": deg_to_rad(0.0),
+			"Thigh_L:rotation": deg_to_rad(24.0), "Shin_L:rotation": deg_to_rad(-18.0), "Boot_L:rotation": deg_to_rad(-6.0),
+			"Thigh_R:rotation": deg_to_rad(-24.0), "Shin_R:rotation": deg_to_rad(22.0), "Boot_R:rotation": deg_to_rad(2.0),
+			"UpperArm_R:rotation": deg_to_rad(-52.0), "Forearm_R:rotation": deg_to_rad(-55.0), "Hand_R:rotation": deg_to_rad(10.0), "WeaponBone:rotation": deg_to_rad(-28.0),
+		}],
+	]))
+
+	# SIG_EXECUTIONER (Guillotine Chop — Dread High-Hanging Raise -> Seismic Flagstone Execution!)
+	lib.add_animation("sig_executioner", _make_pose_anim(0.54, Animation.LOOP_NONE, [
+		[0.0, {
+			"Pelvis:position:y": -2.0, "Pelvis:rotation": deg_to_rad(-8.0),
+			"Torso:rotation": deg_to_rad(-18.0), "Head:rotation": deg_to_rad(14.0), "Hat:rotation": deg_to_rad(-12.0),
+			"Thigh_L:rotation": deg_to_rad(26.0), "Shin_L:rotation": deg_to_rad(-20.0), "Boot_L:rotation": deg_to_rad(-4.0),
+			"Thigh_R:rotation": deg_to_rad(-18.0), "Shin_R:rotation": deg_to_rad(18.0), "Boot_R:rotation": deg_to_rad(-2.0),
+			"UpperArm_R:rotation": deg_to_rad(-134.0), "Forearm_R:rotation": deg_to_rad(-44.0), "Hand_R:rotation": deg_to_rad(-14.0), "WeaponBone:rotation": deg_to_rad(-54.0),
+		}],
+		[0.16, {
+			"Pelvis:position:y": -14.0, "Pelvis:rotation": deg_to_rad(-14.0),
+			"Torso:rotation": deg_to_rad(-28.0), "Head:rotation": deg_to_rad(22.0), "Hat:rotation": deg_to_rad(-24.0),
+			"Thigh_L:rotation": deg_to_rad(18.0), "Shin_L:rotation": deg_to_rad(-10.0), "Boot_L:rotation": deg_to_rad(12.0),
+			"Thigh_R:rotation": deg_to_rad(-14.0), "Shin_R:rotation": deg_to_rad(14.0), "Boot_R:rotation": deg_to_rad(10.0),
+			"UpperArm_R:rotation": deg_to_rad(-154.0), "Forearm_R:rotation": deg_to_rad(-38.0), "Hand_R:rotation": deg_to_rad(-20.0), "WeaponBone:rotation": deg_to_rad(-70.0),
+		}],
+		[0.28, {
+			"Pelvis:position:y": 30.0, "Pelvis:rotation": deg_to_rad(18.0),
+			"Torso:rotation": deg_to_rad(30.0), "Head:rotation": deg_to_rad(-24.0), "Hat:rotation": deg_to_rad(28.0),
+			"Thigh_L:rotation": deg_to_rad(52.0), "Shin_L:rotation": deg_to_rad(-12.0), "Boot_L:rotation": deg_to_rad(-32.0),
+			"Thigh_R:rotation": deg_to_rad(-60.0), "Shin_R:rotation": deg_to_rad(56.0), "Boot_R:rotation": deg_to_rad(4.0),
+			"UpperArm_R:rotation": deg_to_rad(-24.0), "Forearm_R:rotation": deg_to_rad(-4.0), "Hand_R:rotation": deg_to_rad(22.0), "WeaponBone:rotation": deg_to_rad(66.0),
+		}],
+		[0.39, {
+			"Pelvis:position:y": 22.0, "Pelvis:rotation": deg_to_rad(14.0),
+			"Torso:rotation": deg_to_rad(22.0), "Head:rotation": deg_to_rad(-16.0), "Hat:rotation": deg_to_rad(14.0),
+			"UpperArm_R:rotation": deg_to_rad(-34.0), "Forearm_R:rotation": deg_to_rad(-14.0), "Hand_R:rotation": deg_to_rad(16.0), "WeaponBone:rotation": deg_to_rad(48.0),
+		}],
+		[0.54, {
+			"Pelvis:position:y": 2.0, "Pelvis:rotation": deg_to_rad(3.0),
+			"Torso:rotation": deg_to_rad(-5.0), "Head:rotation": deg_to_rad(2.0), "Hat:rotation": deg_to_rad(0.0),
+			"Thigh_L:rotation": deg_to_rad(24.0), "Shin_L:rotation": deg_to_rad(-18.0), "Boot_L:rotation": deg_to_rad(-6.0),
+			"Thigh_R:rotation": deg_to_rad(-24.0), "Shin_R:rotation": deg_to_rad(22.0), "Boot_R:rotation": deg_to_rad(2.0),
+			"UpperArm_R:rotation": deg_to_rad(-52.0), "Forearm_R:rotation": deg_to_rad(-55.0), "Hand_R:rotation": deg_to_rad(10.0), "WeaponBone:rotation": deg_to_rad(-28.0),
+		}],
+	]))
+
+	# SIG_BLACK_KNIGHT (Iron Bull Barge — Tucked-Chin Full-Plate Shoulder & Gauntlet Ram!)
+	lib.add_animation("sig_black_knight", _make_pose_anim(0.40, Animation.LOOP_NONE, [
+		[0.0, {
+			"Pelvis:position:y": 14.0, "Pelvis:rotation": deg_to_rad(-4.0),
+			"Torso:rotation": deg_to_rad(-8.0), "Head:rotation": deg_to_rad(6.0), "Hat:rotation": deg_to_rad(-6.0),
+			"Thigh_L:rotation": deg_to_rad(34.0), "Shin_L:rotation": deg_to_rad(-30.0), "Boot_L:rotation": deg_to_rad(-4.0),
+			"Thigh_R:rotation": deg_to_rad(-28.0), "Shin_R:rotation": deg_to_rad(28.0), "Boot_R:rotation": deg_to_rad(0.0),
+			"UpperArm_R:rotation": deg_to_rad(-24.0), "Forearm_R:rotation": deg_to_rad(-98.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(-42.0),
+		}],
+		[0.13, {
+			"Pelvis:position:y": 24.0, "Pelvis:rotation": deg_to_rad(18.0),
+			"Torso:rotation": deg_to_rad(30.0), "Head:rotation": deg_to_rad(-24.0), "Hat:rotation": deg_to_rad(22.0),
+			"Thigh_L:rotation": deg_to_rad(52.0), "Shin_L:rotation": deg_to_rad(-10.0), "Boot_L:rotation": deg_to_rad(-34.0),
+			"Thigh_R:rotation": deg_to_rad(-58.0), "Shin_R:rotation": deg_to_rad(54.0), "Boot_R:rotation": deg_to_rad(4.0),
+			"UpperArm_R:rotation": deg_to_rad(-58.0), "Forearm_R:rotation": deg_to_rad(-88.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(-36.0),
+		}],
+		[0.25, {
+			"Pelvis:position:y": 20.0, "Pelvis:rotation": deg_to_rad(14.0),
+			"Torso:rotation": deg_to_rad(24.0), "Head:rotation": deg_to_rad(-18.0), "Hat:rotation": deg_to_rad(14.0),
+			"Thigh_L:rotation": deg_to_rad(46.0), "Shin_L:rotation": deg_to_rad(-14.0), "Boot_L:rotation": deg_to_rad(-26.0),
+			"Thigh_R:rotation": deg_to_rad(-50.0), "Shin_R:rotation": deg_to_rad(46.0), "Boot_R:rotation": deg_to_rad(4.0),
+			"UpperArm_R:rotation": deg_to_rad(-54.0), "Forearm_R:rotation": deg_to_rad(-82.0), "Hand_R:rotation": deg_to_rad(4.0), "WeaponBone:rotation": deg_to_rad(-32.0),
+		}],
+		[0.40, {
+			"Pelvis:position:y": 2.0, "Pelvis:rotation": deg_to_rad(3.0),
+			"Torso:rotation": deg_to_rad(-5.0), "Head:rotation": deg_to_rad(2.0), "Hat:rotation": deg_to_rad(0.0),
+			"Thigh_L:rotation": deg_to_rad(24.0), "Shin_L:rotation": deg_to_rad(-18.0), "Boot_L:rotation": deg_to_rad(-6.0),
+			"Thigh_R:rotation": deg_to_rad(-24.0), "Shin_R:rotation": deg_to_rad(22.0), "Boot_R:rotation": deg_to_rad(2.0),
+			"UpperArm_R:rotation": deg_to_rad(-52.0), "Forearm_R:rotation": deg_to_rad(-55.0), "Hand_R:rotation": deg_to_rad(10.0), "WeaponBone:rotation": deg_to_rad(-28.0),
+		}],
+	]))
+
+	# SIG_BRAVO (Punta Doppia — Ducking Low-Profile Slip -> Rapid 2-Hit Rapier Double-Needle Lunge!)
+	lib.add_animation("sig_bravo", _make_pose_anim(0.44, Animation.LOOP_NONE, [
+		[0.0, {
+			"Pelvis:position:y": 14.0, "Pelvis:rotation": deg_to_rad(6.0),
+			"Torso:rotation": deg_to_rad(8.0), "Head:rotation": deg_to_rad(-6.0), "Hat:rotation": deg_to_rad(-4.0),
+			"Thigh_L:rotation": deg_to_rad(34.0), "Shin_L:rotation": deg_to_rad(-30.0), "Boot_L:rotation": deg_to_rad(-4.0),
+			"Thigh_R:rotation": deg_to_rad(-30.0), "Shin_R:rotation": deg_to_rad(30.0), "Boot_R:rotation": deg_to_rad(0.0),
+			"UpperArm_R:rotation": deg_to_rad(22.0), "Forearm_R:rotation": deg_to_rad(-106.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(88.0),
+		}],
+		[0.07, {
+			"Pelvis:position:y": 46.0, "Pelvis:rotation": deg_to_rad(16.0),
+			"Torso:rotation": deg_to_rad(24.0), "Head:rotation": deg_to_rad(-22.0), "Hat:rotation": deg_to_rad(14.0),
+			"Thigh_L:rotation": deg_to_rad(54.0), "Shin_L:rotation": deg_to_rad(-82.0), "Boot_L:rotation": deg_to_rad(24.0),
+			"Thigh_R:rotation": deg_to_rad(-72.0), "Shin_R:rotation": deg_to_rad(62.0), "Boot_R:rotation": deg_to_rad(8.0),
+			"UpperArm_R:rotation": deg_to_rad(12.0), "Forearm_R:rotation": deg_to_rad(-98.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(88.0),
+		}],
+		[0.15, {
+			"Pelvis:position:y": 26.0, "Pelvis:rotation": deg_to_rad(14.0),
+			"Torso:rotation": deg_to_rad(22.0), "Head:rotation": deg_to_rad(-20.0), "Hat:rotation": deg_to_rad(16.0),
+			"Thigh_L:rotation": deg_to_rad(48.0), "Shin_L:rotation": deg_to_rad(-10.0), "Boot_L:rotation": deg_to_rad(-34.0),
+			"Thigh_R:rotation": deg_to_rad(-56.0), "Shin_R:rotation": deg_to_rad(52.0), "Boot_R:rotation": deg_to_rad(4.0),
+			"UpperArm_R:rotation": deg_to_rad(-108.0), "Forearm_R:rotation": deg_to_rad(-6.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(80.0),
+		}],
+		[0.21, {
+			"Pelvis:position:y": 22.0, "Pelvis:rotation": deg_to_rad(8.0),
+			"Torso:rotation": deg_to_rad(12.0), "Head:rotation": deg_to_rad(-10.0), "Hat:rotation": deg_to_rad(-6.0),
+			"UpperArm_R:rotation": deg_to_rad(-24.0), "Forearm_R:rotation": deg_to_rad(-78.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(84.0),
+		}],
+		[0.28, {
+			"Pelvis:position:y": 30.0, "Pelvis:rotation": deg_to_rad(17.0),
+			"Torso:rotation": deg_to_rad(25.0), "Head:rotation": deg_to_rad(-23.0), "Hat:rotation": deg_to_rad(20.0),
+			"Thigh_L:rotation": deg_to_rad(54.0), "Shin_L:rotation": deg_to_rad(-8.0), "Boot_L:rotation": deg_to_rad(-38.0),
+			"Thigh_R:rotation": deg_to_rad(-62.0), "Shin_R:rotation": deg_to_rad(58.0), "Boot_R:rotation": deg_to_rad(4.0),
+			"UpperArm_R:rotation": deg_to_rad(-114.0), "Forearm_R:rotation": deg_to_rad(-4.0), "Hand_R:rotation": deg_to_rad(0.0), "WeaponBone:rotation": deg_to_rad(82.0),
+		}],
+		[0.44, {
+			"Pelvis:position:y": 2.0, "Pelvis:rotation": deg_to_rad(3.0),
+			"Torso:rotation": deg_to_rad(-5.0), "Head:rotation": deg_to_rad(2.0), "Hat:rotation": deg_to_rad(0.0),
+			"Thigh_L:rotation": deg_to_rad(24.0), "Shin_L:rotation": deg_to_rad(-18.0), "Boot_L:rotation": deg_to_rad(-6.0),
+			"Thigh_R:rotation": deg_to_rad(-24.0), "Shin_R:rotation": deg_to_rad(22.0), "Boot_R:rotation": deg_to_rad(2.0),
+			"UpperArm_R:rotation": deg_to_rad(-52.0), "Forearm_R:rotation": deg_to_rad(-55.0), "Hand_R:rotation": deg_to_rad(10.0), "WeaponBone:rotation": deg_to_rad(-28.0),
+		}],
+	]))
+
 	anim_player.add_animation_library("", lib)
 
 

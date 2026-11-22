@@ -29,6 +29,10 @@ const DEFAULT := {
 	"ai_aggression": 0.55, # 0..1, shortens AI attack cooldowns
 	"ai_thrust_bias": 0.0, # -1..1, shifts AI attack choice toward slashes / thrusts
 	"ai_style": "balanced", # "pressure" | "master" | "executioner" | "bully" | "duelist"
+	"signature_move": "sig_landsknecht",
+	"signature_name": "GASSENHAUER",
+	"signature_desc": "Low-to-high figure-8 advancing double cleave.",
+	"passive_desc": "Hits restore stamina; severs reset dash.",
 	"unhelmed_head": "", # optional bare head sprite id revealed when helmet is smashed off
 	# Head sprite part ids (from rig_metadata.json) per facial expression.
 	"heads": {"calm": "p1_head_calm", "yell": "p1_head_yell", "pain": "p1_head_grimace", "bloody": "p1_head_bloody", "dead": "p1_head_dead"},
@@ -60,7 +64,10 @@ const WEAPON_SPECS := {
 const TABLE := {
 	"landsknecht": {
 		"display_name": "LANDSKNECHT",
-		"blurb": "Doppelsöldner. Relentless high-low combos & fast stamina, no armour.",
+		"blurb": "Doppelsöldner. Relentless figure-8 combos & fast stamina, no armour.",
+		"signature_move": "sig_landsknecht",
+		"signature_name": "GASSENHAUER [G]",
+		"signature_desc": "Advancing low-to-high figure-8 double cleave; hits refund stamina & severs reset Dash.",
 		"max_hp": 112.0,
 		"move_speed": 345.0,
 		"attack_speed": 1.10,
@@ -75,6 +82,9 @@ const TABLE := {
 	"fechtmeister": {
 		"display_name": "FECHTMEISTER",
 		"blurb": "Master of defence. Wide perfect-parry window, steel gauntlets & half plate.",
+		"signature_move": "sig_fechtmeister",
+		"signature_name": "MEISTERHAU BIND [G]",
+		"signature_desc": "Auto-deflecting bind counter that rips the rival's sword from weakened guards.",
 		"move_speed": 338.0,
 		"attack_speed": 1.12,
 		"blade_weight": 0.90,
@@ -89,6 +99,9 @@ const TABLE := {
 	"plague_executioner": {
 		"display_name": "PLAGUE EXECUTIONER",
 		"blurb": "Heavy executioner's blade. Slow wind-up, brutal limb-chopping momentum.",
+		"signature_move": "sig_executioner",
+		"signature_name": "GUILLOTINE CHOP [G]",
+		"signature_desc": "Seismic armour-piercing overhead chop; executes wounded targets (+22% vs bleeding).",
 		"max_hp": 115.0,
 		"move_speed": 300.0,
 		"attack_speed": 0.94,
@@ -113,6 +126,9 @@ const TABLE := {
 	"black_knight": {
 		"display_name": "BLACK KNIGHT",
 		"blurb": "Full plate harness. Shrugs off slashes and bullies guards, tires quickly.",
+		"signature_move": "sig_black_knight",
+		"signature_name": "IRON BULL BARGE [G]",
+		"signature_desc": "Unblockable hyper-armour plate shoulder ram that shatters guards & crushes corners.",
 		"max_hp": 125.0,
 		"move_speed": 282.0,
 		"attack_speed": 0.98,
@@ -135,6 +151,9 @@ const TABLE := {
 	"venetian_bravo": {
 		"display_name": "VENETIAN BRAVO",
 		"blurb": "Rapier duellist. Nimble armour-piercing thrusts and footwork, fragile.",
+		"signature_move": "sig_bravo",
+		"signature_name": "PUNTA DOPPIA [G]",
+		"signature_desc": "Low-profile ducking slip into a rapid 2-hit armour-piercing Rapier needle lunge.",
 		"max_hp": 88.0,
 		"move_speed": 392.0,
 		"attack_speed": 1.28,

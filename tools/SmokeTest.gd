@@ -834,10 +834,163 @@ func _run() -> void:
 			saw_land_ring = true
 	check(saw_land_ring and p1()._rig_squash > 0.01, "landing from Jump_Slash triggers flagstone shockwave ring and tactile landing compression")
 
-	print("== Back to title")
+	print("== 5 Fighter Signature Moves & Passives")
+	arena._set_fighter(true, 0) # Landsknecht
+	arena._set_fighter(false, 1) # Fechtmeister
+	_reset_both()
+	var all_sigs_baked := true
+	for sig_anim in FighterController.SIGNATURE_MOVES:
+		if not p1().anim_player.has_animation(sig_anim):
+			all_sigs_baked = false
+	check(all_sigs_baked, "all 5 bespoke signature animations (22 total anims) baked into fighter rigs")
+
+	# 1. Landsknecht: [G] triggers Gassenhauer (low-to-high 2-hit cleave) + sever resets Dash cooldown
+	p1().input_enabled = true
+	Input.action_press("signature")
+	p1()._process(0.016)
+	Input.action_release("signature")
+	check(p1().current_action == "sig_landsknecht" and p1().signature_cd > 2.0, "pressing [G] launches active fighter's signature move (sig_landsknecht) & starts cooldown")
+	await frames(2)
+	var land_s1 := p1().attack_serial
+	check(not arena._is_covered_by_parry(p1(), p2(), "thigh_l", p2().position), "Gassenhauer Hit #1 strikes low")
+	p1().action_elapsed = 0.23
+	p1()._process(0.016)
+	p2().parrying = true
+	p2().guard_zone = "high"
+	check(p1().attack_serial == land_s1 + 1 and arena._is_covered_by_parry(p1(), p2(), "torso", p2().position + Vector2(0, -100)), "Gassenhauer re-arms Hit #2 mid-combo as an overhead high cleave")
+	_reset_both()
+	p1().dash_cooldown = 0.42
+	p2().hp = 24.0
+	arena.settings["one_hit_sever"] = true
+	p1().position.x = 490.0
+	p2().position.x = 635.0
+	p1().start_attack("slash_high")
+	p1().action_elapsed = 0.20
+	p1().anim_player.play("slash_high", 0.0)
+	p1().anim_player.seek(0.20, true)
+	arena._check_blade_vs_body(p1(), p2())
+	arena.settings["one_hit_sever"] = false
+	check(is_equal_approx(p1().dash_cooldown, 0.0), "Landsknecht passive resets Dash cooldown immediately on limb sever")
+
+	# 2. Fechtmeister: Meisterhau Bind auto-catches & disarms incoming blade attack
+	_reset_both()
+	p1().position.x = 500.0
+	p2().position.x = 625.0
+	p2().start_signature()
+	p2().action_elapsed = 0.08
+	p2().anim_player.play("sig_fechtmeister", 0.0)
+	p2().anim_player.seek(0.08, true)
+	p1().start_attack("slash_high")
+	p1().action_elapsed = 0.20
+	p1().anim_player.play("slash_high", 0.0)
+	p1().anim_player.seek(0.20, true)
+	arena._resolve_combat()
+	check(not p1().has_weapon and p1().current_action == "parry_recoil" and p2().riposte_timer > 0.55, "Fechtmeister Meisterhau Bind auto-deflects incoming slash, disarms rival & grants extended Riposte")
+
+	# 3. Plague Executioner: Guillotine Chop shockwave + +22% Bloodscent passive vs bleeding targets
+	arena._set_fighter(true, 2) # Plague Executioner
+	arena._set_fighter(false, 0) # Landsknecht
+	_reset_both()
+	p1().position.x = 490.0
+	p2().position.x = 640.0
+	p1().start_attack("slash_high")
+	p1().action_elapsed = 0.20
+	p1().anim_player.play("slash_high", 0.0)
+	p1().anim_player.seek(0.20, true)
+	var hp_clean_pre := p2().hp
+	arena._check_blade_vs_body(p1(), p2())
+	var dmg_clean := hp_clean_pre - p2().hp
+	_reset_both()
+	p1().position.x = 490.0
+	p2().position.x = 640.0
+	p2().bleed_rate = 2.5
+	p1().start_attack("slash_high")
+	p1().action_elapsed = 0.20
+	p1().anim_player.play("slash_high", 0.0)
+	p1().anim_player.seek(0.20, true)
+	var hp_bleed_pre := p2().hp
+	arena._check_blade_vs_body(p1(), p2())
+	var dmg_bleed := hp_bleed_pre - p2().hp
+	check(dmg_bleed > dmg_clean * 1.18, "Plague Executioner passive deals +22%% damage against bleeding foes (%.1f vs %.1f)" % [dmg_bleed, dmg_clean])
+	arena.particles_dust.clear()
+	p1().current_action = ""
+	p1().signature_cd = 0.0
+	check(p1().start_signature() and p1().current_action == "sig_executioner", "Plague Executioner launches Guillotine Chop (sig_executioner)")
+	p1().action_elapsed = 0.27
+	p1()._process(0.016)
+	check(arena.particles_dust.size() > 0, "Guillotine Chop slam triggers flagstone shockwave dust")
+
+	# 4. Black Knight: Iron Bull Barge has hyper-armor, works unarmed, shatters parry & boosts Corner Crush
+	arena._set_fighter(true, 3) # Black Knight
+	arena._set_fighter(false, 1) # Fechtmeister
+	_reset_both()
+	p1().has_weapon = false
+	p1().position.x = 985.0
+	p2().position.x = 1140.0
+	p2().parrying = true
+	check(p1().start_signature() and p1().current_action == "sig_black_knight", "Black Knight can unleash Iron Bull Barge even when disarmed")
+	p1().action_elapsed = 0.14
+	p1().trigger_hurt(false)
+	check(p1().current_action == "sig_black_knight", "Iron Bull Barge hyper-armor shrugs off light hit-stun during charge")
+	var bk_def_hp := p2().hp
+	arena._check_barge(p1(), p2())
+	check(not p2().parrying and p2().current_action == "parry_recoil" and (bk_def_hp - p2().hp) > 30.0, "Iron Bull Barge shatters active parry and triggers boosted 16-HP Corner Crush")
+
+	# 5. Venetian Bravo: Punta Doppia ducks high slashes, fires 2-hit needle thrust, cheap 9-stam dash & 1.45x bleed
+	arena._set_fighter(true, 4) # Venetian Bravo
+	arena._set_fighter(false, 0) # Landsknecht
+	_reset_both()
+	var bravo_stam_pre := p1().stamina
+	p1().start_dash(1.0)
+	check(is_equal_approx(bravo_stam_pre - p1().stamina, 9.0), "Venetian Bravo passive reduces Dash stamina cost to 9")
+	_reset_both()
+	p1().position.x = 490.0
+	p2().position.x = 635.0
+	p1().start_signature()
+	p1().action_elapsed = 0.06
+	p1().anim_player.play("sig_bravo", 0.0)
+	p1().anim_player.seek(0.06, true)
+	p2().start_attack("slash_high")
+	p2().action_elapsed = 0.20
+	p2().anim_player.play("slash_high", 0.0)
+	p2().anim_player.seek(0.20, true)
+	var bravo_hp_pre := p1().hp
+	arena._check_blade_vs_body(p2(), p1())
+	check(is_equal_approx(p1().hp, bravo_hp_pre), "Bravo Punta Doppia low-profile slip ducks cleanly underneath Slash_High")
+	var bravo_s1 := p1().attack_serial
+	p1().action_elapsed = 0.22
+	p1()._process(0.016)
+	check(p1().attack_serial == bravo_s1 + 1 and p1().is_thrust_strike(), "Punta Doppia re-arms its 2nd armor-piercing needle thrust")
+
+	print("== Live Character Select Puppets & Single-Character Solo Practice Mode")
 	arena._go_to_title()
 	await frames(3)
 	check(arena.phase == TITLE and arena.ui._title_root.visible, "Change Fighters returns to the title screen")
+	check(p1().visible and p1().position.x < 250.0 and p2().visible and p2().position.x > 1020.0, "live marionettes stand visible in left & right stage spotlights on Character Select")
+	arena.ui._sel_p1 = 0
+	arena.ui._cycle_p1(1) # -> Fechtmeister (idx 1)
+	arena.ui._cycle_loadout(true) # -> Halberd
+	check(p1().fighter_id == "fechtmeister" and p1().weapon_part_id == "p_weapon_halberd" and p1().current_action == "sig_fechtmeister", "cycling fighter & weapon on Title swaps live puppet immediately and plays signature flourish")
+	arena.ui._set_mode("practice")
+	check(not p2().visible, "selecting PRACTICE · SOLO on Title hides Rival puppet for single-character preview")
+
+	# Launch Single-Character Solo Practice Mode!
+	arena.ui._emit_start()
+	await frames(2)
+	check(arena.phase == FIGHT and arena.match_mode == "practice" and arena.practice_dummy_mode == "off" and p1().input_enabled and not p2().visible, "starting PRACTICE · SOLO boots straight into single-character open stage (no rival, input live)")
+	p1().throw_weapon()
+	check(not p1().has_weapon, "solo fighter can hurl weapon across open practice stage")
+	arena._reset_practice_stage()
+	check(p1().has_weapon and not p2().visible, "[R] / Reset restores weapon & cleans stage while staying in single-character Solo Dojo")
+	arena._cycle_practice_dummy()
+	check(arena.practice_dummy_mode == "static" and p2().visible, "optional Practice Dummy button spawns Static dummy on stage")
+	arena._cycle_practice_dummy()
+	arena._cycle_practice_dummy()
+	arena._cycle_practice_dummy()
+	check(arena.practice_dummy_mode == "off" and not p2().visible, "cycling Practice Dummy returns cleanly to OFF (Solo single-character stage)")
+
+	arena._go_to_title()
+	await frames(2)
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SETTINGS))
 	print("")
@@ -857,6 +1010,8 @@ func _reset_both() -> void:
 		f.loadout_id = "signature"
 		f.reset_fighter()
 		f.cursor_aim_enabled = false
+	p1().set_facing(1)
+	p2().set_facing(-1)
 	p1().position = Vector2(440, 445)
 	p2().position = Vector2(640, 445)
 

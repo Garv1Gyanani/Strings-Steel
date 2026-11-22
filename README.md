@@ -8,22 +8,24 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
 - **Cursor sword control.** The sword arm follows the mouse (or right stick) through weighted two-bone IK. Swing through a real arc to build limb-chopping momentum (gold trail), or drive the point forward to thrust.
 - **Perfect parries & ripostes.** Raise your guard just before impact to stagger the attacker, or block cleanly to earn a brief golden **Riposte** window with faster, harder counters.
 - **Half-Swording (`Q` / `R3`) & Mordhau Thunderblow (`Q` -> `K`/`L`).** Grip the centre of a two-handed blade with your off-hand for close-quarters leverage, cheaper blocks, and an overhead crossguard hammer blow (`Mordhau`) that crushes 70%+ of plate armour.
-- **Fast-Action 17-Animation Rig, Secondary Spring Physics & Chain/Dash Cancels.** Vault over low sweeps with **Leap Cleave (`W`)**, unleash lightning **Zornhau Riposte Cleaves** out of block, lean out of range with **Fadeaway Backstep Cuts (`Back-Dash + Slash`)**, crack visors with **Pommel Bash (`C`/`L` or `RMB + LMB`)**, duck under high slashes with **Ankle Sweep (`S + E`)**, chain-cancel landed hits into 3-hit combos, or **Dash-Cancel (`Shift` / `2x A/D`)** recovery with speed afterimages, flagstone dust plumes, catenary marionette strings, and damped scabbard/plume/pauldron physics!
+- **Fast-Action 22-Animation Rig, Secondary Spring Physics & Chain/Dash Cancels.** Vault over low sweeps with **Leap Cleave (`W`)**, unleash lightning **Zornhau Riposte Cleaves** out of block, lean out of range with **Fadeaway Backstep Cuts (`Back-Dash + Slash`)**, crack visors with **Pommel Bash (`C`/`L` or `RMB + LMB`)**, duck under high slashes with **Ankle Sweep (`S + E`)**, chain-cancel landed hits into 3-hit combos, or **Dash-Cancel (`Shift` / `2x A/D`)** recovery with speed afterimages, flagstone dust plumes, catenary marionette strings, and damped scabbard/plume/pauldron physics!
 - **6 Weapon Loadouts, Disarms & Sword Throws (`F` / `MMB`).** Choose **Signature**, **Crimson Halberd**, **Bec de Corbin Warhammer**, **Iron Pollaxe**, **Sword + Buckler**, or **Katzbalger**. Hurl your weapon across the stage, deflect flying steel, brawl with gauntlet jabs, and scramble to pick up any dropped blade on the floorboards!
 - **Knock-Off Hats, Cracking Helmets & Earned Dismemberment.** Solid headshots knock off feathered hats or crack off Gothic plate helmets, exposing bare heads to mid-fight decapitation. High slashes can snap live overhead marionette strings (`Strings & Steel`), and shoving a rival into the proscenium wall triggers a **Corner Crush**.
-- **5 distinct fighters** (see `scripts/FighterStats.gd`):
+- **5 distinct fighters with Unique Signature Moves (`[G]` / `[Tab]`) & Passives** (see `scripts/FighterStats.gd`):
 
-  | Fighter | Style |
-  |---|---|
-  | Landsknecht | Hits hard, recovers fast, no armour |
-  | Fechtmeister | Wide perfect-parry window, half plate |
-  | Plague Executioner | Slow, limb-cleaving chops, brigandine |
-  | Black Knight | Full plate, slow, tires quickly |
-  | Venetian Bravo | Lightning rapier thrusts, fragile |
+  | Fighter | Signature Move (`[G]`) | Passive Trait |
+  |---|---|---|
+  | Landsknecht | **Gassenhauer**: Advancing low-to-high figure-8 double cleave | Blade hits restore stamina; severing a limb/string resets Dash |
+  | Fechtmeister | **Meisterhau Bind**: Auto-deflecting Ochs bind counter that disarms rivals | `+18` stamina & extended `0.66 s` Riposte window on Perfect Parry |
+  | Plague Executioner | **Guillotine Chop**: Seismic armour-piercing overhead execution slam | `+22%` Bloodscent damage against bleeding or maimed targets |
+  | Black Knight | **Iron Bull Barge**: Unblockable hyper-armour plate shoulder ram (works unarmed!) | `42%` knockback resistance & boosted `16 HP` Corner Crush |
+  | Venetian Bravo | **Punta Doppia**: Ducking low-profile slip into 2-hit Rapier needle lunge | `9`-stamina dashes & `1.45x` arterial bleed on thrusts |
 
-- **Modes:**
-  - **Duel**: best of 3 rounds with a 90 s timer.
-  - **Gauntlet**: endless waves of random challengers that get tougher each wave. Your best wave is saved.
+- **Live Animated Puppets on Character Select & 3 Modes:**
+  - **Live Stage Select**: Rigged marionettes breathe, sway on strings, swap weapons live, and perform signature flourishes in stage spotlights as you pick fighters and loadouts.
+  - **Duel**: Best of 3 rounds with a 90 s timer.
+  - **Gauntlet**: Endless waves of random challengers that get tougher each wave. Your best wave is saved.
+  - **Practice · Solo**: Open single-character dojo to practice footwork, mouse arcs, weapon throws, and signature combos alone — with `[R]` instant stage/weapon reset and a 1-click HUD toggle for an optional dummy (`OFF (Solo)` / `STATIC` / `GUARD` / `SPAR`).
 - **AI** with human-like reaction time, imperfect guard reads and per-fighter spacing. Three difficulties.
 - **Juice:** hitstop, slow-motion KO cam, screen shake, controller rumble, arterial blood, persistent blood on the backdrop and floor, bloody bootprints. All audio is synthesised procedurally, with no audio files.
 - Keyboard + mouse, gamepad, and a **button-free translucent touch-wheel system** for mobile/Android (screen stays 100% clean until touched; floating low-opacity wheels appear under your thumbs and fade out on release). Settings are saved automatically, and `.github/workflows/android-apk.yml` builds `StringsAndSteel.apk` automatically on push.
@@ -34,7 +36,8 @@ A 2D marionette sword-fighting game built in **Godot 4.7**. Two puppets hang fro
 |---|---|---|---|
 | Move & Attack Drift | A / D (or ← →, works mid-swing!) | Left stick / D-pad | Slide left/right on Left Stick (tight 32 px full-speed span + frame-1 reversal) |
 | Effortless 210° Swing | Move mouse (or Hold LMB + Drag) | Right stick | Swipe / arc across 360° Right Blade Wheel (0 ms unlocked 2-bone IK cuts) |
-| Slash & 3-Hit Combo | LMB / J (`High -> Low -> Spin` on hit) | X / RB | Quick tap on Right side (chains 3-hit combo on hit-confirm) |
+| Slash & Mixup Combo | LMB / J (`High -> Low -> Spin` on hit) | X / RB | Quick tap on Right side (chains 3-hit combo on hit-confirm) |
+| Fighter Signature Move | G / Tab (or `Parry + E`) | `B/LB + A` | Quick Double-Tap on Right Wheel (or 2nd-finger tap) |
 | Thrust / Mordhau | Wheel Up / MB4 / V / K | Y | Sharp horizontal forward whip on Right Blade Wheel |
 | Leap Plunge Cleave | W (or Fwd-Dash + LMB/Slash) | RT + X | Quick Up+Forward diagonal flick on Left Stick |
 | Pommel Visor Bash | C / L (or RMB/Parry + LMB) | L3 | 2nd-finger tap while holding Rear Guard Parry |
@@ -71,7 +74,7 @@ scripts/
 tools/
   CharacterRigBuilder.gd  builds fighter .tscn rigs from data/rig_metadata.json
   BuildAllRigs.gd         headless rig + arena builder
-  SmokeTest.gd            133-check headless gameplay test suite
+  SmokeTest.gd            159-check headless gameplay test suite
   BalanceSim.gd           multi-bot headless AI & combat balance simulator
 data/rig_metadata.json    sprite parts, pivots and sockets for every fighter
 ```

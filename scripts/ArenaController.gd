@@ -27,6 +27,8 @@ const INTRO_TIME := 1.4
 const ROUND_END_TIME := 2.8
 const FLOOR_Y := 562.0
 const MIN_FIGHTER_GAP := 116.0
+const TITLE_P1_POS := Vector2(182.0, 445.0)
+const TITLE_P2_POS := Vector2(1098.0, 445.0)
 const SETTINGS_PATH := "user://settings.cfg"
 
 @onready var cam: Camera2D = $Camera2D
@@ -88,7 +90,11 @@ var settings := {
 
 # Match state
 var phase: Phase = Phase.TITLE
-var match_mode: String = "duel" # "duel" | "gauntlet"
+var match_mode: String = "duel" # "duel" | "gauntlet" | "practice"
+var practice_dummy_mode: String = "off" # "off" | "static" | "guard" | "spar"
+var _practice_revive_timer: float = 0.0
+var _title_preview_mode: String = "duel"
+var _title_p2_random: bool = false
 var round_num: int = 1
 var wins_p1: int = 0
 var wins_p2: int = 0
@@ -163,11 +169,18 @@ func _ready() -> void:
 	add_child(ui)
 	ui.setup(_roster_info(), settings)
 	ui.start_requested.connect(_on_start_requested)
+	ui.preview_changed.connect(_on_preview_changed)
+	ui.preview_flourish_requested.connect(_on_preview_flourish_requested)
+	ui.practice_dummy_cycled.connect(_cycle_practice_dummy)
+	ui.practice_reset_requested.connect(_reset_practice_stage)
 	ui.pause_toggle_requested.connect(_toggle_pause)
 	ui.resume_requested.connect(func(): _set_paused(false))
 	ui.restart_round_requested.connect(func():
 		_set_paused(false)
-		_begin_round())
+		if match_mode == "practice":
+			_reset_practice_stage()
+		else:
+			_begin_round())
 	ui.title_requested.connect(_go_to_title)
 	ui.rematch_requested.connect(_on_rematch)
 	ui.setting_changed.connect(_on_setting_changed)
@@ -293,6 +306,7 @@ func _set_fighter(is_p1: bool, new_idx: int) -> void:
 		p2_roster_idx = idx
 		p2 = new_f
 	add_child(new_f)
+	new_f.set_facing(1 if is_p1 else -1)
 	_wire_fighter(new_f, is_p1)
 	_apply_settings()
 
@@ -310,12 +324,64 @@ func _go_to_title() -> void:
 	ui.show_title(p1_roster_idx, p2_roster_idx, match_mode, best_wave, p1_loadout, p2_loadout)
 
 
+func _on_preview_changed(cfg: Dictionary) -> void:
+	if phase != Phase.TITLE:
+		return
+	_title_preview_mode = String(cfg.get("mode", "duel"))
+	var p1_idx := int(cfg.get("p1", p1_roster_idx))
+	var raw_p2 := int(cfg.get("p2", p2_roster_idx))
+	var lo1 := String(cfg.get("p1_loadout", p1_loadout))
+	var lo2 := String(cfg.get("p2_loadout", p2_loadout))
+	p1_loadout = lo1 if lo1 in FighterStats.LOADOUT_ORDER else "signature"
+	p2_loadout = lo2 if lo2 in FighterStats.LOADOUT_ORDER else "signature"
+
+	_set_fighter(true, p1_idx)
+	if p1 != null:
+		p1.visible = true
+		p1.modulate = Color.WHITE
+		p1.position = TITLE_P1_POS
+		p1.loadout_id = p1_loadout
+		p1.reset_fighter()
+		p1.set_facing(1)
+
+	if _title_preview_mode == "practice":
+		if p2 != null:
+			p2.visible = false
+			p2.position = Vector2(2400.0, 445.0)
+	else:
+		_title_p2_random = raw_p2 < 0
+		if raw_p2 >= 0:
+			_set_fighter(false, raw_p2)
+		if p2 != null:
+			p2.visible = true
+			p2.modulate = Color(0.55, 0.54, 0.66, 0.92) if _title_p2_random else Color.WHITE
+			p2.position = TITLE_P2_POS
+			p2.loadout_id = p2_loadout
+			p2.reset_fighter()
+			p2.set_facing(-1)
+
+	_freeze_fighters(true)
+	var chg := String(cfg.get("changed", ""))
+	if chg == "p1" and p1 != null:
+		p1.play_preview_flourish()
+	elif chg == "p2" and p2 != null and p2.visible:
+		p2.play_preview_flourish()
+
+
+func _on_preview_flourish_requested(is_p1: bool) -> void:
+	if phase != Phase.TITLE:
+		return
+	var target := p1 if is_p1 else p2
+	if target != null and target.visible:
+		target.play_preview_flourish()
+
+
 func _on_start_requested(cfg: Dictionary) -> void:
 	match_mode = String(cfg.get("mode", "duel"))
 	var p1_idx := int(cfg.get("p1", 0))
 	var p2_idx := int(cfg.get("p2", -1))
 	if p2_idx < 0:
-		p2_idx = randi() % FIGHTER_ROSTER.size()
+		p2_idx = (p1_idx + 1) % FIGHTER_ROSTER.size() if match_mode == "practice" else (randi() % FIGHTER_ROSTER.size())
 	var lo1 := String(cfg.get("p1_loadout", "signature"))
 	var lo2 := String(cfg.get("p2_loadout", "signature"))
 	p1_loadout = lo1 if lo1 in FighterStats.LOADOUT_ORDER else "signature"
@@ -336,7 +402,78 @@ func _start_match() -> void:
 		p2_loadout = "signature"
 	ai.set_difficulty(_effective_difficulty())
 	ui.hide_result()
-	_begin_round()
+	if match_mode == "practice":
+		practice_dummy_mode = "off"
+		_begin_practice_dojo()
+	else:
+		_begin_round()
+
+
+func _begin_practice_dojo() -> void:
+	_reset_stage()
+	phase = Phase.FIGHT
+	round_time_left = 999.0
+	_practice_revive_timer = 0.0
+	_freeze_fighters(false)
+	_sync_practice_dummy_placement(true)
+	ui.show_banner("SOLO DOJO", "Single-character practice · [G] Signature · [R] Reset", 0.9)
+
+
+func _sync_practice_dummy_placement(center_p1: bool = false) -> void:
+	if p1 == null or p2 == null:
+		return
+	p2.modulate = Color.WHITE
+	if practice_dummy_mode == "off":
+		p2.visible = false
+		p2.parrying = false
+		p2.position = Vector2(2400.0, 445.0)
+		if center_p1:
+			p1.position = Vector2(640.0, 445.0)
+			p1.set_facing(1)
+	else:
+		p2.visible = true
+		p2.hp_scale = 1.0
+		p2.limb_hp_scale = 1.0
+		p2.loadout_id = p2_loadout
+		p2.reset_fighter()
+		if center_p1:
+			p1.position = Vector2(440.0, 445.0)
+			p2.position = Vector2(820.0, 445.0)
+		else:
+			var desired_x := p1.position.x + float(p1.facing) * 280.0
+			if desired_x < 180.0 or desired_x > 1100.0:
+				desired_x = p1.position.x - float(p1.facing) * 280.0
+			p2.position = Vector2(clampf(desired_x, 180.0, 1100.0), 445.0)
+		var d := 1 if p2.position.x >= p1.position.x else -1
+		p1.set_facing(d)
+		p2.set_facing(-d)
+
+
+func _cycle_practice_dummy() -> void:
+	if match_mode != "practice" or phase != Phase.FIGHT:
+		return
+	var order := ["off", "static", "guard", "spar"]
+	practice_dummy_mode = order[(order.find(practice_dummy_mode) + 1) % order.size()]
+	_practice_revive_timer = 0.0
+	_sync_practice_dummy_placement(false)
+	var tag := "SOLO STAGE (NO DUMMY)" if practice_dummy_mode == "off" else ("DUMMY: " + practice_dummy_mode.to_upper())
+	_on_cut_flash(p1.position + Vector2(0, -155), tag, Color(0.76, 0.92, 1.0))
+
+
+func _reset_practice_stage() -> void:
+	if match_mode != "practice":
+		return
+	var keep_x := p1.position.x if p1 != null else 640.0
+	var keep_f := p1.facing if p1 != null else 1
+	_reset_stage()
+	phase = Phase.FIGHT
+	_practice_revive_timer = 0.0
+	_freeze_fighters(false)
+	if p1 != null:
+		p1.position = Vector2(clampf(keep_x, 160.0, 1120.0), 445.0)
+		p1.set_facing(keep_f)
+	_sync_practice_dummy_placement(false)
+	_on_cut_flash(p1.position + Vector2(0, -155), "STAGE RESET!", Color(1.0, 0.88, 0.44))
 
 
 func _on_rematch() -> void:
@@ -386,6 +523,8 @@ func _reset_stage() -> void:
 	ai.reset()
 
 	if p1 != null:
+		p1.visible = true
+		p1.modulate = Color.WHITE
 		p1.position = Vector2(440, 445)
 		p1.hp_scale = 1.0
 		p1.limb_hp_scale = 1.0
@@ -393,6 +532,8 @@ func _reset_stage() -> void:
 		p1.reset_fighter()
 		p1.set_facing(1)
 	if p2 != null:
+		p2.visible = true
+		p2.modulate = Color.WHITE
 		p2.position = Vector2(840, 445)
 		var wave_bonus := float(gauntlet_wave - 1) if match_mode == "gauntlet" else 0.0
 		p2.hp_scale = 1.0 + 0.12 * wave_bonus
@@ -507,12 +648,40 @@ func _process(delta: float) -> void:
 
 	_update_camera(unscaled_dt)
 
-	# Auto-face while alive
-	var dir := 1 if p2.position.x >= p1.position.x else -1
-	if not p1.is_dead:
-		p1.set_facing(dir)
-	if not p2.is_dead:
-		p2.set_facing(-dir)
+	if phase == Phase.TITLE:
+		if p1 != null:
+			p1.position = TITLE_P1_POS
+			p1.set_facing(1)
+		if p2 != null and p2.visible:
+			p2.position = TITLE_P2_POS
+			p2.set_facing(-1)
+		_idle_ai_fighter()
+		_step_particles(delta)
+		_step_callouts(unscaled_dt)
+		_refresh_hud()
+		if candle_layer != null:
+			candle_layer.queue_redraw()
+		if fx_layer != null:
+			fx_layer.queue_redraw()
+		return
+
+	# Auto-face while alive (in Solo Practice without a dummy, face toward mouse or movement!)
+	var solo_practice := match_mode == "practice" and practice_dummy_mode == "off"
+	if solo_practice:
+		if not p1.is_dead and p1.current_action == "" and p1.dash_timer <= 0.0:
+			var vp_m := get_viewport().get_mouse_position()
+			if p1.cursor_aim_enabled and not p1.touch_mode_active and vp_m.y >= 106.0:
+				var mw_x := get_global_mouse_position().x
+				if absf(mw_x - p1.position.x) > 78.0:
+					p1.set_facing(1 if mw_x >= p1.position.x else -1)
+			elif absf(p1.loco_vx) > 42.0:
+				p1.set_facing(1 if p1.loco_vx > 0.0 else -1)
+	else:
+		var dir := 1 if p2.position.x >= p1.position.x else -1
+		if not p1.is_dead:
+			p1.set_facing(dir)
+		if not p2.is_dead:
+			p2.set_facing(-dir)
 
 	match phase:
 		Phase.INTRO:
@@ -523,18 +692,21 @@ func _process(delta: float) -> void:
 				_freeze_fighters(false)
 				ui.show_banner("FIGHT!", "", 0.6)
 		Phase.FIGHT:
-			ai.step(delta, p2, p1)
-			_separate_fighters()
-			_resolve_combat()
-			round_time_left -= delta
-			if p1.is_dead or p2.is_dead:
-				var w := 0 if (p1.is_dead and p2.is_dead) else (1 if p2.is_dead else 2)
-				_end_round(w, false)
-			elif round_time_left <= 0.0 and match_mode == "duel":
-				var f1 := p1.hp / maxf(1.0, p1.max_hp)
-				var f2 := p2.hp / maxf(1.0, p2.max_hp)
-				var w := 0 if absf(f1 - f2) < 0.01 else (1 if f1 > f2 else 2)
-				_end_round(w, true)
+			if match_mode == "practice":
+				_step_practice_fight(delta)
+			else:
+				ai.step(delta, p2, p1)
+				_separate_fighters()
+				_resolve_combat()
+				round_time_left -= delta
+				if p1.is_dead or p2.is_dead:
+					var w := 0 if (p1.is_dead and p2.is_dead) else (1 if p2.is_dead else 2)
+					_end_round(w, false)
+				elif round_time_left <= 0.0 and match_mode == "duel":
+					var f1 := p1.hp / maxf(1.0, p1.max_hp)
+					var f2 := p2.hp / maxf(1.0, p2.max_hp)
+					var w := 0 if absf(f1 - f2) < 0.01 else (1 if f1 > f2 else 2)
+					_end_round(w, true)
 		Phase.ROUND_END:
 			_idle_ai_fighter()
 			phase_timer -= unscaled_dt
@@ -553,22 +725,86 @@ func _process(delta: float) -> void:
 		fx_layer.queue_redraw()
 
 
+func _step_practice_fight(delta: float) -> void:
+	# Keep the player energized & unkillable so practice never kicks them out to a K.O. screen!
+	p1.stamina = minf(p1.max_stamina, p1.stamina + 46.0 * delta)
+	p1.signature_cd = maxf(0.0, p1.signature_cd - 0.85 * delta)
+	if p1.is_dead or p1.hp <= 2.0:
+		p1.hp = p1.max_hp
+		p1.bleed_rate = 0.0
+		p1.bleed_floor = 0.0
+		if p1.is_dead:
+			p1.reset_fighter()
+			p1.input_enabled = true
+		_on_cut_flash(p1.position + Vector2(0, -155), "DOJO AUTO-HEAL!", Color(0.56, 0.94, 0.68))
+
+	if practice_dummy_mode == "off":
+		# Single-Character Solo Stage: hurled weapons still fly & clatter so you can recover them!
+		_step_weapon_projectiles()
+		_check_debris_rope_cut(p1)
+		return
+
+	if p2.is_dead:
+		_practice_revive_timer += delta
+		if _practice_revive_timer >= 1.35:
+			_practice_revive_timer = 0.0
+			_sync_practice_dummy_placement(false)
+			_on_cut_flash(p2.position + Vector2(0, -155), "DUMMY REVIVED!", Color(0.86, 0.92, 1.0))
+		else:
+			_step_weapon_projectiles()
+			_check_debris_rope_cut(p1)
+		return
+
+	_practice_revive_timer = 0.0
+	match practice_dummy_mode:
+		"static":
+			_idle_ai_fighter()
+			p2.stamina = minf(p2.max_stamina, p2.stamina + 30.0 * delta)
+		"guard":
+			p2.aim_override_enabled = false
+			if p2.current_action == "":
+				p2.parrying = p2.can_wield()
+				p2.parry_hold_time = 0.55
+				p2.guard_zone = "low" if (p1.current_action in ["slash_low", "leg_sweep"] or p1.guard_zone == "low") else "high"
+				if p2.parrying:
+					p2.play_anim("parry_low" if p2.guard_zone == "low" else "parry", 0.06)
+				else:
+					p2.play_anim("idle", 0.08)
+			p2.stamina = maxf(42.0, minf(p2.max_stamina, p2.stamina + 38.0 * delta))
+		"spar":
+			ai.step(delta, p2, p1)
+
+	_separate_fighters()
+	_resolve_combat()
+	if p1.hp <= 1.0 and not p1.is_dead:
+		p1.hp = p1.max_hp
+		p1.bleed_rate = 0.0
+
+
 func _update_camera(unscaled_dt: float) -> void:
 	var vp_sz := get_viewport_rect().size
 	var min_z := 0.92
 	if _use_courtyard_stage() and vp_sz.x > 10.0 and vp_sz.y > 10.0:
 		min_z = maxf(min_z, maxf(vp_sz.x / COURTYARD_RECT.size.x, vp_sz.y / COURTYARD_RECT.size.y))
-	var mid := (p1.position + p2.position) * 0.5 + Vector2(0, -105)
-	var sep := absf(p1.position.x - p2.position.x)
-	var base_zoom := clampf(lerpf(1.16, 0.94, sep / 700.0), min_z, maxf(min_z, 1.22))
-	var ko_focus := phase == Phase.ROUND_END and (p1.is_dead or p2.is_dead)
-	if ko_focus or slow_mo_timer > 0.0:
-		cam_zoom_target = maxf(min_z, 1.38)
-		var target := p2 if p2.is_dead else p1
-		cam_focus = cam_focus.lerp(target.position + Vector2(0, -110), minf(1.0, 6.0 * unscaled_dt))
+	if phase == Phase.TITLE:
+		cam_zoom_target = maxf(min_z, 1.0)
+		cam_focus = cam_focus.lerp(Vector2(640.0, 360.0), minf(1.0, 10.0 * unscaled_dt))
+	elif match_mode == "practice" and practice_dummy_mode == "off":
+		cam_zoom_target = maxf(min_z, 1.06)
+		var solo_mid := p1.position + Vector2(float(p1.facing) * 52.0, -105.0)
+		cam_focus = cam_focus.lerp(Vector2(clampf(solo_mid.x, 420.0, 860.0), clampf(solo_mid.y, 280.0, 380.0)), minf(1.0, 6.5 * unscaled_dt))
 	else:
-		cam_zoom_target = base_zoom
-		cam_focus = cam_focus.lerp(Vector2(clampf(mid.x, 420.0, 860.0), clampf(mid.y, 280.0, 380.0)), minf(1.0, 6.0 * unscaled_dt))
+		var mid := (p1.position + p2.position) * 0.5 + Vector2(0, -105)
+		var sep := absf(p1.position.x - p2.position.x)
+		var base_zoom := clampf(lerpf(1.16, 0.94, sep / 700.0), min_z, maxf(min_z, 1.22))
+		var ko_focus := phase == Phase.ROUND_END and (p1.is_dead or p2.is_dead)
+		if ko_focus or slow_mo_timer > 0.0:
+			cam_zoom_target = maxf(min_z, 1.38)
+			var target := p2 if p2.is_dead else p1
+			cam_focus = cam_focus.lerp(target.position + Vector2(0, -110), minf(1.0, 6.0 * unscaled_dt))
+		else:
+			cam_zoom_target = base_zoom
+			cam_focus = cam_focus.lerp(Vector2(clampf(mid.x, 420.0, 860.0), clampf(mid.y, 280.0, 380.0)), minf(1.0, 6.0 * unscaled_dt))
 	if cam != null:
 		var z_cur := maxf(min_z, lerpf(cam.zoom.x, cam_zoom_target, minf(1.0, 5.5 * unscaled_dt)))
 		cam.zoom = Vector2(z_cur, z_cur)
@@ -642,7 +878,9 @@ func _resolve_combat() -> void:
 			_handle_blade_clash(p1, p2, best_pt)
 			_handle_blade_clash(p2, p1, best_pt)
 
-	# 2. Kicks, Low Sweeps, Pommel Bashes & Unarmed / Buckler Bashes
+	# 2. Kicks, Low Sweeps, Pommel Bashes, Armored Shoulder Barges & Unarmed / Buckler Bashes
+	_check_barge(p1, p2)
+	_check_barge(p2, p1)
 	_check_kick(p1, p2)
 	_check_kick(p2, p1)
 	_check_leg_sweep(p1, p2)
@@ -745,11 +983,40 @@ func _step_weapon_projectiles() -> void:
 						break
 
 
+func _trigger_meisterhau_bind_counter(atk: FighterController, def: FighterController, pt: Vector2) -> void:
+	var key := "%d:%d" % [atk.get_instance_id(), atk.attack_serial]
+	_last_clash_serial[key] = true
+	atk.hit_registered_serial = atk.attack_serial
+	var was_committed_attack := atk.current_action in FighterController.ATTACK_MOVES
+	hitstop_timer = 0.085
+	shake_mag = maxf(shake_mag, 15.0)
+	sfx.play_sfx("perfect_parry", 0.05, 2.5)
+	_rumble(0.80, 0.95, 0.24)
+	atk.trigger_hurt(true)
+	atk.apply_blade_rebound(1.35)
+	atk.spend_stamina(24.0)
+	def.stamina = minf(def.max_stamina, def.stamina + 18.0)
+	def.grant_riposte()
+	atk.knockback_vx = -float(atk.facing) * 280.0
+	_spawn_sparks(pt, 38)
+	_spawn_vfx_burst(pt, 0.92, Color(1.0, 0.94, 0.62))
+	var disarmed := false
+	if atk.stamina < 46.0 or was_committed_attack:
+		if atk.drop_weapon(Vector2(-float(atk.facing) * 210.0, -255.0)) != null:
+			disarmed = true
+	_on_cut_flash(pt, "MEISTERHAU DISARM!" if disarmed else "MEISTERHAU BIND!", Color(1.0, 0.88, 0.36))
+	if def == p2:
+		ai.notify_blocked(true)
+
+
 func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vector2) -> void:
 	if not atk.is_blade_active():
 		return
 	var key := "%d:%d" % [atk.get_instance_id(), atk.attack_serial]
 	if _last_clash_serial.has(key):
+		return
+	if def.is_meisterhau_bind_active():
+		_trigger_meisterhau_bind_counter(atk, def, pt)
 		return
 	var explicit_guard: bool = def.parrying
 	var blades_meet: bool = def.is_blade_active()
@@ -772,7 +1039,8 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 		atk.trigger_hurt(true)
 		atk.apply_blade_rebound(1.25)
 		atk.spend_stamina(20.0)
-		def.stamina = minf(def.max_stamina, def.stamina + 10.0)
+		var pp_stam := 18.0 if def.fighter_id == "fechtmeister" else 10.0
+		def.stamina = minf(def.max_stamina, def.stamina + pp_stam)
 		def.grant_riposte()
 		atk.knockback_vx = -float(atk.facing) * 320.0
 		_spawn_sparks(pt, 36)
@@ -794,12 +1062,17 @@ func _handle_blade_clash(atk: FighterController, def: FighterController, pt: Vec
 		if atk.get_guard_crush_mult() >= 1.25 or float(def.limb_hp.get("forearm_r", 64.0)) < 28.0:
 			if def.drop_weapon(Vector2(-float(def.facing) * 190.0, -235.0)) != null:
 				_on_cut_flash(pt + Vector2(0, -24), "DISARMED!", Color(1.0, 0.38, 0.26))
-		_check_corner_crush(def, pt)
+		_check_corner_crush(def, pt, atk)
 		return
 
 	atk.hit_registered_serial = atk.attack_serial
 	atk.apply_blade_rebound(0.95)
 	def.spend_stamina(cost)
+	if atk.current_action == "sig_fechtmeister" and def.stamina < 44.0:
+		if def.drop_weapon(Vector2(-float(def.facing) * 195.0, -240.0)) != null:
+			def.trigger_hurt(false)
+			_on_cut_flash(pt + Vector2(0, -22), "BIND DISARM!", Color(1.0, 0.78, 0.32))
+			return
 	var stuffed_spin := false
 	var stuffed_spam := false
 	if explicit_guard:
@@ -865,7 +1138,43 @@ func _check_kick(atk: FighterController, def: FighterController) -> void:
 		atk.grant_chain_cancel()
 		shake_mag = maxf(shake_mag, 10.0)
 		_on_cut_flash(foot_pt, "PUSH KICK!", Color(0.92, 0.76, 0.38))
-		_check_corner_crush(def, foot_pt)
+		_check_corner_crush(def, foot_pt, atk)
+
+
+func _check_barge(atk: FighterController, def: FighterController) -> void:
+	if not atk.is_barge_active() or def.is_dead or def.is_airborne():
+		return
+	var key := "barge:%d:%d" % [atk.get_instance_id(), atk.attack_serial]
+	if _last_clash_serial.has(key):
+		return
+	var dist_x := absf(def.position.x - atk.position.x)
+	var facing_def := (def.position.x - atk.position.x) * float(atk.facing) >= -18.0
+	if not facing_def or dist_x > 176.0:
+		return
+	_last_clash_serial[key] = true
+	var hit_pt := def.position + Vector2(-float(def.facing) * 26.0, -108.0)
+	var was_guarding := def.parrying
+	sfx.play_sfx("thud", 0.08, 2.2)
+	sfx.play_sfx("clang", 0.10, -1.5)
+	_spawn_sparks(hit_pt, 26)
+	_spawn_vfx_burst(hit_pt, 0.82, Color(1.0, 0.76, 0.34))
+	var dmg := 18.0 * atk.stat("damage_mult") * (0.82 if def.is_armored_slot("torso") else 1.0)
+	def.hp = maxf(0.0, def.hp - dmg)
+	def.spend_stamina(34.0 if was_guarding else 24.0)
+	def.parrying = false
+	def.knockback_vx = float(atk.facing) * 520.0
+	atk.lunge_vx *= 0.25
+	atk.grant_chain_cancel()
+	atk.grant_riposte()
+	hitstop_timer = 0.075
+	shake_mag = maxf(shake_mag, 18.0)
+	_rumble(0.75, 0.90, 0.20)
+	_on_cut_flash(hit_pt + Vector2(0, -18), "GUARD SHATTERED!" if was_guarding else "IRON BARGE!", Color(1.0, 0.68, 0.28))
+	if def.hp <= 0.0:
+		def.kill_fighter()
+	else:
+		def.trigger_hurt(true)
+		_check_corner_crush(def, hit_pt, atk)
 
 
 func _check_leg_sweep(atk: FighterController, def: FighterController) -> void:
@@ -907,7 +1216,7 @@ func _check_leg_sweep(atk: FighterController, def: FighterController) -> void:
 		def.kill_fighter()
 	else:
 		def.trigger_hurt(true)
-		_check_corner_crush(def, hit_pt)
+		_check_corner_crush(def, hit_pt, atk)
 
 
 func _check_pommel(atk: FighterController, def: FighterController) -> void:
@@ -943,7 +1252,7 @@ func _check_pommel(atk: FighterController, def: FighterController) -> void:
 		def.kill_fighter()
 	else:
 		def.trigger_hurt(true)
-		_check_corner_crush(def, hit_pt)
+		_check_corner_crush(def, hit_pt, atk)
 
 
 func _check_jab(atk: FighterController, def: FighterController) -> void:
@@ -969,18 +1278,19 @@ func _check_jab(atk: FighterController, def: FighterController) -> void:
 		def.kill_fighter()
 	else:
 		def.trigger_hurt(false)
-		_check_corner_crush(def, hit_pt)
+		_check_corner_crush(def, hit_pt, atk)
 	hitstop_timer = 0.045
 	shake_mag = maxf(shake_mag, 9.0)
 	_on_cut_flash(hit_pt, "BUCKLER BASH!" if with_buckler else "GAUNTLET JAB!", Color(0.96, 0.82, 0.44))
 
 
-func _check_corner_crush(def: FighterController, impact_pt: Vector2) -> bool:
+func _check_corner_crush(def: FighterController, impact_pt: Vector2, atk: FighterController = null) -> bool:
 	if def == null or def.is_dead:
 		return false
 	if def.position.x > 145.0 and def.position.x < 1135.0:
 		return false
-	def.hp = maxf(0.0, def.hp - 10.0)
+	var crush_dmg := 16.0 if (atk != null and atk.fighter_id == "black_knight") else 10.0
+	def.hp = maxf(0.0, def.hp - crush_dmg)
 	_spawn_sparks(def.position + Vector2(0, -110.0), 18)
 	sfx.play_sfx("thud", 0.08, 2.0)
 	shake_mag = maxf(shake_mag, 16.0)
@@ -1040,10 +1350,15 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 	if best_slot == "":
 		return
 
-	# Low-profile Leg Sweep ducks cleanly underneath high horizontal/overhead cuts & head-level thrusts!
-	if def.is_low_profile() and (atk.current_action == "slash_high" or (atk.current_action == "thrust" and best_slot == "head")):
+	# Low-profile Leg Sweep / Bravo Punta Doppia slip ducks cleanly underneath high cuts & head thrusts!
+	if def.is_low_profile() and (atk.current_action in ["slash_high", "sig_fechtmeister"] or (atk.current_action in ["thrust", "sig_bravo"] and best_slot == "head")):
 		atk.hit_registered_serial = atk.attack_serial
 		_on_cut_flash(def.position + Vector2(0, -90), "DUCKED!", Color(0.76, 0.94, 1.0))
+		return
+
+	# Fechtmeister Meisterhau Bind catches & disarms incoming blade swings even at close measure!
+	if def.is_meisterhau_bind_active():
+		_trigger_meisterhau_bind_counter(atk, def, best_pt)
 		return
 
 	# Explicit directional guard: if the defender is actively parrying the attacked line,
@@ -1061,15 +1376,19 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 	var b_guard: Vector2 = blade[0]
 	var b_vec: Vector2 = Vector2(blade[1]) - b_guard
 	var blade_pos_frac := clampf((best_pt - b_guard).dot(b_vec) / maxf(1.0, b_vec.length_squared()), 0.0, 1.0)
-	var swing_dir := Vector2(float(atk.facing), -0.35 if atk.current_action == "slash_low" else 0.25).normalized()
+	var low_rising := atk.current_action == "slash_low" or (atk.current_action == "sig_landsknecht" and not atk._sig_second_armed)
+	var swing_dir := Vector2(float(atk.facing), -0.35 if low_rising else 0.25).normalized()
 	if atk.current_action == "" and atk._cursor_last_dir.length() > 0.1:
 		var cx := float(atk.facing) * absf(atk._cursor_last_dir.x) if absf(atk._cursor_last_dir.x) > 0.2 else float(atk.facing)
 		swing_dir = Vector2(cx, atk._cursor_last_dir.y).normalized()
 	var is_thrust := atk.is_thrust_strike()
-	var attacker_heavy := pwr >= FighterController.HEAVY_POWER_THRESHOLD and (blade_pos_frac >= 0.36 or atk.current_action == "mordhau_smash") and not is_thrust
+	var attacker_heavy := pwr >= FighterController.HEAVY_POWER_THRESHOLD and (blade_pos_frac >= 0.36 or atk.current_action in ["mordhau_smash", "sig_executioner", "sig_landsknecht", "sig_fechtmeister"]) and not is_thrust
 	var is_rip := atk._riposte_active_attack
 	atk._riposte_active_attack = false
 	var dmg := (24.0 if is_thrust else 20.0) * atk.stat("damage_mult") * atk.get_weapon_damage_mult() * (atk.stat("thrust_mult") if is_thrust else 1.0)
+	# Plague Executioner Passive: +22% ruthless damage against bleeding or maimed targets!
+	if atk.fighter_id == "plague_executioner" and (def.bleed_rate > 0.1 or def.severed.values().has(true)):
+		dmg *= 1.22
 	match atk.current_action:
 		"jump_slash":
 			dmg *= 1.35
@@ -1088,6 +1407,19 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 			_on_cut_flash(best_pt + Vector2(0, -20), "FADEAWAY CUT!", Color(0.84, 0.94, 1.0))
 		"spin_slash":
 			dmg *= 0.72
+		"sig_landsknecht":
+			dmg *= 0.86
+			blade_pos_frac = maxf(blade_pos_frac, 0.78)
+		"sig_fechtmeister":
+			dmg *= 1.22
+			blade_pos_frac = maxf(blade_pos_frac, 0.78)
+		"sig_executioner":
+			dmg *= 1.42
+			blade_pos_frac = maxf(blade_pos_frac, 0.86)
+			_spawn_vfx_burst(best_pt, 0.90, Color(1.0, 0.48, 0.26))
+		"sig_bravo":
+			dmg *= 0.76
+			blade_pos_frac = maxf(blade_pos_frac, 0.82)
 		"":
 			# Free-form mouse & touch-wheel cuts cleave with crisp steel bite!
 			var free_mult := (0.95 if atk.touch_mode_active else 0.90)
@@ -1100,12 +1432,17 @@ func _check_blade_vs_body(atk: FighterController, def: FighterController) -> voi
 		def.trigger_hurt(true)
 		_on_cut_flash(best_pt + Vector2(0, -24), "SPIN PUNISHED!", Color(1.0, 0.54, 0.26))
 	if not is_thrust and pwr >= 0.46:
-		_spawn_vfx_slash_arc(atk.position + Vector2(float(atk.facing) * 62.0, -108.0), float(atk.facing), swing_dir.angle(), 0.78 if atk.current_action in ["jump_slash", "mordhau_smash", "spin_slash"] else 0.62)
+		_spawn_vfx_slash_arc(atk.position + Vector2(float(atk.facing) * 62.0, -108.0), float(atk.facing), swing_dir.angle(), 0.78 if atk.current_action in ["jump_slash", "mordhau_smash", "spin_slash", "sig_executioner", "sig_landsknecht"] else 0.62)
 	if atk.current_action == "mordhau_smash":
 		_spawn_vfx_burst(best_pt, 0.76, Color(1.0, 0.88, 0.48))
 	var ap := atk.get_thrust_armor_pierce() if is_thrust else atk.get_cut_armor_pierce()
-	var did_sever := def.apply_blade_damage(best_slot, dmg, best_pt, swing_dir, bool(settings["one_hit_sever"]), attacker_heavy, pwr, atk.get_limb_damage_mult(), blade_pos_frac, is_thrust, ap)
+	var did_sever := def.apply_blade_damage(best_slot, dmg, best_pt, swing_dir, bool(settings["one_hit_sever"]), attacker_heavy, pwr, atk.get_limb_damage_mult(), blade_pos_frac, is_thrust, ap, atk.fighter_id, atk.current_action)
 	atk.blade_blood = minf(1.0, atk.blade_blood + (0.65 if did_sever else 0.24 * pwr))
+	# Landsknecht Passive: blade hits restore stamina; severing limbs resets Dash cooldown!
+	if atk.fighter_id == "landsknecht":
+		atk.stamina = minf(atk.max_stamina, atk.stamina + (14.5 if did_sever else 4.5))
+		if did_sever:
+			atk.dash_cooldown = 0.0
 
 	if def.is_armored_slot(best_slot):
 		_spawn_sparks(best_pt, maxi(4, int(10.0 * pwr)))
@@ -1128,8 +1465,9 @@ func _is_covered_by_parry(atk: FighterController, def: FighterController, slot: 
 	if not facing_atk:
 		return false
 	var is_low_leg := slot in ["thigh_r", "shin_r", "thigh_l", "shin_l"]
-	var high_move := atk.current_action in ["slash_high", "thrust", "jump_slash", "mordhau_smash", "spin_slash", "riposte_cleave", "backstep_cut"]
-	var is_low_strike := atk.current_action in ["slash_low", "leg_sweep"] or (not high_move and (is_low_leg or (atk.current_action == "" and hit_pt.y > def.position.y - 36.0)))
+	var sig_land_low := atk.current_action == "sig_landsknecht" and not atk._sig_second_armed
+	var high_move := atk.current_action in ["slash_high", "thrust", "jump_slash", "mordhau_smash", "spin_slash", "riposte_cleave", "backstep_cut", "sig_fechtmeister", "sig_executioner", "sig_bravo"] or (atk.current_action == "sig_landsknecht" and atk._sig_second_armed)
+	var is_low_strike := atk.current_action in ["slash_low", "leg_sweep"] or sig_land_low or (not high_move and (is_low_leg or (atk.current_action == "" and hit_pt.y > def.position.y - 36.0)))
 	if def.guard_zone == "low":
 		return is_low_strike or (slot == "torso" and hit_pt.y > def.position.y - 68.0)
 	return not is_low_strike
@@ -1155,6 +1493,9 @@ func _check_live_string_cut(atk: FighterController, def: FighterController) -> v
 			var info := _closest_segments(mid_tip, b_seg[1], s_entry[1], s_entry[2])
 			if float(info["dist"]) < 12.0:
 				if def.cut_live_string(skey, info["pt"]):
+					if atk.fighter_id == "landsknecht":
+						atk.dash_cooldown = 0.0
+						atk.stamina = minf(atk.max_stamina, atk.stamina + 10.0)
 					_spawn_sparks(info["pt"], 10)
 					hitstop_timer = 0.03
 					return
@@ -1217,6 +1558,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_echo():
 		return
 	if event.is_action_pressed("restart"):
+		if match_mode == "practice" and phase == Phase.FIGHT:
+			_reset_practice_stage()
+			return
 		match phase:
 			Phase.INTRO, Phase.FIGHT:
 				_begin_round()
@@ -1628,15 +1972,21 @@ func _draw_stage() -> void:
 
 func _draw_candles() -> void:
 	var now := Time.get_ticks_msec() * 0.008
-	# Grounded contact shadows beneath both fighters so boots sit firmly on flagstones / timber
+	# Grounded contact shadows beneath visible fighters so boots sit firmly on flagstones / timber
 	for raw_f in [p1, p2]:
 		var f := raw_f as FighterController
-		if f != null:
+		if f != null and f.visible:
 			var sh_w := 54.0 if not f.is_dead else 74.0
 			var sh_y := (FLOOR_Y - 1.0) if not f.is_dead else (FLOOR_Y + 8.0)
 			candle_layer.draw_set_transform(Vector2(f.position.x, sh_y), 0.0, Vector2(1.0, 0.22))
 			candle_layer.draw_circle(Vector2.ZERO, sh_w, Color(0.02, 0.015, 0.025, 0.38))
 			candle_layer.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			if phase == Phase.TITLE:
+				var spot_col := Color(0.62, 0.80, 1.0, 0.075) if f == p1 else Color(1.0, 0.68, 0.38, 0.075)
+				candle_layer.draw_circle(Vector2(f.position.x, FLOOR_Y - 145.0), 155.0, spot_col)
+				candle_layer.draw_set_transform(Vector2(f.position.x, FLOOR_Y - 1.0), 0.0, Vector2(1.0, 0.24))
+				candle_layer.draw_circle(Vector2.ZERO, 108.0, Color(1.0, 0.82, 0.42, 0.14))
+				candle_layer.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	if _use_courtyard_stage():
 		var flick_l := 0.88 + 0.14 * sin(now * 1.3) + 0.08 * cos(now * 2.9)
@@ -1798,6 +2148,9 @@ func _refresh_hud() -> void:
 	var timer_text := ""
 	if phase == Phase.TITLE:
 		center = "STRINGS & STEEL"
+	elif match_mode == "practice":
+		center = "SOLO DOJO   ·   [G] SIGNATURE" if practice_dummy_mode == "off" else ("PRACTICE   ·   DUMMY: " + practice_dummy_mode.to_upper())
+		timer_text = "∞"
 	elif match_mode == "gauntlet":
 		center = "WAVE %d   ·   BEST %d" % [gauntlet_wave, best_wave]
 	else:
@@ -1805,7 +2158,8 @@ func _refresh_hud() -> void:
 		timer_text = str(ceili(maxf(0.0, round_time_left)))
 	if phase != Phase.TITLE and bool(settings["one_hit_sever"]):
 		center += "   ·   BRUTAL SEVER"
-	ui.update_hud(p1, p2, _format_limbs(p1), _format_limbs(p2), center, timer_text)
+	var p_info := {"active": match_mode == "practice", "dummy_mode": practice_dummy_mode}
+	ui.update_hud(p1, p2, _format_limbs(p1), _format_limbs(p2), center, timer_text, p_info)
 
 
 func _pips(wins: int) -> String:

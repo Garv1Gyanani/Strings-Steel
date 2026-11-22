@@ -16,6 +16,7 @@ const KEYS := {
 	"thrust": [KEY_V, KEY_K],
 	"pommel": [KEY_C, KEY_L],
 	"spin_slash": [KEY_X, KEY_U],
+	"signature": [KEY_G, KEY_TAB],
 	"kick": [KEY_E],
 	"parry": [KEY_SPACE],
 	"half_sword": [KEY_Q],
@@ -57,7 +58,7 @@ const DEADZONES := {
 }
 
 # Keys that should match by layout-independent physical position.
-const PHYSICAL := [KEY_W, KEY_A, KEY_D, KEY_S, KEY_J, KEY_K, KEY_L, KEY_U, KEY_C, KEY_X, KEY_V, KEY_E, KEY_Q, KEY_F, KEY_R, KEY_P]
+const PHYSICAL := [KEY_W, KEY_A, KEY_D, KEY_S, KEY_J, KEY_K, KEY_L, KEY_U, KEY_C, KEY_X, KEY_V, KEY_G, KEY_E, KEY_Q, KEY_F, KEY_R, KEY_P]
 
 
 static func register() -> void:

@@ -7,6 +7,10 @@ extends CanvasLayer
 ## Talks to the arena only through signals plus a few update methods.
 
 signal start_requested(config: Dictionary)
+signal preview_changed(config: Dictionary)
+signal preview_flourish_requested(is_p1: bool)
+signal practice_dummy_cycled
+signal practice_reset_requested
 signal pause_toggle_requested
 signal resume_requested
 signal restart_round_requested
@@ -35,12 +39,18 @@ var _p1_stam: ProgressBar
 var _p2_stam: ProgressBar
 var _p1_limbs: Label
 var _p2_limbs: Label
+var _practice_row: HBoxContainer
+var _practice_info_lbl: Label
+var _practice_dummy_btn: Button
 var _center_lbl: Label
 var _timer_lbl: Label
 var _hint_lbl: Label
 
 # Screens
 var _title_root: Control
+var _title_p2_badge: PanelContainer
+var _vs_lbl: Label
+var _fight_btn: Button
 var _pause_root: Control
 var _result_root: Control
 var _result_title: Label
@@ -85,19 +95,45 @@ func setup(roster: Array, settings: Dictionary) -> void:
 # Public API
 # ---------------------------------------------------------------------------
 
-func update_hud(p1: FighterController, p2: FighterController, limbs1: String, limbs2: String, center: String, timer_text: String) -> void:
+func update_hud(p1: FighterController, p2: FighterController, limbs1: String, limbs2: String, center: String, timer_text: String, practice_info: Dictionary = {}) -> void:
 	_p1_name.text = "YOU: " + String(p1.stats.get("display_name", ""))
-	_p2_name.text = "RIVAL: " + String(p2.stats.get("display_name", ""))
 	_p1_hp.max_value = p1.max_hp
 	_p1_hp.value = p1.hp
-	_p2_hp.max_value = p2.max_hp
-	_p2_hp.value = p2.hp
 	_p1_stam.value = p1.stamina
-	_p2_stam.value = p2.stamina
 	_p1_limbs.text = limbs1
-	_p2_limbs.text = limbs2
 	_center_lbl.text = center
 	_timer_lbl.text = timer_text
+
+	var in_practice := bool(practice_info.get("active", false))
+	var dummy_mode := String(practice_info.get("dummy_mode", "off"))
+	var solo_stage := in_practice and dummy_mode == "off"
+	_p2_hp.visible = not solo_stage
+	_p2_stam.visible = not solo_stage
+	_p2_limbs.visible = not in_practice
+	if _practice_row != null:
+		_practice_row.visible = in_practice
+	if in_practice:
+		if solo_stage:
+			_p2_name.text = "SOLO DOJO · SINGLE CHARACTER"
+		else:
+			_p2_name.text = "DUMMY [%s]: %s" % [dummy_mode.to_upper(), String(p2.stats.get("display_name", ""))]
+			_p2_hp.max_value = p2.max_hp
+			_p2_hp.value = p2.hp
+			_p2_stam.value = p2.stamina
+		if _practice_info_lbl != null:
+			var sig_txt := "READY" if p1.signature_cd <= 0.05 else ("%.1fs" % p1.signature_cd)
+			var pwr_pct := int(round(p1.last_strike_power * 100.0))
+			var mv_str := p1.last_performed_move if pwr_pct <= 0 else ("%s (%d%%)" % [p1.last_performed_move, pwr_pct])
+			_practice_info_lbl.text = "LAST: %s  ·  SIG [G]: %s" % [mv_str, sig_txt]
+		if _practice_dummy_btn != null:
+			var d_lbl := "OFF (Solo)" if dummy_mode == "off" else dummy_mode.to_upper()
+			_practice_dummy_btn.text = "Dummy: " + d_lbl
+	else:
+		_p2_name.text = "RIVAL: " + String(p2.stats.get("display_name", ""))
+		_p2_hp.max_value = p2.max_hp
+		_p2_hp.value = p2.hp
+		_p2_stam.value = p2.stamina
+		_p2_limbs.text = limbs2
 
 
 func show_title(p1_idx: int, p2_idx: int, mode: String, best_wave: int, p1_loadout: String = "signature", p2_loadout: String = "signature") -> void:
@@ -105,7 +141,7 @@ func show_title(p1_idx: int, p2_idx: int, mode: String, best_wave: int, p1_loado
 	_sel_p2 = -1 if mode == "gauntlet" else p2_idx
 	_sel_p1_loadout = p1_loadout if p1_loadout in FighterStats.LOADOUT_ORDER else "signature"
 	_sel_p2_loadout = p2_loadout if p2_loadout in FighterStats.LOADOUT_ORDER else "signature"
-	_sel_mode = mode
+	_sel_mode = mode if mode in ["duel", "gauntlet", "practice"] else "duel"
 	_best_wave = best_wave
 	_refresh_title()
 	_refresh_settings()
@@ -113,6 +149,7 @@ func show_title(p1_idx: int, p2_idx: int, mode: String, best_wave: int, p1_loado
 	_hud_root.visible = false
 	if _touch_ctrl != null:
 		_touch_ctrl.set_active(false)
+	_emit_preview("init")
 
 
 func hide_title() -> void:
@@ -165,15 +202,15 @@ func refresh_hint(cursor_aim: bool) -> void:
 	if _hint_lbl == null:
 		return
 	if bool(_settings.get("touch", false)):
-		_hint_lbl.text = "TOUCH:  Left = Move · Flick L/R = Dash · Up+Fwd = Leap · Down+Fwd = Sweep · Down = Kick · Up = Half-Sword  |  Right = Effortless 360° Swing · Tap = Combo · Pull Back = Parry"
+		_hint_lbl.text = "TOUCH:  Left = Move · Flick L/R = Dash · Up+Fwd = Leap · Down+Fwd = Sweep · Down = Kick · Up = Half-Sword  |  Right = 360° Swing · 2x Tap = ★ Signature · Pull Back = Parry"
 		return
 	var pads := Input.get_connected_joypads()
 	if pads.size() > 0:
-		_hint_lbl.text = "PAD [%s]:  L-Stick Move  |  R-Stick Swing  |  X Slash/Combo  Y Thrust  L3 Pommel  A Kick (Down+A Sweep)  |  R3 Half-Sword  |  B/LB Parry  RT Dash" % Input.get_joy_name(pads[0]).left(16)
+		_hint_lbl.text = "PAD [%s]:  L-Stick Move  |  R-Stick Swing  |  X Slash  Y Thrust  B+A ★Signature  L3 Pommel  A Kick  R3 Half-Sword  |  B/LB Parry  RT Dash" % Input.get_joy_name(pads[0]).left(16)
 	elif cursor_aim:
-		_hint_lbl.text = "A/D Move (2x/Shift Dash)  |  Mouse Swing or LMB Click/Combo  |  RMB/Space Parry  |  WheelUp/V Thrust  WheelDn/X Spin  C Pommel  W Leap  E Kick (S+E Sweep)  Q Half-Sword  F/MMB Throw"
+		_hint_lbl.text = "A/D Move (2x/Shift Dash)  |  Mouse Swing or LMB Click  |  G/Tab ★Signature  |  RMB/Space Parry  WheelUp/V Thrust  WheelDn/X Spin  C Pommel  W Leap  E Kick  Q Half-Sword  F Throw"
 	else:
-		_hint_lbl.text = "A/D Move (2x/Shift Dash)  |  LMB/J Slash & Combo  V/K Thrust  X/U Spin  C/L Pommel  W Leap  E Kick (S+E Sweep)  Q Half-Sword  F Throw  |  RMB/Space Parry"
+		_hint_lbl.text = "A/D Move (2x/Shift Dash)  |  LMB/J Slash  G/Tab ★Signature  V/K Thrust  X/U Spin  C/L Pommel  W Leap  E Kick (S+E Sweep)  Q Half-Sword  F Throw  |  RMB/Space Parry"
 
 
 # ---------------------------------------------------------------------------
@@ -359,6 +396,21 @@ func _build_hud() -> void:
 	_p2_limbs = _label("", 11, INK, HORIZONTAL_ALIGNMENT_RIGHT)
 	c2.add_child(_p2_limbs)
 
+	_practice_row = HBoxContainer.new()
+	_practice_row.alignment = BoxContainer.ALIGNMENT_END
+	_practice_row.add_theme_constant_override("separation", 6)
+	_practice_row.visible = false
+	c2.add_child(_practice_row)
+	_practice_info_lbl = _label("LAST: READY  ·  SIG [G]: READY", 10, Color(1.0, 0.86, 0.48), HORIZONTAL_ALIGNMENT_RIGHT)
+	_practice_info_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_practice_row.add_child(_practice_info_lbl)
+	_practice_dummy_btn = _button("Dummy: OFF (Solo)", func(_b): practice_dummy_cycled.emit(), 10)
+	_practice_dummy_btn.custom_minimum_size = Vector2(128, 24)
+	_practice_row.add_child(_practice_dummy_btn)
+	var reset_btn := _button("Reset [R]", func(_b): practice_reset_requested.emit(), 10)
+	reset_btn.custom_minimum_size = Vector2(74, 24)
+	_practice_row.add_child(reset_btn)
+
 	_hint_lbl = _label("", 11, Color(0.85, 0.8, 0.7, 0.8), HORIZONTAL_ALIGNMENT_CENTER)
 	_hint_lbl.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	_hint_lbl.offset_top = -26
@@ -390,15 +442,15 @@ func _build_banner() -> void:
 
 # --- Settings grid (shared by title & pause) ---
 
-func _build_settings_grid() -> GridContainer:
+func _build_settings_grid(btn_w: float = 150.0) -> GridContainer:
 	var grid := GridContainer.new()
 	grid.columns = 4
-	grid.add_theme_constant_override("h_separation", 6)
-	grid.add_theme_constant_override("v_separation", 6)
+	grid.add_theme_constant_override("h_separation", 5)
+	grid.add_theme_constant_override("v_separation", 5)
 
 	for key in ["difficulty", "stage", "gore", "one_hit_sever", "cursor_aim", "touch", "strings", "sound"]:
-		var b := _button(_setting_label(key), func(_b): _toggle_setting(key), 11)
-		b.custom_minimum_size = Vector2(150, 0)
+		var b := _button(_setting_label(key), func(_b): _toggle_setting(key), 10 if btn_w < 140.0 else 11)
+		b.custom_minimum_size = Vector2(btn_w, 0)
 		grid.add_child(b)
 		_settings_refreshers.append(func(): b.text = _setting_label(key))
 	return grid
@@ -454,107 +506,151 @@ func _refresh_settings() -> void:
 
 # --- Title / character select ---
 
+func _build_stage_wing_badge(title_txt: String, col: Color, left_side: bool, on_flourish: Callable) -> PanelContainer:
+	var badge := PanelContainer.new()
+	badge.add_theme_stylebox_override("panel", _box(Color(0.06, 0.03, 0.04, 0.80), Color(col.r, col.g, col.b, 0.72), 8))
+	badge.position = Vector2(28.0 if left_side else 972.0, 14.0)
+	badge.custom_minimum_size = Vector2(280, 0)
+	var hb := HBoxContainer.new()
+	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	hb.add_theme_constant_override("separation", 8)
+	badge.add_child(hb)
+	var lbl := _label(title_txt, 11, col, HORIZONTAL_ALIGNMENT_CENTER)
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hb.add_child(lbl)
+	var fl_btn := _button("★ FLOURISH", func(_b): on_flourish.call(), 10)
+	fl_btn.custom_minimum_size = Vector2(92, 24)
+	hb.add_child(fl_btn)
+	return badge
+
+
 func _build_title() -> void:
 	_title_root = Control.new()
 	_full_rect(_title_root)
+	_title_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_title_root)
-	var dim := ColorRect.new()
-	dim.color = Color(0.03, 0.01, 0.02, 0.62)
-	_full_rect(dim)
-	_title_root.add_child(dim)
+
+	# Split-stage theatre layout: NO full-screen dark dimmer so the live breathing marionettes
+	# stand illuminated in left & right stage spotlights while the sleek center console frames them!
+	var p1_badge := _build_stage_wing_badge("◀ YOU · LIVE STAGE", Color(0.62, 0.82, 1.0), true, func(): preview_flourish_requested.emit(true))
+	_title_root.add_child(p1_badge)
+	_title_p2_badge = _build_stage_wing_badge("RIVAL · LIVE STAGE ▶", Color(1.0, 0.62, 0.62), false, func(): preview_flourish_requested.emit(false))
+	_title_root.add_child(_title_p2_badge)
+
 	var center := CenterContainer.new()
 	_full_rect(center)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_title_root.add_child(center)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(820, 0)
-	panel.add_theme_stylebox_override("panel", _box(PANEL_BG, GOLD, 14))
+	panel.custom_minimum_size = Vector2(576, 0)
+	panel.add_theme_stylebox_override("panel", _box(Color(0.06, 0.03, 0.04, 0.88), GOLD, 12))
 	center.add_child(panel)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 14)
+	vb.add_theme_constant_override("separation", 8)
 	panel.add_child(vb)
 
-	var title := _label("STRINGS & STEEL", 46, Color(1.0, 0.84, 0.48), HORIZONTAL_ALIGNMENT_CENTER)
+	var title := _label("STRINGS & STEEL", 36, Color(1.0, 0.84, 0.48), HORIZONTAL_ALIGNMENT_CENTER)
 	title.add_theme_color_override("font_outline_color", Color(0.25, 0.03, 0.04))
-	title.add_theme_constant_override("outline_size", 8)
+	title.add_theme_constant_override("outline_size", 7)
 	vb.add_child(title)
-	vb.add_child(_label("A marionette duel to the last string", 14, Color(0.85, 0.75, 0.6), HORIZONTAL_ALIGNMENT_CENTER))
+	vb.add_child(_label("A marionette duel to the last string", 12, Color(0.85, 0.75, 0.6), HORIZONTAL_ALIGNMENT_CENTER))
 
 	var cards := HBoxContainer.new()
-	cards.add_theme_constant_override("separation", 24)
+	cards.add_theme_constant_override("separation", 10)
 	cards.alignment = BoxContainer.ALIGNMENT_CENTER
 	vb.add_child(cards)
 	_p1_card = _build_fighter_card("YOU", Color(0.6, 0.78, 1.0), func(d): _cycle_p1(d), func(): _cycle_loadout(true))
 	cards.add_child(_p1_card["root"])
-	cards.add_child(_label("VS", 30, GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	_vs_lbl = _label("VS", 20, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	cards.add_child(_vs_lbl)
 	_p2_card = _build_fighter_card("RIVAL", Color(1.0, 0.6, 0.6), func(d): _cycle_p2(d), func(): _cycle_loadout(false))
 	cards.add_child(_p2_card["root"])
 
 	var modes := HBoxContainer.new()
 	modes.alignment = BoxContainer.ALIGNMENT_CENTER
-	modes.add_theme_constant_override("separation", 10)
+	modes.add_theme_constant_override("separation", 8)
 	vb.add_child(modes)
-	_mode_btns["duel"] = _button("DUEL · BEST OF 3", func(_b): _set_mode("duel"), 14)
-	_mode_btns["gauntlet"] = _button("GAUNTLET · ENDLESS", func(_b): _set_mode("gauntlet"), 14)
+	_mode_btns["duel"] = _button("DUEL · BEST OF 3", func(_b): _set_mode("duel"), 12)
+	_mode_btns["gauntlet"] = _button("GAUNTLET · ENDLESS", func(_b): _set_mode("gauntlet"), 12)
+	_mode_btns["practice"] = _button("PRACTICE · SOLO", func(_b): _set_mode("practice"), 12)
 	modes.add_child(_mode_btns["duel"])
 	modes.add_child(_mode_btns["gauntlet"])
+	modes.add_child(_mode_btns["practice"])
 
 	var settings_center := CenterContainer.new()
-	settings_center.add_child(_build_settings_grid())
+	settings_center.add_child(_build_settings_grid(130.0))
 	vb.add_child(settings_center)
 
-	var fight := _button("FIGHT!", func(_b): _emit_start(), 22)
-	fight.custom_minimum_size = Vector2(260, 52)
-	fight.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	vb.add_child(fight)
+	_fight_btn = _button("FIGHT!", func(_b): _emit_start(), 20)
+	_fight_btn.custom_minimum_size = Vector2(248, 44)
+	_fight_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vb.add_child(_fight_btn)
 
-	_title_best_lbl = _label("", 12, Color(0.85, 0.75, 0.6), HORIZONTAL_ALIGNMENT_CENTER)
+	_title_best_lbl = _label("", 11, Color(0.85, 0.75, 0.6), HORIZONTAL_ALIGNMENT_CENTER)
 	vb.add_child(_title_best_lbl)
-	vb.add_child(_label("←/→ pick fighter   ↑/↓ pick rival   Enter / A to fight", 11, Color(0.7, 0.65, 0.55), HORIZONTAL_ALIGNMENT_CENTER))
+	vb.add_child(_label("←/→ pick fighter   ↑/↓ pick rival   Enter / A to start", 10, Color(0.7, 0.65, 0.55), HORIZONTAL_ALIGNMENT_CENTER))
 
 
 func _build_fighter_card(header: String, col: Color, on_cycle: Callable, on_loadout: Callable) -> Dictionary:
 	var root := VBoxContainer.new()
-	root.custom_minimum_size = Vector2(330, 0)
-	root.add_theme_constant_override("separation", 6)
-	root.add_child(_label(header, 13, col, HORIZONTAL_ALIGNMENT_CENTER))
+	root.custom_minimum_size = Vector2(258, 0)
+	root.add_theme_constant_override("separation", 4)
+	root.add_child(_label(header, 12, col, HORIZONTAL_ALIGNMENT_CENTER))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	root.add_child(row)
-	row.add_child(_button(" < ", func(_b): on_cycle.call(-1), 16))
-	var name_lbl := _label("", 20, INK, HORIZONTAL_ALIGNMENT_CENTER)
-	name_lbl.custom_minimum_size = Vector2(230, 0)
+	row.add_child(_button(" < ", func(_b): on_cycle.call(-1), 14))
+	var name_lbl := _label("", 16, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	name_lbl.custom_minimum_size = Vector2(174, 0)
 	row.add_child(name_lbl)
-	row.add_child(_button(" > ", func(_b): on_cycle.call(1), 16))
-	var blurb := _label("", 12, Color(0.85, 0.78, 0.66), HORIZONTAL_ALIGNMENT_CENTER)
+	row.add_child(_button(" > ", func(_b): on_cycle.call(1), 14))
+	var blurb := _label("", 10, Color(0.85, 0.78, 0.66), HORIZONTAL_ALIGNMENT_CENTER)
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.custom_minimum_size = Vector2(320, 34)
+	blurb.custom_minimum_size = Vector2(252, 28)
 	root.add_child(blurb)
-	var lo_btn := _button("Weapon: SIGNATURE", func(_b): on_loadout.call(), 11)
+	var sig_name := _label("", 11, Color(1.0, 0.85, 0.42), HORIZONTAL_ALIGNMENT_CENTER)
+	root.add_child(sig_name)
+	var sig_desc := _label("", 10, Color(0.78, 0.86, 0.96), HORIZONTAL_ALIGNMENT_CENTER)
+	sig_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sig_desc.custom_minimum_size = Vector2(252, 28)
+	root.add_child(sig_desc)
+	var lo_btn := _button("Weapon: SIGNATURE", func(_b): on_loadout.call(), 10)
 	lo_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	lo_btn.custom_minimum_size = Vector2(230, 0)
+	lo_btn.custom_minimum_size = Vector2(204, 0)
 	root.add_child(lo_btn)
 	var bars := {}
 	for stat_name in ["HEALTH", "SPEED", "POWER", "ARMOUR"]:
 		var line := HBoxContainer.new()
-		var l := _label(stat_name, 10, Color(0.8, 0.72, 0.6))
-		l.custom_minimum_size = Vector2(64, 0)
+		var l := _label(stat_name.left(4), 9, Color(0.8, 0.72, 0.6))
+		l.custom_minimum_size = Vector2(40, 0)
 		line.add_child(l)
-		var bar := _bar(GOLD, 8.0, 1.0)
+		var bar := _bar(GOLD, 6.0, 1.0)
 		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		line.add_child(bar)
 		root.add_child(line)
 		bars[stat_name] = bar
-	return {"root": root, "name": name_lbl, "blurb": blurb, "loadout": lo_btn, "bars": bars}
+	return {"root": root, "name": name_lbl, "blurb": blurb, "sig_name": sig_name, "sig_desc": sig_desc, "loadout": lo_btn, "bars": bars}
 
 
-func _fill_card(card: Dictionary, idx: int, loadout_id: String) -> void:
+func _fill_card(card: Dictionary, idx: int, loadout_id: String, is_solo_practice_slot: bool = false) -> void:
 	var bars: Dictionary = card["bars"]
 	var lo_btn: Button = card["loadout"]
 	var lo_lbl: String = String(FighterStats.LOADOUT_LABELS.get(loadout_id, "SIGNATURE"))
+	if is_solo_practice_slot:
+		card["name"].text = "SOLO DOJO"
+		card["blurb"].text = "Practice footwork, mouse arcs & combos alone with a single character."
+		card["sig_name"].text = "★ OPEN SOLO STAGE"
+		card["sig_desc"].text = "Optional Dummy toggle (Off/Static/Guard/Spar) & [R] instant reset in-game."
+		lo_btn.text = "Dummy Weapon: " + lo_lbl
+		for k in bars.keys():
+			bars[k].value = 0.0
+		return
 	if idx < 0 or idx >= _roster.size():
 		card["name"].text = "RANDOM"
-		card["blurb"].text = "A random challenger steps onto the stage." if _sel_mode == "duel" else "Gauntlet rivals & loadouts scale each wave."
+		card["blurb"].text = "A mystery challenger steps onto the stage." if _sel_mode == "duel" else "Gauntlet rivals & loadouts scale each wave."
+		card["sig_name"].text = "★ MYSTERY SIGNATURE"
+		card["sig_desc"].text = "Each fighter wields a unique signature technique & combat passive."
 		lo_btn.text = "Weapon: MIXED" if _sel_mode == "gauntlet" else ("Weapon: " + lo_lbl)
 		for k in bars.keys():
 			bars[k].value = 0.0
@@ -562,9 +658,11 @@ func _fill_card(card: Dictionary, idx: int, loadout_id: String) -> void:
 	var s: Dictionary = _roster[idx]
 	card["name"].text = String(s["display_name"])
 	card["blurb"].text = String(s["blurb"])
+	card["sig_name"].text = "★ " + String(s.get("signature_name", "SIGNATURE [G]"))
+	card["sig_desc"].text = String(s.get("signature_desc", ""))
 	lo_btn.text = "Weapon: " + lo_lbl
-	var pwr_bonus := 0.14 if loadout_id == "pollaxe" else (-0.04 if loadout_id in ["buckler", "katzbalger"] else 0.0)
-	var spd_bonus := 0.14 if loadout_id == "katzbalger" else (-0.10 if loadout_id == "pollaxe" else 0.0)
+	var pwr_bonus := 0.14 if loadout_id in ["pollaxe", "warhammer", "halberd"] else (-0.04 if loadout_id in ["buckler", "katzbalger"] else 0.0)
+	var spd_bonus := 0.14 if loadout_id == "katzbalger" else (-0.10 if loadout_id in ["pollaxe", "warhammer"] else 0.0)
 	var arm_bonus := 0.18 if loadout_id == "buckler" else 0.0
 	bars["HEALTH"].value = clampf((float(s["max_hp"]) - 70.0) / 60.0, 0.05, 1.0)
 	bars["SPEED"].value = clampf((float(s["move_speed"]) - 220.0) / 140.0 + spd_bonus, 0.05, 1.0)
@@ -574,13 +672,34 @@ func _fill_card(card: Dictionary, idx: int, loadout_id: String) -> void:
 
 
 func _refresh_title() -> void:
-	_fill_card(_p1_card, _sel_p1, _sel_p1_loadout)
-	_fill_card(_p2_card, _sel_p2, _sel_p2_loadout)
+	_fill_card(_p1_card, _sel_p1, _sel_p1_loadout, false)
+	_fill_card(_p2_card, _sel_p2, _sel_p2_loadout, _sel_mode == "practice")
+	if _title_p2_badge != null:
+		_title_p2_badge.visible = _sel_mode != "practice"
+	if _vs_lbl != null:
+		_vs_lbl.text = "★" if _sel_mode == "practice" else "VS"
+	if _fight_btn != null:
+		_fight_btn.text = "ENTER SOLO DOJO!" if _sel_mode == "practice" else "FIGHT!"
 	for k in _mode_btns.keys():
 		var b: Button = _mode_btns[k]
-		var base := "DUEL · BEST OF 3" if k == "duel" else "GAUNTLET · ENDLESS"
+		var base := "DUEL · BEST OF 3"
+		if k == "gauntlet":
+			base = "GAUNTLET · ENDLESS"
+		elif k == "practice":
+			base = "PRACTICE · SOLO"
 		b.text = ("▶ " + base + " ◀") if k == _sel_mode else base
 	_title_best_lbl.text = "Gauntlet best: wave %d cleared" % _best_wave if _best_wave > 0 else ""
+
+
+func _emit_preview(changed_tag: String) -> void:
+	preview_changed.emit({
+		"p1": _sel_p1,
+		"p2": _sel_p2,
+		"p1_loadout": _sel_p1_loadout,
+		"p2_loadout": _sel_p2_loadout,
+		"mode": _sel_mode,
+		"changed": changed_tag,
+	})
 
 
 func _cycle_loadout(is_p1: bool) -> void:
@@ -594,11 +713,13 @@ func _cycle_loadout(is_p1: bool) -> void:
 	else:
 		_sel_p2_loadout = nxt
 	_refresh_title()
+	_emit_preview("p1" if is_p1 else "p2")
 
 
 func _cycle_p1(d: int) -> void:
 	_sel_p1 = posmod(_sel_p1 + d, _roster.size())
 	_refresh_title()
+	_emit_preview("p1")
 
 
 func _cycle_p2(d: int) -> void:
@@ -608,6 +729,7 @@ func _cycle_p2(d: int) -> void:
 		# Cycle through RANDOM (-1) and every roster entry.
 		_sel_p2 = posmod(_sel_p2 + 1 + d, _roster.size() + 1) - 1
 	_refresh_title()
+	_emit_preview("p2")
 
 
 func _set_mode(m: String) -> void:
@@ -615,6 +737,7 @@ func _set_mode(m: String) -> void:
 	if m == "gauntlet":
 		_sel_p2 = -1
 	_refresh_title()
+	_emit_preview("mode")
 
 
 func _emit_start() -> void:
